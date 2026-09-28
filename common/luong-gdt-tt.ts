@@ -34,7 +34,7 @@
  *   B18    Vụ trưởng      · Phân công TTV cho HỒ SƠ KHÁNG NGHỊ (lọc Hình thức "Hồ sơ kháng nghị GĐT-TT")
  *   B19    Vụ trưởng      · Tạo danh sách vụ xét xử (hội đồng + lịch) → Danh sách tham mưu › Lấy số ›
  *                           Trình ký › Gửi
- *   B20    Phó Chánh án   · Phê duyệt Chương trình làm việc
+ *   B20    Chánh án       · Phê duyệt Chương trình làm việc HĐXX (CTLVHDXX — trình lên Chánh án)
  *   B21    Vụ trưởng      · Phân công Hội đồng xét xử › thêm 2 biểu mẫu (QĐ thành lập HĐXX, Thông báo
  *                           VKS tham gia phiên tòa) → nơi nhận → Lưu → Trình ký › Gửi
  *   B22    Phó Chánh án   · Ký logic hai biểu mẫu Hội đồng xét xử
@@ -419,10 +419,25 @@ export function dangKyLuongGdtTT(dsVu: VuLuongGdtTT[], { tenSoCai, vuGdkt = VU_G
         testInfo.setTimeout(10 * 60_000);
         const { page, context } = await moTrangVaiTKM(browser, testInfo, 'PCA');
         const pd = new PheDuyetPage(page);
-        await pd.mo();
-        if (await pd.moChiTietNeuCon('Kháng nghị giám đốc thẩm', '', new Date(Date.now() - 24 * 3600_000))) {
-          await pd.ykienVaKyLogicVanBan('Đồng ý ban hành Quyết định kháng nghị giám đốc thẩm.');
+        // Mở theo ID dự thảo (B12b ghi vào sổ cái). Tìm theo tên loại văn bản là KHÔNG đủ: mọi vụ đều
+        // có đề xuất tên "Kháng nghị giám đốc thẩm", 28/09/2026 VG16 (bản án 33) mở trúng đề xuất của
+        // vụ khác (VA26-004447, bản án 47 — Công ty TNHH Đại Dương Miền Nam) và thấy "Đã duyệt".
+        const khoaKy = khoaDuThao || docDong(b)?.khoaDuThao;
+        let conKy = false;
+        if (khoaKy) {
+          try {
+            conKy = await pd.moChiTietTheoId(khoaKy);
+          } catch {
+            await pd.mo();
+            conKy = await pd.moChiTietNeuCon('Kháng nghị giám đốc thẩm', '', new Date(Date.now() - 24 * 3600_000));
+            await pd.xacNhanDungVu([b.biCao, b.soBanAn].filter(Boolean) as string[]);
+          }
+        } else {
+          await pd.mo();
+          conKy = await pd.moChiTietNeuCon('Kháng nghị giám đốc thẩm', '', new Date(Date.now() - 24 * 3600_000));
+          await pd.xacNhanDungVu([b.biCao, b.soBanAn].filter(Boolean) as string[]);
         }
+        if (conKy) await pd.ykienVaKyLogicVanBan('Đồng ý ban hành Quyết định kháng nghị giám đốc thẩm.');
         ghiSoCai(b, { xongBuoc: 'kyDuThao' });
         await context.close();
       });
@@ -528,10 +543,12 @@ export function dangKyLuongGdtTT(dsVu: VuLuongGdtTT[], { tenSoCai, vuGdkt = VU_G
         await context.close();
       });
 
-      test('B20 · Phó Chánh án: phê duyệt Chương trình làm việc', async ({ browser }, testInfo) => {
+      // Đo trên STG 28/09/2026 (vai Phó Chánh án: 95 đề xuất, KHÔNG có biểu mẫu CTLVHDXX nào; vai Chánh
+      // án: 22 bản ghi CTLVHDXX) → Chương trình làm việc HĐXX trình lên CHÁNH ÁN, không phải Phó Chánh án.
+      test('B20 · Chánh án: phê duyệt Chương trình làm việc', async ({ browser }, testInfo) => {
         test.skip(vaiThieu.length > 0, lyDoThieuVai);
         test.skip(daXongBuoc(b, 'duyetChuongTrinh'), 'Chương trình làm việc của bản án này đã duyệt ở lần chạy trước');
-        const { page, context } = await moTrangVaiCauHinh(browser, testInfo, 'phoChanhAn');
+        const { page, context } = await moTrangVaiCauHinh(browser, testInfo, 'chanhAn');
         const pd = new PheDuyetPage(page);
         const khoaChuongTrinh = docDong(b)?.khoaChuongTrinh;
         if (khoaChuongTrinh) {
@@ -542,13 +559,13 @@ export function dangKyLuongGdtTT(dsVu: VuLuongGdtTT[], { tenSoCai, vuGdkt = VU_G
           }
         } else {
           await pd.mo();
-          // Vụ chạy B19 trước khi có khoá trong sổ cái: tìm theo tên. Cột "Nội dung đề xuất" hiện hai
-          // nhãn tuỳ bản ghi — "Chương trình làm việc" (CTLVHDXX) hoặc "Tờ trình thẩm tra vụ việc số N"
-          // (ảnh chụp VG01 28/09/2026) → khớp cả hai.
+          // Vụ chạy B19 trước khi có khoá trong sổ cái: tìm theo tên "Chương trình làm việc của HĐXX".
+          // KHÔNG nhận thêm nhãn "Tờ trình thẩm tra vụ việc": đo trên STG 28/09/2026, dòng đó là biểu mẫu
+          // MS_42 "Tờ trình vụ giải quyết" của một vụ giải quyết đơn khác, duyệt vào là duyệt sai văn bản.
           // moChiTietNeuCon: không còn ở "Chờ duyệt" mà đã ở "Đã duyệt" thì coi như xong, không báo lỗi giả
           if (
             await pd.moChiTietNeuCon(
-              /Chương trình làm việc|Tờ trình thẩm tra vụ việc/,
+              /Chương trình làm việc/,
               taiKhoan(vuGdkt.vuTruong).ten,
               new Date(Date.now() - 24 * 3600_000),
             )

@@ -38,6 +38,8 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: 1,
   reporter: [['html', { open: 'never' }], ['line']],
+  // Chạy xong tự cập nhật báo cáo của đợt GĐT/TT (chỉ khi sổ cái của đợt vừa được ghi)
+  globalTeardown: require.resolve('./common/bao-cao-sau-chay'),
   timeout: 300_000, // UAT chậm: mỗi màn tải 20–60s
   expect: { timeout: 10_000 },
   use: {

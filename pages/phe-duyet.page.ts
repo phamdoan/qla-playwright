@@ -188,6 +188,24 @@ export class PheDuyetPage {
     }
   }
 
+  /**
+   * Chốt danh tính trang đề xuất đang mở: phải thấy ít nhất một dấu hiệu của vụ (tên bị cáo, số bản
+   * án). Mọi vụ đều có đề xuất cùng tên loại văn bản nên mở theo tên rất dễ trúng vụ khác rồi
+   * duyệt/ký lên văn bản của họ (28/09/2026: VG16 bản án 33 mở trúng vụ bản án 47).
+   */
+  async xacNhanDungVu(dauHieu: string[]) {
+    const { page } = this;
+    const can = dauHieu.filter(Boolean);
+    if (!can.length) return;
+    const chu = (await page.locator('body').innerText().catch(() => '')).replace(/\s+/g, ' ');
+    if (!can.some(t => chu.includes(t))) {
+      throw new Error(
+        'Trang phê duyệt đang mở KHÔNG phải của vụ này (không thấy ' + can.join(' / ') + ' trên trang) — ' +
+          'mở theo tên loại văn bản đã trúng đề xuất của vụ khác. Cần id văn bản trong sổ cái.',
+      );
+    }
+  }
+
   /** Trưởng/Phó phòng: tick dòng → "Phê duyệt" trên thanh công cụ → "Đồng ý" */
   async pheDuyetHangLoat(dong: Locator) {
     const { page } = this;
@@ -305,6 +323,16 @@ export class PheDuyetPage {
     if (laManDuThao) {
       await this.bamVaChoApi(nutDuyet, /ky-so-va-duyet|ky-logic|\/duyet$/);
       return;
+    }
+    // Văn bản đã duyệt/đã ký ở lượt trước: không còn ô ý kiến, cũng không còn cặp Duyệt/Trả lại, chỉ
+    // còn nhãn "Đã duyệt"/"Đã ký" — nghiệp vụ chốt 28/09/2026: thấy "Đã duyệt" là bước này đã xong.
+    const oYKien = page.locator('#noiDungYKienLanhDao').or(page.locator('#yKienLanhDao')).first();
+    if (!(await hienTrong(oYKien, 8_000))) {
+      const daXong = page.getByText(/Đã duyệt|Đã ký/i).first();
+      if (await hienTrong(daXong, 5_000)) {
+        console.log('    · Phê duyệt: văn bản đã ở trạng thái "' + (await daXong.innerText()).trim() + '" từ trước → bỏ qua');
+        return;
+      }
     }
     await this.nhapYKien(noiDung);
     await this.bamVaChoApi(page.getByRole('button', { name: /Ký logic$/ }).first(), /ky-so-va-duyet|ky-logic|\/duyet$/);

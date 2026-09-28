@@ -2,8 +2,12 @@ import { Locator, Page, expect } from '@playwright/test';
 
 /** Tốc độ gõ phím (ms/ký tự), chỉnh qua QLA_GO_PHIM_MS; 0 = điền ngay */
 let TOC_DO_GO = Number(process.env.QLA_GO_PHIM_MS ?? 40);
-/** Hệ số thời gian nghỉ giữa các thao tác (1 = như người; chế độ điền nhanh rút còn 0.3) */
-let HE_SO_NGHI = 1;
+/**
+ * Hệ số thời gian nghỉ giữa các thao tác (1 = như người; chế độ điền nhanh rút còn 0.3).
+ * QLA_GO_PHIM_MS=0 (chạy seed) tự bật luôn chế độ nhanh — trước đây phải gọi datTocDoGo() mới rút nghỉ,
+ * nên đợt seed 27–28/09 chạy ở tốc độ "như người": ~69 chỗ nghỉ cố định, tốn 10–25s mỗi bước.
+ */
+let HE_SO_NGHI = TOC_DO_GO === 0 ? 0.3 : 1;
 /** Đổi tốc độ gõ trong phiên chạy (vd. script seed dùng 0 = điền ngay, vẫn thao tác qua UI) */
 export const datTocDoGo = (ms: number) => {
   TOC_DO_GO = ms;
