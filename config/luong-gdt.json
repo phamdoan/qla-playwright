@@ -1,0 +1,117 @@
+{
+  "_ghiChu": [
+    "Cấu hình cho luồng GĐT/TT theo 'Luồng nhập data.txt' (Bước 1–18).",
+    "Đổi tài khoản / tên người / giá trị nghiệp vụ ở đây, KHÔNG sửa code test.",
+    "Ghi đè theo môi trường: tạo thêm config/luong-gdt.dev.json hoặc config/luong-gdt.stg.json",
+    "(chỉ cần khai phần khác biệt, phần còn lại lấy từ file này).",
+    "CCCD/mật khẩu từng vai khai ở config/tai-khoan.local.json (không commit, mẫu: tai-khoan.example.json). Mật khẩu mặc định Ta@<CCCD>."
+  ],
+  "taiKhoan": {
+    "canBo": {
+      "ten": "Nguyễn Thị Thu Hường",
+      "vaiTro": "Trưởng phòng HCTP – nhập đơn, lập tờ trình/thông báo"
+    },
+    "chanhVanPhong": {
+      "ten": "Nguyễn Tường Linh",
+      "vaiTro": "Chánh văn phòng – ký logic"
+    },
+    "phoChanhAn": {
+      "ten": "Nguyễn Hải Trâm",
+      "vaiTro": "Phó Chánh án – phê duyệt tờ trình, duyệt kháng nghị"
+    },
+    "chanhAn": {
+      "ten": "Nguyễn Văn Quảng",
+      "vaiTro": "Chánh án – phê duyệt chương trình làm việc, ký biểu mẫu HĐXX"
+    },
+    "thuKyVu": {
+      "ten": "Trương Minh Trang",
+      "vaiTro": "Thư ký viên Vụ hình sự – thụ lý vụ án, hồ sơ kháng nghị, phân công HĐXX"
+    },
+    "vuTruong": {
+      "ten": "Nguyễn Thị Bình",
+      "vaiTro": "Vụ trưởng Vụ GĐKT về hình sự – phân công TTV, tạo danh sách xét xử"
+    },
+    "thuKyVuHoSoKhangNghi": {
+      "ten": "Nguyễn Thị Bình",
+      "vaiTro": "B16 – chuyển và nhận Hồ sơ kháng nghị",
+      "_lechTaiLieu": "Tài liệu Playwright nhập data GDT-TT (Bước 16) ghi Trương Minh Trang (thuKyVu). Đã thử đúng tài liệu ngày 27/09/2026 và HỎNG 8 vụ: CAN_BO.MA_CHUC_VU của tài khoản đó là NULL nên donKetQuaReadPredicate chỉ cho thấy DON_KETQUA do chính mình tạo, mà bản ghi KHANG_NGHI lại do Phó Chánh án ký quyết định tạo ra → tab \"Hồ sơ kháng nghị đi\" trống. Nghiệp vụ quyết định (27/09/2026) dùng Vụ trưởng Nguyễn Thị Bình (MA_CHUC_VU = HU6, lãnh đạo cùng đơn vị D01.106). Cấp chức vụ lãnh đạo cho Trương Minh Trang xong thì trả lại cho khớp tài liệu."
+    },
+    "thamTraVien": {
+      "ten": "Bùi Thị Thanh Loan",
+      "vaiTro": "Thẩm tra viên – lập dự thảo kết quả giải quyết (đúng tài liệu Bước 12 cũ / B13a mới)",
+      "_canhBao": "Đã trả về đúng tài liệu 27/09/2026 theo yêu cầu. Lưu ý đã đo được: tài khoản này chưa được cấp role nên có thể không thấy vụ án ở màn Quản lý vụ án. Không thấy thì cần cấp role, KHÔNG đổi sang tài khoản khác."
+    },
+    "canBoDanSu": {
+      "ten": "",
+      "vaiTro": "Phó Chánh Văn phòng – nhận và nhập đơn khởi kiện dân sự"
+    },
+    "chanhAnDanSu": {
+      "ten": "Nguyễn Mậu Trường",
+      "vaiTro": "Chánh án – người ký/phân công Thẩm phán xử lý đơn, ký logic"
+    },
+    "vuTruongDanSu": {
+      "ten": "Nguyễn Thị Hà",
+      "vaiTro": "Vụ trưởng Vụ Giám đốc, kiểm tra về dân sự (D01.107) – phân công TTV"
+    },
+    "thamTraVienDanSu": {
+      "ten": "Phạm Minh Tùng",
+      "vaiTro": "Thẩm tra viên Vụ Giám đốc, kiểm tra về dân sự (D01.107) – lập dự thảo kết quả giải quyết"
+    },
+    "chanhAnPhucThamHanhChinh": {
+      "ten": "Nguyễn Xuân Kỳ",
+      "vaiTro": "Tòa án cấp trên (TAND TP Hà Nội) – tiếp nhận hồ sơ chuyển đến, thụ lý và xét xử phúc thẩm hành chính (StepData_HC.txt phần phúc thẩm)"
+    },
+    "thuKyVuDanSu": {
+      "ten": "Nguyễn Thị Hà",
+      "vaiTro": "Thư ký Vụ GĐKT về dân sự (D01.107) – B10 nhận đơn, B11 giao tiểu hồ sơ, B21 biểu mẫu HĐXX",
+      "_canhBao": "CHỌN TẠM, cần nghiệp vụ xác nhận. Tài liệu Playwright nhập data GDT-TT chỉ khai tài khoản luồng HÌNH SỰ; không có tài liệu nào nêu Thư ký Vụ dân sự. Tra CAN_BO D01.107: mọi Thư ký viên đều có MA_CHUC_VU = NULL và KHÔNG xuất hiện trong PHAN_CONG/DON_PHANCONG của vụ dân sự nào, nên không có căn cứ chọn người cụ thể. Tạm dùng chính Vụ trưởng Nguyễn Thị Hà (lãnh đạo D01.107, thấy toàn bộ vụ của Vụ) như cách đã làm ở luồng hình sự. Có tài khoản Thư ký viên đúng thì thay cccd/ten ở đây và ở nghiepVu.nguoiNhanTieuHoSoDanSu."
+    }
+  },
+  "nghiepVu": {
+    "_buoc4_5": "Tờ trình và Thông báo phân công thẩm phán",
+    "nguoiDuyetVanBan": "Nguyễn Thị Thu Hường",
+    "nguoiKyVanBan": "Nguyễn Tường Linh",
+    "capTrinhTiep": "Phó chánh án",
+    "nguoiTrinhTiep": "Nguyễn Hải Trâm",
+    "_buoc11": "Phân công Thẩm tra viên. Dropdown chỉ liệt kê TTV thật nên phải là tên một TTV, KHÔNG đặt tên Vụ trưởng vào đây. Tài khoản đăng nhập làm bước TTV (taiKhoan.thamTraVien) được phép là người khác: Vụ trưởng thấy toàn bộ vụ của Vụ nên vẫn mở được vụ đã phân công cho TTV.",
+    "thamTraVien": "Bùi Thị Thanh Loan",
+    "lanhDaoPhuTrach": "Lê Thị Thu Hiền",
+    "_buoc12": "Dự thảo kết quả giải quyết (kháng nghị)",
+    "ketQuaGiaiQuyet": "Kháng nghị",
+    "nguoiKyQuyetDinh": "Nguyễn Hải Trâm",
+    "thamQuyenXetXu": "Tòa án nhân dân tối cao",
+    "capTrinhKhangNghi": "Phó Chánh án TANDTC",
+    "nguoiTrinhKhangNghi": "Nguyễn Hải Trâm",
+    "noiDungVuAn": "Bị cáo bị xét xử sơ thẩm và bản án đã có hiệu lực pháp luật; đương sự đề nghị xem xét lại theo thủ tục giám đốc thẩm.",
+    "xetThay": "Xét thấy bản án sơ thẩm có vi phạm nghiêm trọng thủ tục tố tụng và đánh giá chứng cứ chưa đầy đủ, cần kháng nghị theo thủ tục giám đốc thẩm.",
+    "_buoc14": "Hồ sơ kháng nghị",
+    "donViNhanHoSo": "Tòa án nhân dân tối cao",
+    "_buoc14b": "Phân công Thẩm phán TANDTC cho vụ xét xử GĐT (tài liệu chưa ghi; bắt buộc trước B15 — popup Danh sách vụ xét xử lấy chủ tọa từ PHAN_CONG vai trò TA.TP.001 đã duyệt). Vụ trưởng phân công chỉ định → Lưu tờ trình MS_02_TC → Lấy số → Trình ký; Phó Chánh án phê duyệt. Thẩm phán lấy theo vụ mẫu VA26-003268/003270 — đổi nếu nghiệp vụ chỉ định khác.",
+    "nguoiKyToTrinhTANDTC": "Nguyễn Hải Trâm",
+    "_buoc15": "Quản lý xét xử GĐT",
+    "loaiHoiDong": "Hội đồng toàn thể",
+    "_buoc17": "Biểu mẫu hội đồng xét xử",
+    "nguoiKyBieuMau": "Nguyễn Hải Trâm",
+    "bieuMauHoiDong": [
+      "Quyết định thành lập Hội đồng xét xử",
+      "Thông báo VKS tham gia phiên tòa"
+    ],
+    "_buoc10b": "Giao tiểu hồ sơ từ Văn phòng HCTP sang Vụ GĐ,KT (bước thụ lý, tài liệu chưa ghi)",
+    "nguoiGiaoTieuHoSo": "Nguyễn Thị Thu Hường",
+    "nguoiNhanTieuHoSo": "Trương Minh Trang",
+    "_luongDanSu": "Đơn khởi kiện và yêu cầu (dân sự sơ thẩm)",
+    "nguoiKyPhanCongDon": "Nguyễn Mậu Trường",
+    "vaiTroPhanCongDon": "Thẩm phán xử lý đơn",
+    "hinhThucNhanDon": "Trực tiếp",
+    "nguoiNhanDon": "Nguyễn Mậu Trường",
+    "yKienKyPhanCongDon": "Đồng ý phân công Thẩm phán giải quyết đơn.",
+    "nguoiKyThongBaoAnPhi": "Nguyễn Mậu Trường",
+    "vaiTroPhanCongVuAn": "Thẩm phán chủ tọa",
+    "tuoiMacDinhDuongSu": "35",
+    "_vuGdktDanSu": "Nhánh Vụ Giám đốc, kiểm tra về dân sự (D01.107) cho luồng GĐT/TT án dân sự",
+    "thamTraVienDanSu": "Phạm Minh Tùng",
+    "lanhDaoPhuTrachDanSu": "Nguyễn Thị Hà",
+    "nguoiNhanTieuHoSoDanSu": "Phạm Minh Tùng",
+    "hinhThucPhanCongTPTC": "Hồ sơ kháng nghị GĐT-TT"
+  }
+}

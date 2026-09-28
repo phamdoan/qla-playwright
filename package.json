@@ -1,0 +1,43 @@
+{
+  "name": "e2e",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "ui": "playwright test --ui",
+    "test": "playwright test",
+    "dev": "playwright test",
+    "dev:ui": "playwright test --ui",
+    "staging": "playwright test",
+    "staging:ui": "playwright test --ui",
+    "report": "playwright show-report",
+    "ui:stg": "node tools/chay-ui.js stg",
+    "ui:stg:ghi": "node tools/chay-ui.js stg --ghi",
+    "ui:dev": "node tools/chay-ui.js dev",
+    "ui:dev:ghi": "node tools/chay-ui.js dev --ghi",
+    "uat": "playwright test",
+    "uat:ui": "playwright test --ui",
+    "ui:uat": "node tools/chay-ui.js uat",
+    "ui:uat:ghi": "node tools/chay-ui.js uat --ghi",
+    "ui:stg:24-09": "node tools/chay-ui.js stg --ghi --file=luong-gdt-tt-24-09-2026",
+    "stg:24-09": "node tools/chay-ui.js stg --ghi --file=luong-gdt-tt-24-09-2026 --cli",
+    "gdt-tt:26-09:stg": "node tools/chay-ui.js stg --ghi --file=luong-gdt-tt-26-09-2026.spec --cli",
+    "gdt-tt:26-09:stg:ui": "node tools/chay-ui.js stg --ghi --file=luong-gdt-tt-26-09-2026.spec",
+    "gdt-tt:26-09-hinh-su-1c1:stg": "node tools/chay-ui.js stg --ghi --file=luong-gdt-tt-26-09-2026-hinh-su-1C1 --cli",
+    "gdt-tt:26-09-hinh-su-1c1:stg:ui": "node tools/chay-ui.js stg --ghi --file=luong-gdt-tt-26-09-2026-hinh-su-1C1",
+    "gdt-tt-dan-su:26-09:stg": "node tools/chay-ui.js stg --ghi --file=don-kien-dan-su-luong-gdt-tt-26-09-2026 --cli",
+    "gdt-tt-dan-su:26-09:stg:ui": "node tools/chay-ui.js stg --ghi --file=don-kien-dan-su-luong-gdt-tt-26-09-2026",
+    "hinh-su:dev": "node tools/chay-ui.js dev --ghi --file=vu-an-hinh-su-so-tham --cli",
+    "hinh-su:dev:ui": "node tools/chay-ui.js dev --ghi --file=vu-an-hinh-su-so-tham",
+    "hinh-su:stg": "node tools/chay-ui.js stg --ghi --file=vu-an-hinh-su-so-tham --cli",
+    "hinh-su:stg:ui": "node tools/chay-ui.js stg --ghi --file=vu-an-hinh-su-so-tham"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^22.20.3",
+    "dotenv": "^17.4.2"
+  }
+}

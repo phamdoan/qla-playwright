@@ -1,0 +1,174 @@
+﻿Bước 1: Đăng nhập tài khoản
+Click vào đường link: https://qla-stg.toaan.gov.vn/sso/login
+Click button “ Đăng nhập với Tòa án tối cao SSO” 
+Nhập số Căn cước công dân: <CCCD:canBo> - Đây là tài khoản của Nguyễn Thị Thu Hường/Trưởng phòng
+Nhập Mật khẩu: Ta@<CCCD:canBo>
+Bước 2: Nhập data
+- Tại thanh menu bên trái: Click Quản lý đơn -> Danh sách đơn
+- Click button “ Thêm mới”
+- Màn hình hiện ra popup Tải lên tài liệu. Click vào ô “ Click hoặc kéo thả tài liệu vào đây”. Chọn tài liệu từ máy tính. Click tải lên. Sau đó tại popup Xác nhận xử lý OCR. Click “Quay lại”
+- Tại tab Thông tin bản án đề nghị. Nhập các trường Số bản án, Ngày bản án, Tòa ra bản án, chọn cấp xét xử. Các thông tin này lấy ở trong file tôi gửi kèm. Số bản án, ngày bản án, chọn cấp xét xử lấy thông tin ở cột Bản án sơ thẩm gốc. Tòa ra bản án lấy ở cột Tòa án. 
+Ví dụ: Cột Bản án sơ thẩm gốc có số bản án là: Bản án số 16/2024/HS-ST ngày 19/12/2024
+Thì nhập trường thông tin Số bản án: 16
+Ngày bản án:  19/12/2024
+Cấp xét xử: Sơ thẩm 
+Lưu ý:
+Đuôi HS-ST: tức là Hình sự  - Sơ thẩm. 
+Đuôi HS -PT tức là Hình sự - Phúc thẩm
+Đuôi DS-ST tức là Dân sự - Sơ thẩm
+Đuôi DS-PT tức là Dân sự - Phúc thẩm
+- Sau đó Click vào icon Tìm kiếm. Sẽ hiện ra thông tin bản án.  Tự fill trường “ Loại án”. 
+-Tại trường “thủ tục giải quyết”  nếu tải lên file yêu cầu nhập thủ tục giải quyết là  Giám đốc thẩm.=> thì chọn “Giám đốc thẩm”
+-Tại trường “thủ tục giải quyết”  nếu tải lên file yêu cầu nhập thủ tục giải quyết là  Tái thẩm.=> thì chọn “Tái thẩm”.
+* Tại tab Thông tin đơn.  Click dropdown “ Chọn người từ bản án cũ “. Sau đó click chọn người hiện ra
+* Sau đó click dropdown Tính/ Thành phố, dropdown Phường/xã khớp với thông tin dịa chỉ người đứng đơn trong bản án, nếu không có bạn có thể click 1 địa chỉ bất kì
+* Sau đó tại tab Nội dung đơn, Click Gợi ý. Hệ thống tự fill ra nội dung gợi ý.
+* Sau đó tại tab Xử lý đon, điền các thông tin còn thiếu. Tại trường “ Đơn vị chuyển đến” Chọn Vụ chuyển đến tương ứng với “ Loại án”. Ví vụ án Hình sự -> Đơn vị chuyển đến là “ Vụ giám đốc kiểm tra về hình sự”. Loại án Dân sự thì đơn vị chuyển đến là  “Vụ giám đốc kiểm tra về dân sự”.  Tại trường thông tin Thụ lý đơn  chọn “ Thụ lý mới”
+Sau đó tại tab Thông tin khiếu nại, click Button “ Thêm mới”  . Tai popup  Thêm thông tin khiếu nại, chọn người được khiếu nại sẵn có. Tại tab Nội dung khiếu nại, ghi nội dung khiếu nại là : Khiếu nại cho người thân.
+Nhập Ngày tòa nhận, chọn ngày nhập ( là ngày nhập)
+Nhập Ngày ghi trên đơn, chọn ngày nhập ( là ngày nhập)
+Nhập ngày trên dấu bưu điện ( là ngày nhập)
+Sau đó click “Lưu thông tin” .
+Sau đó click mũi tên ra ngoài màn hình.
+Bước 3: Phân công thẩm phán 
+Tại menu Quản lý đơn -> Phân công thẩm phán
+Tại tab DS chưa phân công ngẫu nhiên, click button Phân công ngẫu nhiên. Hệ thống sẽ tự đông phân công ngẫu nhiên cho từng đơn.
+Bước 4: Tạo tờ trình phân công thẩm phán
+* Tại màn hình Quản lý đơn -> Danh sách đơn. Click vào đơn đã phân công thẩm phán. 
+* Tại trường  dropdown Loại văn bản. Chọn Tờ trình phân công thẩm phán. 
+* Tab Người duyệt chọn Nguyễn Thị Thu Hường
+* Tab Người ký chọn Nguyễn Tường Linh
+* Tại cột Thao tác, chọn Tạo văn bản
+* Ấn button Trình ký
+Bước 5: Tạo Tờ Thông báo phân công thẩm phán
+- Tại màn hình Quản lý đơn -> Danh sách đơn. Click vào đơn vừa nhập 
+* Tại trường  dropdown Loại văn bản. Chọn Tờ thông báo phân công thẩm phán. 
+* Tab Người duyệt chọn Nguyễn Thị Thu Hường
+* Tab Người ký chọn Nguyễn Tường Linh
+* Tại cột Thao tác, chọn Tạo văn bản
+Ấn button Trình ký
+Bước 6: Đăng nhập tài khoản bà Nguyễn Tường Linh
+Click vào account Nguyễn Thị Thu Hường. Click Đăng xuất
+Click button “ Đăng nhập với Tòa án tối cao SSO” 
+Nhập số Căn cước công dân: <CCCD:chanhVanPhong> -  Đây là tài khoản Nguyễn Tường Linh/Chánh văn phòng
+Nhập Mật khẩu: Ta@<CCCD:chanhVanPhong>
+Bước 7: 
+Tại menu chọn Công tác lãnh đạo -> Tab Chờ duyệt
+- Chọn Tờ trình phân công thẩm phán của đơn bạn đang nhập từ đầu 
+Màn hình Lãnh đạo phê duyệt ý kiến hiện ra
+Tại trường Cấp trình tiếp, chọn Phó chánh án
+Tại trường Người đề xuất trình, chọn Nguyễn Hải Trâm
+Sau đó click button Lưu và ký logic
+- Chọn Tờ thông báo phân công thẩm phán vừa gửi của đơn bạn đang nhập từ đầu 
+Màn hình Lãnh đạo phê duyệt ý kiến hiện ra
+Sau đó click button Ký logic
+Bước 8 : Đăng nhập tài khoản Nguyễn Hải Trâm
+Click vào account Nguyễn Tường Linh . Click Đăng xuất
+Click button “ Đăng nhập với Tòa án tối cao SSO” 
+Nhập số Căn cước công dân: <CCCD:phoChanhAn> - Đây là tài khoản của Nguyễn Hải Trâm/Phó Chánh án
+Nhập Mật khẩu: Ta@<CCCD:phoChanhAn>
+Bước 9:
+Tại menu chọn Công tác lãnh đạo -> Phê duyệt đề xuất -> Tab Chờ duyệt
+Chọn Tờ trình phân công thẩm phán của đơn đang nhập bên trên.
+Màn hình Lãnh đạo phê duyệt ý kiến hiện ra
+Click button Phê duyệt
+Bước 10: Quản lý vụ án
+Click vào account Nguyễn Hải Trâm. Click Đăng xuất
+Click button “ Đăng nhập với Tòa án tối cao SSO” 
+Nhập số Căn cước công dân:<CCCD:thuKyVu> - Đây là tài khoản của Trương Minh Trang/Thư ký viên Vụ hình sự
+Click vào menu Quản lý án GĐT/TT -> Nhận đơn và Thụ lý vụ án -> Đã có vụ án
+Đơn sau khi được ký tờ trình bên trên sẽ hiển thị ở danh sách.
+Bước 11: Giao tiểu hồ sơ cho Thẩm tra viên
+Vẫn ở tài khoản Trương Minh Trang (<CCCD:thuKyVu> / Thư ký viên Vụ hình sự).
+Menu Quản lý án GĐT/TT -> Nhận đơn và TL vụ án -> tab Đã có vụ án. Nhập Số bản án/quyết định rồi ấn Tìm kiếm để lọc đúng đơn.
+Tích checkbox dòng của đơn, ấn button Giao THS. Hệ thống mở MÀN RIÊNG Giao tiểu hồ sơ (không phải popup).
+Tại dòng của đơn, chọn Người giao là Nguyễn Thị Thu Hường (Văn phòng HCTP) và Người nhận là Trương Minh Trang (Vụ GĐ,KT). Chọn xong hai ô mới tích checkbox dòng, vì mỗi lần chọn bảng render lại và mất ô tích.
+Ấn Lưu. Không giao tiểu hồ sơ thì Bước 12 không thấy đơn ở màn Phân công TTV.
+Bước 12
+Click vào account Trương Minh Trang. Click Đăng xuất
+Click button “ Đăng nhập với Tòa án tối cao SSO” 
+Nhập số Căn cước công dân:<CCCD:vuTruong> - Đây là tài khoản của Nguyễn Thị Bình,  Vụ trưởng · Vụ Giám đốc kiểm tra về hình sự.
+Mật khẩu: Ta@<CCCD:vuTruong>
+Click menu Quản lý án GĐT/TT -> Danh sách phân công TTV
+Tại tab Chưa phân công TTV.  Chọn Phân công chỉ định, chọn checkbox đơn cần phân công, tại cột thẩm tra viên chọn Bùi Thị Thanh Loan, tại cột Lãnh đạo, chọn Lê Thị Thu Hiền. click Phân công, sau đó popup Xác nhận hiện ra, click Đồng ý.
+Bước 13
+Click vào account Nguyễn Thị Bình. Click Đăng xuất
+Click button “ Đăng nhập với Tòa án tối cao SSO” 
+Nhập số Căn cước công dân:<CCCD:thamTraVien> - Đây là tài khoản  của Bùi Thị Thanh Loan/TTV Vụ Giám đốc kiểm tra về hình sự
+Click menu Quản lý án GĐT/TT -> Quản lý vụ án. Click icon Xem chi tiết vụ án đã tạo. Tại tab Tờ trình,  click button Tạo văn bản -> Tạo dự thảo kết quả giải quyết.
+Popup thêm dự thảo hiện ra, Click vào trường Đơn liên quan, chọn tất cả các đơn liên quan
+Tại trường Kết quả giải quyết, chọn Kháng nghị
+Tại Thông tin quyết định, trường Người ký , chọn Nguyễn Hải Trâm, chọn tất cả các bị cáo đang hiện ra. 
+Tại trường Thẩm quyền xét xử, chọn Tòa án nhân dân tối cao.
+Tại trường Nội dung vụ án và trường xét thấy nhập đủ nội dung.
+Click button Lưu.
+Tại màn hình danh sách văn bản và tờ trình, chọn bản ghi là dự thảo vừa tạo. Click button Trình văn bản, hiện ra màn hình Trình ký. Tại trường cấp trình, chọn Phó Chánh án TANDTC, Người được trình chọn Nguyễn Hải Trâm. Sau đó click button “ Xin ý kiến”
+Click button Quay lại
+Bước 14:
+Click vào account Bùi Thị Thanh Loan. Click Đăng xuất
+Click button “ Đăng nhập với Tòa án tối cao SSO” 
+Nhập số Căn cước công dân:<CCCD:phoChanhAn>- Đây là tài khoản của Nguyễn Hải Trâm/Phó Chánh án
+Mật khẩu 
+Vào menu Chọn Công tác lãnh đạo -> Phê duyệt đề xuất.  Tại tab Chờ duyệt, chọn bản ghi Quyết định Kháng nghị giám đốc thẩm vừa trình ký, mở màn hình Lãnh đạo phê duyệt ý kiến. 
+Tại tab Ý kiến lãnh đạo, tick checkbox Dự thảo Quyết định Kháng nghị giám đốc thẩm -> Click button Duyệt
+Bước 15: Người ký ban hành Quyết định kháng nghị giám đốc thẩm
+Vẫn ở tài khoản Nguyễn Hải Trâm (<CCCD:phoChanhAn> / Phó Chánh án - người ký quyết định).
+Menu Công tác lãnh đạo -> Phê duyệt đề xuất -> tab Chờ duyệt. Mở bản ghi Kháng nghị giám đốc thẩm vừa được duyệt ở Bước 14.
+Tại màn Ký số văn bản, ấn Ký logic để ban hành Quyết định kháng nghị giám đốc thẩm.
+Chưa ký ở bước này thì Bước 16 không thấy hồ sơ ở tab Hồ sơ kháng nghị đi.
+Bước 16
+Click vào account Nguyễn Hải Trâm. Click Đăng xuất
+Click button “ Đăng nhập với Tòa án tối cao SSO” 
+Nhập số Căn cước công dân: <CCCD:thuKyVu> - Đây là tài khoản của Trương Minh Trang/Thư ký viên Vụ hình sự
+Mật khẩu 
+Vào menu Quản lý án GĐT/TT
+Chọn chức năng Hồ sơ kháng nghị
+Khi vụ án có quyết định kháng nghị thì sẽ hiển thị ở tab Hồ sơ kháng nghị đi. Tại đây chọn thao tác Chuyển hồ sơ của bản án có Quyết định kháng nghị.
+Ở popup Chuyển hồ sơ kháng nghị, nhập các trường bắt buộc: Số bút lục HSKN (nhập số bất kỳ), Đơn vị chuyển đến (Toà án nhân dân tối cao), bật Đính kèm tài liệu, hồ sơ và Thêm mới tài liệu bất kỳ. Ấn nút Chuyển hồ sơ, ấn Đồng ý khi hiện ra ô Xác nhận…
+Chuyển sang tab Hồ sơ kháng nghị đến, chọn đúng hồ sơ kháng nghị đi vừa chuyển. Tại đây chọn thao tác nhận hồ sơ.
+Bước 17: Vụ trưởng phân công Thẩm phán Tòa án nhân dân tối cao cho vụ xét xử
+Đăng xuất Trương Minh Trang, đăng nhập Vụ trưởng Nguyễn Thị Bình (<CCCD:vuTruong>).
+Menu Quản lý án GĐT/TT -> Phân công thẩm phán. Lọc theo Số bản án/quyết định để tìm đúng vụ xét xử vừa nhận ở Bước 16.
+Chọn Phân công chỉ định, tích vụ án, chọn Thẩm phán Tòa án nhân dân tối cao (ví dụ Lê Hưng Dũng), nhập Lý do phân công.
+Hệ thống lập Tờ trình phân công thẩm phán tối cao (mã biểu mẫu MS_02_TC). Chọn Người ký là Nguyễn Hải Trâm, ấn Lưu, ấn Lấy số rồi ấn Trình ký, ấn Gửi ở popup Nhập thông tin trình duyệt ký.
+Bước 18: Phó Chánh án ký logic Tờ trình phân công thẩm phán tối cao
+Đăng xuất Nguyễn Thị Bình, đăng nhập Nguyễn Hải Trâm (<CCCD:phoChanhAn> / Phó Chánh án).
+Menu Công tác lãnh đạo -> Phê duyệt đề xuất -> tab Chờ duyệt. Mở Tờ trình phân công thẩm phán tối cao của vụ vừa trình, ấn Ký logic.
+Sau bước này PHAN_CONG của vụ xét xử có vai trò Thẩm phán TAND tối cao (TA.TP.001) ở trạng thái đã duyệt.
+Bắt buộc phải xong Bước 17 và 14c trước khi làm Bước 19: thiếu thì popup Danh sách vụ xét xử đã chọn chặn nút Lưu với thông báo "Vụ án chưa xác định thẩm phán chủ tọa, không thể trình ký".
+Bước 19
+Đăng xuất tài khoản Trương Minh Trang và đăng nhập vào tài khoản Vụ trưởng Nguyễn Thị Bình. 
+Hồ sơ kháng nghị sẽ chuyển đến chức năng Quản lý xét xử GĐT. 
+Tại đây vụ trưởng chọn bản ghi vụ án vừa được nhận từ Hồ sơ kháng nghị đến, ấn thao tác Xem chi tiết.
+Mở tab Thụ lý của vụ án và ấn nút Thụ lý tại phần Thông tin thụ lý vụ án GĐT,TT
+Người dùng ấn quay trở lại Danh sách vụ xét xử và chọn vụ án vừa thụ lý để tạo danh sách vụ xét xử.
+Tích vào checkbox của vụ án và ấn button Tạo danh sách vụ xét xử.
+Tại popup Danh sách vụ xét xử đã chọn, chọn Hội đồng toàn thể, ấn Chọn lịch xét xử.
+Bấm vào lịch xét xử màu đỏ đã tạo sẵn, ấn lưu tại popup Danh sách vụ xét xử đã chọn.
+Ấn chọn nút Danh sách tham mưu ở Danh sách vụ xét xử, tại Danh sách tham mưu vụ xét xử GĐT, ấn xem chi tiết vụ đã tham mưu. Màn hình mở ra Danh sách vụ xét xử đã chọn, ấn vào nút Lấy số và nút Trình ký. Ấn nút Gửi trong popup Nhập thông tin trình duyệt ký.
+
+Lưu ý về lịch xét xử (kiểm chứng trên STG ngày 27/09/2026): MỖI VỤ CẦN MỘT LỊCH XÉT XỬ RIÊNG. Lưu danh sách vụ xét xử lên một lịch đã có danh sách thì hệ thống THAY danh sách cũ bằng vụ mới, và vụ bị thay ra sẽ mất khỏi danh sách đã duyệt. Trên STG hiện chỉ có 1 lịch loại Hội đồng xét xử dùng được (26/09/2026 11:00 - Phòng xét xử 102) nên chỉ chạy trọn được 1 vụ; các vụ sau lấy được số văn bản Chương trình làm việc của HĐXX nhưng không trình ký được (popup xem chi tiết chỉ còn Đóng / Xem biểu mẫu / Hủy cấp số). Cần tạo sẵn một lịch xét xử GĐT cho mỗi vụ trước khi làm Bước 19.
+
+
+Bước 20
+Click vào account Nguyễn Thị Bình. Click Đăng xuất
+Click button “ Đăng nhập với Tòa án tối cao SSO” 
+Nhập số Căn cước công dân: Nguyễn Văn Quảng/<CCCD:chanhAn>/Chánh án.
+Vào menu Chọn Công tác lãnh đạo -> Phê duyệt đề xuất. Tại tab Chờ duyệt, chọn bản ghi Chương trình làm việc vừa trình duyệt, mở màn hình Ký số văn bản.
+Tại màn Ký số văn bản -> Click button Phê duyệt
+Bước 21
+Click vào account Nguyễn Văn Quảng -> Click Đăng xuất
+Click button “ Đăng nhập với Tòa án tối cao SSO” 
+Nhập số Căn cước công dân: <CCCD:thuKyVu>/Trương Minh Trang/Thư ký viên Vụ hình sự để tạo Thông báo và Quyết định phân công hội đồng xét xử.
+Ấn chọn chức năng Phân công hội đồng xét xử trên thanh menu Quản lý án GĐT/TT, ấn thao tác Xem chi tiết hội đồng vừa được duyệt Chương trình làm việc.
+Tại phần danh sách Quyết định/Thông báo ở màn Xem chi tiết, ấn nút Thêm biểu mẫu để thêm 2 biểu mẫu cùng lúc là Quyết định thành lập Hội đồng xét xử và Thông báo VKS tham gia phiên toà. 
+Mở popup Quyết định thành lập Hội đồng xét xử/Thông báo VKS tham gia phiên toà. 
+Chọn Người ký là Nguyễn Văn Quảng và nhập Ngày thông báo là ngày hiện tại.
+Tại Cấu hình nơi nhận, ấn nút Thêm mới nhận và chọn Phân loại nơi nhận và Nơi nhận chi tiết rồi ấn thao tác Lưu.
+Ấn button Lưu ở cuối popup và Trình ký. Ấn nút Gửi trong popup Nhập thông tin trình duyệt ký.
+Bước 22
+Click vào account Nguyễn Thị Bình. Click Đăng xuất
+Click button “ Đăng nhập với Tòa án tối cao SSO” 
+Nhập số Căn cước công dân: Nguyễn Văn Quảng/<CCCD:chanhAn>/Chánh án.
+Vào menu Chọn Công tác lãnh đạo -> Phê duyệt đề xuất. Tại tab Chờ duyệt, chọn bản ghi Quyết định thành lập Hội đồng xét xử/Thông báo VKS tham gia phiên toà vừa trình ký, mở màn hình Ký số văn bản.
+Tại màn Ký số văn bản -> Click button Ký logic.

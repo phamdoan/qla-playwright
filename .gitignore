@@ -1,0 +1,38 @@
+
+# Playwright
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
+.env
+playwright/.auth/
+evidence/
+.run-state.json
+# .env.dev, .env.staging, .env.*.bak… (giữ lại .env.example)
+.env.*
+!.env.example
+
+# Seed data (sổ cái idempotency, kết quả từng lần chạy) – không commit
+seed-output/
+
+# Tài khoản thật (CCCD) – mẫu ở config/tai-khoan.example.json
+config/*.local.json
+
+# Dữ liệu test chứa tài khoản/mật khẩu, CCCD, văn bản thật – chép tay, không commit
+data/*.xlsx
+data/*.pdf
+
+# Trạng thái chạy cục bộ
+.run-state*.json
+/test-results/
+
+# Rác: bản sao lưu, file tắt, file nén, log, script thử
+*.bak
+*.bak-*
+*.tat
+*.zip
+*.log
+do-b4.js
