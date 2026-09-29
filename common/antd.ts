@@ -102,8 +102,48 @@ async function dropdownCua(page: Page, input: Locator) {
 }
 
 /**
+ * Chờ một BẢNG antd tải xong: hết spin, và đã có dòng dữ liệu HOẶC đã hiện "không có dữ liệu".
+ *
+ * Dùng trước khi kết luận "không thấy dòng nào": đo trên 526 lần chạy bước của đợt 27–28/09/2026,
+ * 324 lần có vụ hỏng chiếm 24,1 trên 31,5 giờ. Phần lớn là chờ `toBeVisible({ timeout: 60_000 })`
+ * một dòng KHÔNG BAO GIỜ xuất hiện. Bảng đã tải xong mà 0 dòng khớp thì báo lỗi ngay, đừng chờ.
+ */
+export async function luoiDaTai(page: Page, timeout = 30_000) {
+  await choHetSpin(page, timeout);
+  await expect(page.locator('.ant-table-row:visible, .ant-empty, .ant-table-placeholder').first())
+    .toBeVisible({ timeout })
+    .catch(() => {});
+}
+
+/**
+ * Chờ danh sách option NGỪNG ĐỔI rồi mới đọc.
+ *
+ * Vì sao cần: ô chọn của hệ thống là ProFormSelectCustom
+ * (qla-webapp/src/components/ProFormSelectCustom/index.tsx:236-239) đặt
+ *   filterOption: showSearch ? false : …        → KHÔNG lọc phía trình duyệt
+ *   onSearch: debounce(v => setTuKhoaTimKiem(v), 400)  → gọi LẠI API danh mục
+ * nên mỗi lần từ khoá đổi là một vòng: chờ 400ms → gọi API → options thay → rc-virtual-list vẽ lại.
+ * Đọc options ngay sau khi gõ là đọc danh sách CŨ → click nhầm mục → chạy lại cả vòng thử lại.
+ * Đó là nguồn của hiện tượng danh sách "giật giật" và phần lớn thời gian chết khi chọn.
+ */
+async function choDanhSachOnDinh(dd: Locator, toiDaMs = 4_000) {
+  const doc = () =>
+    dd.locator('.ant-select-item-option').evaluateAll(es => es.map(e => e.getAttribute('title') || e.textContent || '').join('\u0001'));
+  const page = dd.page();
+  let truoc = await doc().catch(() => '');
+  const hetHan = Date.now() + toiDaMs;
+  while (Date.now() < hetHan) {
+    await page.waitForTimeout(150);
+    const sau = await doc().catch(() => '');
+    // Đang loading (Spin trong notFoundContent) thì chưa tính là ổn định
+    if (sau === truoc && sau !== '' && !(await dd.locator('.ant-spin').count())) return;
+    truoc = sau;
+  }
+}
+
+/**
  * Chọn option trong antd Select.
- * - `chon` là chuỗi: gõ để lọc (nếu Select có search) rồi chọn option có title trùng/chứa chuỗi đó
+ * - `chon` là chuỗi: điền từ khoá để lọc (nếu Select có search) rồi chọn option có title trùng/chứa chuỗi đó
  * - `chon` bỏ trống: chọn option đầu tiên
  * Form render lại có thể đóng dropdown giữa chừng → thử lại tối đa 3 lần. Trả về nhãn đã chọn.
  */
@@ -131,11 +171,21 @@ export async function chonSelect(
       const goLoc = goDeLoc && lan < 2;
       // Xoá từ khoá gõ dở của lần trước (ô không cho tìm kiếm thì fill lỗi → bỏ qua)
       if (lan > 0 && (await input.inputValue().catch(() => ''))) await input.fill('', { timeout: 2_000 }).catch(() => {});
+      let daGoLoc = false;
       if (goLoc && typeof chon === 'string' && (await input.isEditable().catch(() => false)) && !(await input.inputValue())) {
-        // Danh sách lớn (vd. Nghề nghiệp ~1000 mục) lọc chậm, gõ chuỗi dài dễ mất ký tự → gõ tối đa 20 ký tự đầu
-        await input.pressSequentially(chon.slice(0, 20), { delay: lan === 0 ? TOC_DO_GO : Math.max(TOC_DO_GO, 30) });
+        // ĐIỀN MỘT LẦT thay vì gõ từng ký tự: onSearch của ProFormSelectCustom debounce 400ms rồi gọi
+        // lại API danh mục, nên gõ 20 ký tự × 40ms là 20 lần đổi từ khoá → nhiều vòng gọi API và vẽ lại
+        // danh sách (giật, chọn nhầm). fill() phát đúng MỘT sự kiện input → đúng MỘT vòng.
+        // Danh sách lớn (vd. Nghề nghiệp ~1000 mục) lọc chậm → chỉ lấy 20 ký tự đầu làm từ khoá.
+        await input.fill(chon.slice(0, 20));
+        daGoLoc = true;
       }
       await expect(dd.locator('.ant-select-item-option').first()).toBeVisible({ timeout: 30_000 });
+      // Sau khi đổi từ khoá phải chờ hết debounce 400ms + API danh mục trả về rồi mới đọc options
+      if (daGoLoc) {
+        await page.waitForTimeout(450);
+        await choDanhSachOnDinh(dd);
+      }
       // Ưu tiên option trùng khớp title (tránh "Nguyên đơn" khớp nhầm "…của nguyên đơn"), không có thì khớp chuỗi con
       const trungKhop = typeof chon === 'string' ? dd.locator(`.ant-select-item-option[title="${chon}"]`) : undefined;
       // Chưa thấy mục trùng khớp nguyên văn (danh sách ảo chỉ render phần đang hiện) → cuộn tìm
@@ -143,7 +193,9 @@ export async function chonSelect(
         // Không gõ lọc: danh sách ảo chỉ render vài mục → cuộn dần như người dùng tới khi thấy mục cần chọn
         const khop = () => (trungKhop ? trungKhop.or(dd.locator('.ant-select-item-option').filter({ hasText: chon })) : dd.locator('.ant-select-item-option').filter({ hasText: chon }));
         const cuon = dd.locator('.rc-virtual-list-holder').first();
-        for (let i = 0; i < 250 && !(await khop().count()); i++) {
+        // Danh mục gọi API với size=100 (ProFormSelectCustom.queryParams) nên cuộn quá 100 mục là vô ích:
+        // 60 vòng × 80% chiều cao khung đã phủ hết danh sách. Trước để 250 vòng × 80ms = tới 20s chết.
+        for (let i = 0; i < 60 && !(await khop().count()); i++) {
           const het = await cuon.evaluate(h => {
             const truoc = h.scrollTop;
             h.scrollTop += h.clientHeight * 0.8;
@@ -173,7 +225,7 @@ export async function chonSelect(
         );
       }
       const nhan = ((await option.getAttribute('title')) || (await option.innerText())).trim();
-      await nghi(page);
+      // Bỏ chỗ nghỉ TRƯỚC khi bấm: danh sách đã được chờ ổn định ở trên nên không cần nghỉ thêm
       await option.click({ timeout: 5_000 });
       await nghi(page);
       // Xác nhận ô đã hiển thị giá trị vừa chọn (form render lại có thể làm mất lựa chọn)
@@ -258,7 +310,13 @@ export async function chonSelectNeuCo(page: Page, input: Locator, chon: string):
       await khung.click();
       const dd = await dropdownCua(page, input);
       await expect(dd).toBeVisible({ timeout: 15_000 });
-      if (await input.isEditable().catch(() => false)) await input.pressSequentially(chon, { delay: TOC_DO_GO });
+      // fill() thay pressSequentially: một sự kiện input → một vòng debounce 400ms + một lần gọi API
+      // danh mục, thay vì mỗi ký tự một vòng (xem choDanhSachOnDinh)
+      if (await input.isEditable().catch(() => false)) {
+        await input.fill(chon);
+        await page.waitForTimeout(450);
+        await choDanhSachOnDinh(dd);
+      }
       const option = dd.locator(".ant-select-item-option").filter({ hasText: chon }).first();
       if (!(await hienTrong(option, 10_000))) {
         await page.keyboard.press("Escape");
@@ -296,7 +354,7 @@ export async function chonTreeSelect(page: Page, input: Locator, tuKhoa?: string
     has: page.locator('.ant-select-tree-switcher-noop'),
   });
   if (tuKhoa) {
-    await input.pressSequentially(tuKhoa, { delay: TOC_DO_GO });
+    await input.fill(tuKhoa);
     await page.waitForTimeout(500);
     if ((await la.count()) === 0) await input.fill('');
   }

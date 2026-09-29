@@ -1,5 +1,5 @@
 import { Locator, Page, expect } from '@playwright/test';
-import { choHetSpin, chonNgay, chonRadio, chonSelect, go, hienTrong, nghi, nguyenNhanLoi, toastDaHien } from '../common/antd';
+import { choHetSpin, chonNgay, chonRadio, chonSelect, go, hienTrong, luoiDaTai, nghi, nguyenNhanLoi, toastDaHien } from '../common/antd';
 import { NguoiGia } from '../common/du-lieu';
 import { dienFormNguoi } from '../common/form-nguoi';
 import { moMenu } from '../common/menu';
@@ -302,7 +302,7 @@ export class GdtPage {
     const dong = page.locator('.ant-table-row').filter({ hasText: `Mã đơn:${maDon}` }).or(
       page.locator('.ant-table-row').filter({ hasText: `Mã đơn: ${maDon}` }),
     );
-    await expect(dong.first(), `Đơn ${maDon} chưa có vụ án ở màn Nhận đơn và TL vụ án`).toBeVisible({ timeout: 60_000 });
+    await this.phaiThayDong(dong.first(), `Đơn ${maDon} chưa có vụ án ở màn Nhận đơn và TL vụ án`);
   }
 
   /** Quản lý vụ án → lọc Số BA/QĐ → "Xem chi tiết" → trả về id vụ án */
@@ -1239,7 +1239,7 @@ export class GdtPage {
 
     await moTab(/kháng nghị đến/i);
     const dongDen = dongTheoBanAn();
-    await expect(dongDen, `Hồ sơ kháng nghị của bản án ${soBanAn} chưa sang tab "Hồ sơ kháng nghị đến"`).toBeVisible({ timeout: 60_000 });
+    await this.phaiThayDong(dongDen, `Hồ sơ kháng nghị của bản án ${soBanAn} chưa sang tab "Hồ sơ kháng nghị đến"`);
     // Đã nhận ở lượt trước thì dòng hiện "Đã nhận" → không nhận lại
     if (/Đã nhận/i.test(await dongDen.innerText())) return;
     await dongDen.locator('.ant-checkbox-input').first().check({ force: true });
@@ -1793,10 +1793,30 @@ export class GdtPage {
     return bl.dong();
   }
 
+  /**
+   * Khẳng định đã khớp được ĐÚNG dòng cần thao tác — báo lỗi NGAY khi bảng đã tải xong mà không có
+   * dòng nào, kèm các dòng đang hiện để biết vì sao trượt.
+   *
+   * Vì sao không dùng thẳng `expect(dong).toBeVisible({ timeout: 60_000 })`: đo trên 526 lần chạy
+   * bước đợt 27–28/09/2026, 324 lần có vụ hỏng ngốn 24,1 trên 31,5 giờ — gần hết là ngồi chờ một
+   * dòng không bao giờ xuất hiện. Bảng đã tải xong mà 0 dòng khớp thì chờ thêm 60s cũng vô ích.
+   */
+  private async phaiThayDong(dong: Locator, thongBao: string) {
+    const { page } = this;
+    await luoiDaTai(page);
+    if ((await dong.count()) === 0) {
+      const ds = await page
+        .locator('.ant-table-row:visible')
+        .evaluateAll(es => es.slice(0, 5).map(e => (e.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 160)));
+      throw new Error(`${thongBao}. Dòng đang hiện (${ds.length}): ${ds.join(' ¦ ') || '(trống)'}`);
+    }
+    await expect(dong, thongBao).toBeVisible({ timeout: 15_000 });
+  }
+
   async thuLyVuAnGdt(soBanAn: string, ngayBanAn?: string, toaAn?: string, duongSu?: string) {
     const { page } = this;
     const dong = await this.locDanhSachXetXu(soBanAn, undefined, ngayBanAn, toaAn, duongSu);
-    await expect(dong, `Không thấy vụ án ${soBanAn} ở Quản lý xét xử GĐT`).toBeVisible({ timeout: 60_000 });
+    await this.phaiThayDong(dong, `Không thấy vụ án ${soBanAn} ở Quản lý xét xử GĐT`);
     await dong.locator('button, a').filter({ has: page.locator('[aria-label="eye"]') }).first().click();
     await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => {});
     await choHetSpin(page);
@@ -1965,7 +1985,7 @@ export class GdtPage {
     await choHetSpin(page);
     await nghi(page, 1500, 2500);
     const dong = await this.locTheoBanAn(soBanAn, ngayBanAn, toaAn);
-    await expect(dong, `Không thấy vụ ${soBanAn} ${ngayBanAn || ''} ở Danh sách tham mưu vụ xét xử GĐT`).toBeVisible({ timeout: 60_000 });
+    await this.phaiThayDong(dong, `Không thấy vụ ${soBanAn} ${ngayBanAn || ''} ở Danh sách tham mưu vụ xét xử GĐT`);
     // Cột "Trạng thái" của dòng là bằng chứng nhanh nhất: danh sách đã Lấy số → Trình ký → duyệt xong
     // thì popup chi tiết KHÔNG còn nút "Trình ký" (chỉ còn Đóng / Xem biểu mẫu / Hủy cấp số), mở ra rồi
     // mới kết luận là báo lỗi nhầm (VG11 28/09/2026). Thấy "Đã duyệt"/"Đã trình"/"Chờ ký duyệt" → xong.

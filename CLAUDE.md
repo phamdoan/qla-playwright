@@ -117,3 +117,40 @@ Chạy ở bản sao `toa-an-chay-rieng-a|b|c|…/e2e`, **không** chạy ở `e
 `tools/chay-tung-buoc.js` chạy mỗi bước một lệnh Playwright: một bước hỏng chỉ mất bước đó.
 Log đầy đủ ở `seed-output/<file>.<socai>.<Bxx>.out` — khi điều tra thì **đọc log cũ trước**,
 đừng chạy lại để "xem lỗi gì".
+
+## R11 — Thời gian chạy: hỏng nhanh, đừng chờ thứ không bao giờ đến
+
+Đo trên `seed-output/*.tung-buoc.log`, đợt 27–28/09/2026: **526 lần chạy bước = 31,5 giờ**.
+
+| Loại lần chạy | Số lần | Thời gian |
+|---|---|---|
+| có vụ ĐẠT | 224 (43%) | 13,9 giờ |
+| **có vụ HỎNG** | **324** | **24,1 giờ (77%)** |
+| bỏ qua hết (đã xong ở lần trước) | 67 | 0,1 giờ |
+
+Bỏ qua thì rẻ — vì `test.skip(daXongBuoc(...))` đứng TRƯỚC khi mở trình duyệt. **Giữ nguyên thứ tự đó.**
+
+Tiền mất nằm ở các lần hỏng: trung bình 118 s/vụ, 27 vụ chạm trần `timeout: 300_000`. Gần hết là
+ngồi chờ `toBeVisible({ timeout: 60_000 })` một dòng không bao giờ xuất hiện.
+
+- Trước khi kết luận "không thấy dòng", gọi `luoiDaTai(page)` rồi `count() === 0` → **throw ngay**,
+  kèm các dòng đang hiện. Dùng `GdtPage.phaiThayDong()`; đừng viết lại `expect(...).toBeVisible(60s)`.
+- Thông báo lỗi phải nói **vì sao trượt** (liệt kê dòng/lựa chọn đang có), không chỉ "Timeout".
+- Sửa nguyên nhân (R1: điều hướng bằng khoá) mới là chỗ tiết kiệm lớn nhất — 24 giờ kia là của lỗi.
+
+## R12 — Ô chọn (antd Select): điền một lần, chờ danh sách ổn định
+
+`ProFormSelectCustom` (`qla-webapp/src/components/ProFormSelectCustom/index.tsx:236-239`) đặt:
+
+```ts
+filterOption: showSearch ? false : …            // KHÔNG lọc phía trình duyệt
+onSearch: debounce(v => setTuKhoaTimKiem(v), 400)  // gọi LẠI API danh mục
+```
+
+110 màn dùng wrapper này. Mỗi lần từ khoá đổi là một vòng **chờ 400 ms → gọi API → vẽ lại danh
+sách**. Gõ từng ký tự (`pressSequentially`, 20 ký tự × 40 ms) tạo ra nhiều vòng như vậy → danh sách
+"giật", click trúng mục cũ, rồi chạy lại cả vòng thử lại.
+
+- Dùng `input.fill(tuKhoa)` — **một** sự kiện input, **một** vòng gọi API. Không `pressSequentially`.
+- Sau khi điền, chờ hết debounce (450 ms) rồi `choDanhSachOnDinh(dd)` mới đọc options.
+- Cuộn danh sách ảo tối đa 60 vòng: danh mục gọi API với `size=100` nên cuộn quá đó là vô ích.
