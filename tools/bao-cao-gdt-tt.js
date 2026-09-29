@@ -157,16 +157,18 @@ function docDb() {
 }
 
 /**
- * Ghi chú chặn đường đã biết. B14 (chuyển hồ sơ kháng nghị) của án KINH DOANH THƯƠNG MẠI luôn hỏng ở
- * máy chủ: nhãn loại án dài 21 ký tự trong khi cột HOSO_KHANGNGHI_DEN.LOAI_AN chỉ VARCHAR2(20)
- * → ORA-12899 (đo trên STG 29/09/2026). Playwright không đi tiếp được cho tới khi sửa phía hệ thống.
+ * Ghi chú chặn đường đã biết (cập nhật 29/09/2026 sau khi dev đã sửa DB).
+ *
+ * Lỗi ORA-12899 ở B14 (cột HOSO_KHANGNGHI_DEN.LOAI_AN VARCHAR2(20) < enum KINH_DOANH_THUONG_MAI 21 ký
+ * tự) ĐÃ ĐƯỢC SỬA: cột nay là VARCHAR2(100), án KDTM chuyển được hồ sơ kháng nghị (K06 đã đi trọn 23
+ * bước). Ghi chú còn lại chỉ nêu nguyên nhân thực tế đang chặn từng vụ.
  */
 function ghiChu(v, gd2) {
-  if (!gd2 && v.loaiAn === 'Kinh doanh thương mại') {
-    return 'B14 hỏng do LỖI HỆ THỐNG: ORA-12899 — HOSO_KHANGNGHI_DEN.LOAI_AN là VARCHAR2(20) nhưng ghi nhãn ' +
-      '"Kinh doanh thương mại" (21 ký tự). Cần nới cột hoặc lưu mã loại án.';
-  }
-  return '';
+  if (gd2) return '';
+  // Chưa có vụ xét xử GĐ2 = chưa qua B14. Với đợt 28/09 nguyên nhân đang gặp là Thẩm tra viên chưa
+  // được phân công trên ĐƠN CHÍNH của vụ (DON_PHANCONG không có dòng TTV) nên B12a không thấy vụ.
+  return 'Chưa có vụ xét xử GĐT (chưa qua B14). Kiểm tra phân công Thẩm tra viên trên ĐƠN CHÍNH của vụ: ' +
+    'màn Phân công TTV chỉ hiện đơn chính (DON.IS_DON_CHINH=1), đơn Playwright nhập là đơn phụ.';
 }
 
 /**
@@ -176,9 +178,7 @@ function ghiChu(v, gd2) {
 function lenhChayLai(dot, v, thieu) {
   if (!thieu.length) return '';
   const file = dot.bo.includes('27-09') ? '27-09-2026' : '28-09-2026';
-  const tu = thieu[0];
-  const den = thieu[thieu.length - 1];
-  return 'npm run ui:stg:ghi -- --file=' + file + ' --ma=' + v.maSheet + ' --buoc=' + tu + '..' + den + ' --nhanh';
+  return 'npm run ui:stg:ghi -- --file=' + file + ' --ma=' + v.maSheet + ' --buoc=' + thieu[0] + '..' + thieu[thieu.length - 1] + ' --nhanh';
 }
 
 const o = t => '"' + String(t ?? '').replace(/"/g, '""') + '"';

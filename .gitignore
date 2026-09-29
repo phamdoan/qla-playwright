@@ -36,3 +36,9 @@ data/*.pdf
 *.zip
 *.log
 do-b4.js
+
+# Kết quả chạy của các luồng song song
+/test-results*/
+
+# Đặc tả có CCCD + mật khẩu tài khoản thật – repo này public, chỉ giữ ở máy
+docs/Playwright nhập data GDT-TT-báo cáo thống kê.txt

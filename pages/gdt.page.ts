@@ -70,13 +70,25 @@ const duoiTenToa = (toaAn?: string): RegExp | undefined => {
  * sau mỗi lần lọc/đổi tab: nếu lọc đủ điều kiện ra rỗng thì nới dần (bỏ tòa → bỏ ngày → bỏ cả hai) và
  * CHỈ nhận phương án nới nào cho đúng MỘT dòng, đồng thời ghi rõ đã nới gì vào log.
  */
-function boLocDong(page: Page, soBanAn: string, ngayBanAn?: string, toaAn?: string) {
+function boLocDong(
+  page: Page,
+  soBanAn: string,
+  ngayBanAn?: string,
+  toaAn?: string,
+  soThuLy?: string,
+  duongSu?: string,
+) {
   const soRieng = new RegExp('(^|[^0-9])' + soBanAn + '([^0-9]|$)');
   const reToaGoc = duoiTenToa(toaAn);
   let reToa = reToaGoc;
   let dungNgay = !!ngayBanAn;
-  const dsVoi = (coNgay: boolean, re?: RegExp) => {
+  // Tên đương sự là điều kiện phụ NỮA: ở màn không hiện ngày bản án nó thường là thứ duy nhất tách
+  // được hai vụ cùng số (B15 của K07/K09/K10), nhưng màn nào không hiện tên thì lọc kèm sẽ ra rỗng
+  // (Danh sách vụ xét xử) → cũng phải nới được như ngày/tòa.
+  let dungDuongSu = !!duongSu;
+  const dsVoi = (coNgay: boolean, re?: RegExp, coDuongSu = dungDuongSu) => {
     let d = page.locator('.ant-table-row:visible').filter({ hasText: soRieng });
+    if (coDuongSu && duongSu) d = d.filter({ hasText: duongSu });
     if (coNgay && ngayBanAn) d = d.filter({ hasText: ngayBanAn });
     return re ? d.filter({ hasText: re }) : d;
   };
@@ -87,18 +99,23 @@ function boLocDong(page: Page, soBanAn: string, ngayBanAn?: string, toaAn?: stri
     coToa: () => !!reToa,
     /** Gọi sau mỗi lần lọc/đổi tab, TRƯỚC khi kết luận "không thấy vụ" */
     async noiDieuKienNeuCan(cho = 8_000) {
-      if (!reToa && !dungNgay) return;
+      if (!reToa && !dungNgay && !dungDuongSu) return;
       if (await hienTrong(ds().first(), cho)) return;
-      const phuongAn: { ngay: boolean; re?: RegExp; mo: string }[] = [];
+      const phuongAn: { ngay: boolean; re?: RegExp; nguoi?: boolean; mo: string }[] = [];
       if (reToaGoc) phuongAn.push({ ngay: dungNgay, re: undefined, mo: 'bỏ điều kiện tòa' });
       if (ngayBanAn) phuongAn.push({ ngay: false, re: reToaGoc, mo: 'bỏ điều kiện ngày bản án' });
       if (reToaGoc && ngayBanAn) phuongAn.push({ ngay: false, re: undefined, mo: 'bỏ cả ngày và tòa' });
+      if (duongSu) {
+        phuongAn.push({ ngay: dungNgay, re: reToa, nguoi: false, mo: 'bỏ điều kiện tên đương sự' });
+        phuongAn.push({ ngay: false, re: undefined, nguoi: false, mo: 'bỏ cả ngày, tòa và tên đương sự' });
+      }
       for (const p of phuongAn) {
-        const thu = dsVoi(p.ngay, p.re);
+        const thu = dsVoi(p.ngay, p.re, p.nguoi ?? dungDuongSu);
         if (!(await hienTrong(thu.first(), 2_000))) continue;
         if ((await thu.count()) !== 1) continue; // còn nhiều dòng → không dám chọn, để báo lỗi rõ
         dungNgay = p.ngay;
         reToa = p.re;
+        if (p.nguoi !== undefined) dungDuongSu = p.nguoi;
         const chu = (await thu.first().innerText()).replace(/\s+/g, ' ').trim();
         console.log(
           `    · Bảng thiếu cột để lọc đủ điều kiện → ${p.mo}, còn đúng một dòng số ${soBanAn}: ` +
@@ -217,6 +234,38 @@ export class GdtPage {
    * có dữ liệu này), và danh mục tòa có thể lệch mã. Khi lọc đủ điều kiện ra rỗng thì nới bằng cách xoá
    * hai ô này và tìm lại, rồi để noiDieuKienNeuCan() khớp dòng (chỉ nhận khi còn đúng một dòng).
    */
+  /**
+   * Lọc theo ô "Nguyên đơn/Người khiếu nại" (hoặc "Bị đơn/Bị cáo") nếu màn có. Trả về true khi đã điền.
+   *
+   * Vì sao cần: ở màn "Quản lý xét xử GĐT" (quan-ly-vu-xet-xu) hai ô "Số BA/QĐ" và "Ngày BA/QĐ" KHÔNG
+   * tìm ra gì — nghiệp vụ đã thử tay ngày 29/09/2026 và DB xác nhận nguyên nhân: KHÔNG vụ án GĐ2 nào có
+   * bản ghi BAN_AN (kiểm VA26-004803/4805/4806/4589), nên điều kiện lọc theo bản án luôn rỗng. Tên đương
+   * sự nằm ngay trên vụ nên lọc được.
+   */
+  private async locTheoDuongSuNeuCo(duongSu?: string): Promise<boolean> {
+    const { page } = this;
+    if (!duongSu) return false;
+    const oNguoi = () =>
+      page
+        .getByLabel(/^(Nguyên đơn\/Người khiếu nại|Bị đơn\/Bị cáo)$/)
+        .or(page.getByPlaceholder(/Nhập tên nguyên đơn|Nhập tên bị đơn/))
+        .first();
+    // Ô này thường nằm trong "Tìm kiếm nâng cao" (thanh lọc mặc định chỉ có vài ô đầu) → mở rồi tìm lại
+    if (!(await hienTrong(oNguoi(), 4_000))) {
+      const nut = page.getByRole('button', { name: /Tìm kiếm nâng cao$/ }).first();
+      if (await hienTrong(nut, 4_000)) {
+        await nut.click();
+        await nghi(page, 800, 1200);
+      }
+    }
+    if (!(await hienTrong(oNguoi(), 5_000))) {
+      console.log('    · Màn không có ô "Nguyên đơn/Người khiếu nại" → không lọc được theo tên đương sự');
+      return false;
+    }
+    await go(oNguoi(), duongSu);
+    return true;
+  }
+
   private async xoaLocNgayToaVaTimLai() {
     const { page } = this;
     const oNgay = page.getByLabel(/^Ngày (BA\/QĐ|bản án\/quyết định)$/).first();
@@ -257,7 +306,7 @@ export class GdtPage {
   }
 
   /** Quản lý vụ án → lọc Số BA/QĐ → "Xem chi tiết" → trả về id vụ án */
-  async moVuAn(soBanAn: string, ngayBanAn?: string, toaAn?: string) {
+  async moVuAn(soBanAn: string, ngayBanAn?: string, toaAn?: string, duongSu?: string) {
     const { page } = this;
     await moMenu(page, [MENU_GDT, 'Quản lý vụ án']);
     await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
@@ -270,6 +319,15 @@ export class GdtPage {
     const o = await oSoBanAn(page, 10_000);
     if (!o) throw new Error('Màn Quản lý vụ án: không thấy ô lọc số bản án/quyết định');
     await go(o, soBanAn);
+    // Thêm TÊN ĐƯƠNG SỰ: hai vụ cùng số bản án mà màn không hiện ngày thì không có cách nào tách
+    // (đo 29/09/2026: K03 – bản án 2 ra 2 vụ). Màn có sẵn ô "Nguyên đơn/Người khiếu nại" và "Bị cáo".
+    if (duongSu) {
+      const oNguoi = page
+        .getByPlaceholder(/Nhập tên nguyên đơn|Nhập tên bị cáo/)
+        .or(page.getByLabel(/^(Nguyên đơn\/Người khiếu nại|Bị cáo)$/))
+        .first();
+      if (await hienTrong(oNguoi, 5_000)) await go(oNguoi, duongSu);
+    }
     await page.getByRole('button', { name: /Tìm kiếm$/ }).first().click();
     await choHetSpin(page);
     await moRongCoTrang(page);
@@ -767,13 +825,17 @@ export class GdtPage {
     if (!daKhop) {
       const soDong = await dsDongGiao.count();
       if (soDong !== 1) {
+        // Không dòng nào khớp mà cũng không chỉ còn một dòng → đơn chính của vụ ĐÃ ĐƯỢC GIAO tiểu hồ sơ
+        // ở lượt trước nên không còn trong danh sách chờ giao (màn đang liệt kê đơn của vụ khác). Không
+        // phải lỗi thao tác: bỏ qua để luồng đi tiếp B11 — bước quyết định quyền xem vụ của Thẩm tra viên.
         const chu = (await dsDongGiao.allInnerTexts())
-          .slice(0, 3)
-          .map(t => t.replace(/\s+/g, ' ').trim().slice(0, 160));
-        throw new Error(
-          `Màn Giao tiểu hồ sơ không có dòng của đơn ${soThuLy} (bản án ${soBanAn}) và cũng không chỉ còn ` +
-            `một dòng để chọn (${soDong} dòng): ${chu.join(' || ') || '(trống)'}`,
+          .slice(0, 2)
+          .map(t => t.replace(/\s+/g, ' ').trim().slice(0, 120));
+        console.log(
+          `    · Giao tiểu hồ sơ: không còn dòng nào của vụ (bản án ${soBanAn}, đơn ${soThuLy}) trong ${soDong} ` +
+            `dòng đang chờ giao → coi như đã giao từ trước. Dòng đang hiện: ${chu.join(' || ') || '(trống)'}`,
         );
+        return;
       }
       dongGiao = dsDongGiao.first();
       console.log(`    · Màn Giao tiểu hồ sơ không có số thụ lý ${soThuLy} (đơn phụ) → dùng dòng duy nhất đang hiện`);
@@ -1224,7 +1286,9 @@ export class GdtPage {
       if (await hienTrong(oHinhThuc, 5_000)) await chonSelect(page, oHinhThuc, hinhThuc, { goDeLoc: false });
       // Dòng chỉ hiện "Số/Ngày/Tòa" trong cột "Thông tin BA/QĐ" mà ngày–tòa lấy từ thongTinBanAn nên
       // có hình thức để trống → lọc phía máy chủ bằng "Ngày BA/QĐ" + "Tòa ra BA/QĐ" của chính màn.
-      await this.locNangCaoBanAn(ngayBanAn, d.toaAn);
+      // KHÔNG bật "Tìm kiếm nâng cao" ở màn này: bật xong form đổi và ô "Số BA/QĐ" biến mất
+      // (đo 29/09/2026 với D03 — B16 báo "không thấy ô lọc Số BA/QĐ").
+      await this.locNangCaoBanAn(ngayBanAn, d.toaAn, undefined, false);
       // Ô lọc đổi nhãn/placeholder theo Hình thức phân công (đã treo 30s ở B18) → dùng helper chung
       const oLocSo = await oSoBanAn(page, 10_000);
       if (!oLocSo) throw new Error('Màn Phân công thẩm phán: không thấy ô lọc "Số BA/QĐ"');
@@ -1384,7 +1448,7 @@ export class GdtPage {
   async moKetQuaXetXu(
     soBanAn: string,
     ngayBanAn?: string,
-    d?: { nguyenNhan?: string; ketQuaXetXu?: string; toaAn?: string },
+    d?: { nguyenNhan?: string; ketQuaXetXu?: string; toaAn?: string; duongSu?: string },
   ): Promise<string> {
     const { page } = this;
     await page.goto('vu-an/gdt-tt/quan-ly-vu-xet-xu/danh-sach');
@@ -1392,9 +1456,12 @@ export class GdtPage {
     await choHetSpin(page);
     await nghi(page, 1200, 2000);
 
-    // Lọc phía máy chủ: "Ngày BA/QĐ" (RangePicker hai ô — điền một ô thì khoảng ngày không hợp lệ và
-    // màn trả về danh sách CHƯA LỌC) và "Tòa ra BA/QĐ" nếu màn có.
-    await this.locNangCaoBanAn(ngayBanAn, d?.toaAn);
+    // KHÔNG lọc theo "Nguyên đơn/Người khiếu nại" ở màn này. Điều tra DB + mã nguồn ngày 29/09/2026:
+    // vụ xét xử GĐ2 gắn với một ĐƠN KỸ THUẬT mới (hồ sơ kháng nghị đến) có ID_VU_GIAIQUYET = NULL và
+    // KHÔNG có bản ghi DON_DOITUONG_LIENQUAN, trong khi bộ lọc nguyên đơn của server là
+    // EXISTS(VuGiaiQuyetDtlq WHERE idVuGiaiQuyet = Don.idVuGiaiQuyet ...) → LUÔN ra 0 dòng.
+    // Ngược lại SO_BANAN_QD / NGAY_BANAN_QD trên đơn kỹ thuật đó ĐÚNG → lọc theo số BA/QĐ mới ra vụ.
+    await this.locNangCaoBanAn(ngayBanAn, d?.toaAn, undefined, false);
     const oSo = await oSoBanAn(page, 10_000);
     if (!oSo) throw new Error('Màn Quản lý xét xử GĐT: không thấy ô lọc "Số BA/QĐ"');
     await go(oSo, soBanAn);
@@ -1407,9 +1474,20 @@ export class GdtPage {
     }
 
     // Số bản án phải ĐỨNG RIÊNG, kèm ngày + tòa: số ngắn (1–3 chữ số, 23–36) trùng nhau giữa các đợt
+    // Dòng ở màn này KHÔNG hiện tên đương sự (VUAN giai đoạn 2 có 0 bản ghi CONNGUOI_VU — kiểm DB
+    // 29/09/2026) nên không đưa đương sự vào điều kiện khớp dòng.
     const bl = boLocDong(page, soBanAn, ngayBanAn, d?.toaAn);
     await bl.noiDieuKienNeuCan();
-    const dong = bl.dong();
+    let dong = bl.dong();
+    // Lọc xong mà vẫn không khớp được dòng nào nhưng danh sách chỉ còn ĐÚNG MỘT dòng thì dùng dòng đó.
+    if (!(await hienTrong(dong, 8_000))) {
+      const ds = page.locator('.ant-table-row:visible');
+      if ((await ds.count()) === 1) {
+        dong = ds.first();
+        const chu = (await dong.innerText()).replace(/\s+/g, ' ').trim();
+        console.log(`    · Lọc số BA/QĐ "${soBanAn}" còn đúng một dòng → dùng dòng đó: ${chu.slice(0, 160)}`);
+      }
+    }
     await expect(
       dong,
       `Không thấy vụ ${soBanAn}${ngayBanAn ? ` (${ngayBanAn})` : ''} ở màn Quản lý xét xử GĐT`,
@@ -1594,7 +1672,17 @@ export class GdtPage {
         await chungTatCa.check().catch(() => {});
         await nghi(page, 800, 1200);
       }
-      const o = khoi.getByRole('combobox').first();
+      let o = khoi.getByRole('combobox').first();
+      // Khối có thể đang THU GỌN → không thấy ô chọn, bỏ qua rồi Lưu sẽ bị chặn im lặng (đo 29/09/2026
+      // với D09: màn không báo lỗi, nút Lưu bấm mà không gọi API). Bấm tiêu đề khối để mở ra trước.
+      if (!(await hienTrong(o, 5_000))) {
+        const tieuDe = khoi.getByRole('button', { name: /Kết quả xét xử chi tiết/ }).first();
+        if (await hienTrong(tieuDe, 3_000)) {
+          await tieuDe.click().catch(() => undefined);
+          await nghi(page, 800, 1200);
+          o = khoi.getByRole('combobox').first();
+        }
+      }
       if (await hienTrong(o, 10_000)) {
         // Ô BẮT BUỘC: bộ dữ liệu không khai thì lấy mục đầu danh mục, bỏ trống là "Vui lòng chọn kết quả"
         if (d?.ketQuaXetXu) await chonTuDanhMuc(o, d.ketQuaXetXu, 'Kết quả giải quyết');
@@ -1648,7 +1736,13 @@ export class GdtPage {
     return idVuXetXu;
   }
 
-  private async locDanhSachXetXu(soBanAn: string, tab?: RegExp, ngayBanAn?: string, toaAn?: string) {
+  private async locDanhSachXetXu(
+    soBanAn: string,
+    tab?: RegExp,
+    ngayBanAn?: string,
+    toaAn?: string,
+    duongSu?: string,
+  ) {
     const { page } = this;
     await moMenu(page, [MENU_GDT, 'Quản lý xét xử GĐT']);
     await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
@@ -1658,7 +1752,7 @@ export class GdtPage {
       await choHetSpin(page);
       await nghi(page, 1000, 1500);
     }
-    return this.locTheoBanAn(soBanAn, ngayBanAn, toaAn);
+    return this.locTheoBanAn(soBanAn, ngayBanAn, toaAn, duongSu);
   }
 
   /**
@@ -1666,11 +1760,25 @@ export class GdtPage {
    * đúng ngày bản án: số ngắn (23–36) trùng giữa các đợt (vd "26" có ở cả 24/07/2025 và 28/10/2024).
    * Các danh sách Quản lý xét xử GĐT / Danh sách tham mưu / Phân công HĐXX đều hiện "Ngày: dd/mm/yyyy".
    */
-  private async locTheoBanAn(soBanAn: string, ngayBanAn?: string, toaAn?: string) {
+  private async locTheoBanAn(
+    soBanAn: string,
+    ngayBanAn?: string,
+    toaAn?: string,
+    duongSu?: string,
+    khongLocSoBanAn = false,
+  ) {
     const { page } = this;
-    // Lọc phía máy chủ trước (ô "Ngày BA/QĐ" + "Tòa ra BA/QĐ" trong Tìm kiếm nâng cao, nếu màn có)
-    await this.locNangCaoBanAn(ngayBanAn, toaAn);
-    const o = await oSoBanAn(page);
+    // KHÔNG bật "Tìm kiếm nâng cao": bật xong form đổi, ô "Số BA/QĐ" biến mất và bộ lọc ngày/tòa nối
+    // sang BAN_AN (vụ GĐ2 mới sinh chưa có) → danh sách rỗng dù vụ vẫn ở đó (đo 29/09/2026: B15 của K07,
+    // K09, K10 sau khi đã tạo được vụ xét xử). Chỉ lọc số bản án rồi khớp ngày/tòa trên dòng.
+    // KHÔNG dùng ô "Nguyên đơn/Người khiếu nại" ở các màn giai đoạn 2. Điều tra 29/09/2026 (DB + mã
+    // nguồn qla): vụ xét xử GĐ2 neo vào ĐƠN KỸ THUẬT "hồ sơ kháng nghị đến" (IS_DON_CHINH=1) — đơn này
+    // KHÔNG có DON_DOITUONG_LIENQUAN và ID_VU_GIAIQUYET = NULL, còn bộ lọc nguyên đơn của server là
+    // EXISTS(VuGiaiQuyetDtlq WHERE idVuGiaiQuyet = Don.idVuGiaiQuyet ...) nên LUÔN trả 0 dòng.
+    // Số/ngày/tòa bản án trên đơn kỹ thuật đó thì ĐÚNG (PhanCongHoiDongXetXuServiceImpl và
+    // XetXuGdtServiceImpl đều lọc trên Don.soBanAnQD của đơn chính) → lọc theo số BA/QĐ là cách chạy được.
+    if (!khongLocSoBanAn) await this.locNangCaoBanAn(ngayBanAn, toaAn, undefined, false);
+    const o = khongLocSoBanAn ? null : await oSoBanAn(page);
     if (o) {
       await go(o, soBanAn);
       await page.getByRole('button', { name: /Tìm kiếm$/ }).first().click();
@@ -1679,15 +1787,15 @@ export class GdtPage {
       await nghi(page, 1500, 2500);
     }
     await moRongCoTrang(page);
-    // Thêm TÒA ra bản án: bộ 28/09/2026 có số bản án 1–3 chữ số, trùng hàng chục vụ trên STG
+    // Dòng ở các màn này không in tên đương sự (VUAN GĐ2 có 0 bản ghi CONNGUOI_VU) → chỉ khớp số/ngày/tòa
     const bl = boLocDong(page, soBanAn, ngayBanAn, toaAn);
     await bl.noiDieuKienNeuCan();
     return bl.dong();
   }
 
-  async thuLyVuAnGdt(soBanAn: string, ngayBanAn?: string, toaAn?: string) {
+  async thuLyVuAnGdt(soBanAn: string, ngayBanAn?: string, toaAn?: string, duongSu?: string) {
     const { page } = this;
-    const dong = await this.locDanhSachXetXu(soBanAn, undefined, ngayBanAn, toaAn);
+    const dong = await this.locDanhSachXetXu(soBanAn, undefined, ngayBanAn, toaAn, duongSu);
     await expect(dong, `Không thấy vụ án ${soBanAn} ở Quản lý xét xử GĐT`).toBeVisible({ timeout: 60_000 });
     await dong.locator('button, a').filter({ has: page.locator('[aria-label="eye"]') }).first().click();
     await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => {});
@@ -1714,15 +1822,31 @@ export class GdtPage {
    * → "Chọn lịch xét xử" → chọn lịch đã tạo sẵn → "Lưu"; rồi "Danh sách tham mưu" → xem chi tiết →
    * "Lấy số" → "Trình ký" → "Gửi".
    */
-  async taoDanhSachVuXetXu(soBanAn: string, loaiHoiDong: string, ngayBanAn?: string, toaAn?: string): Promise<boolean> {
+  async taoDanhSachVuXetXu(
+    soBanAn: string,
+    loaiHoiDong: string,
+    ngayBanAn?: string,
+    toaAn?: string,
+    duongSu?: string,
+  ): Promise<boolean> {
     const { page } = this;
     // Chỉ tìm ở tab "Chưa có DS xét xử": vụ đã có danh sách (lượt trước) thì không tạo lại (tránh trùng)
-    const dong = await this.locDanhSachXetXu(soBanAn, /^Chưa có DS xét xử/, ngayBanAn, toaAn);
+    const dong = await this.locDanhSachXetXu(soBanAn, /^Chưa có DS xét xử/, ngayBanAn, toaAn, duongSu);
     if (!(await hienTrong(dong, 15_000))) {
-      const daCo = await this.locDanhSachXetXu(soBanAn, /^Đã có DS xét xử/, ngayBanAn, toaAn);
+      const daCo = await this.locDanhSachXetXu(soBanAn, /^Đã có DS xét xử/, ngayBanAn, toaAn, duongSu);
       if (await hienTrong(daCo, 15_000)) return false;
     }
-    await expect(dong, `Không thấy vụ án ${soBanAn} ở Danh sách vụ xét xử`).toBeVisible({ timeout: 60_000 });
+    if (!(await hienTrong(dong, 60_000))) {
+      // Liệt kê dòng đang hiện: lọc không ra thì phải biết màn đang có gì (vụ chưa về tới danh sách,
+      // hay đang ở tab khác) chứ không chỉ "không thấy".
+      const dangHien = (await page.locator('.ant-table-row:visible').allInnerTexts())
+        .slice(0, 5)
+        .map(t => t.replace(/s+/g, ' ').trim().slice(0, 200));
+      throw new Error(
+        `Không thấy vụ án ${soBanAn}${ngayBanAn ? ` (${ngayBanAn})` : ''} ở Danh sách vụ xét xử. ` +
+          `Dòng đang hiện: ${dangHien.join(' || ') || '(danh sách trống)'}`,
+      );
+    }
     await dong.locator('.ant-checkbox-input').first().check();
     await nghi(page, 800, 1200);
     await page.getByRole('button', { name: /Tạo danh sách vụ xét xử$/ }).first().click();
@@ -1907,7 +2031,14 @@ export class GdtPage {
    */
   async themBieuMauHoiDong(
     soBanAn: string,
-    d: { dsBieuMau: string[]; nguoiKy: string; ngayThongBao: string; ngayBanAn?: string; toaAn?: string },
+    d: {
+      dsBieuMau: string[];
+      nguoiKy: string;
+      ngayThongBao: string;
+      ngayBanAn?: string;
+      toaAn?: string;
+      duongSu?: string;
+    },
   ): Promise<string[]> {
     const { page } = this;
     /** Id văn bản vừa trình ký (để Bước 18 mở theo id) */
@@ -1915,8 +2046,31 @@ export class GdtPage {
     await moMenu(page, [MENU_GDT, 'Phân công Hội đồng xét xử']);
     await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
     await choHetSpin(page);
-    const dong = await this.locTheoBanAn(soBanAn, d.ngayBanAn, d.toaAn);
-    await expect(dong, `Không thấy hội đồng của bản án ${soBanAn} ${d.ngayBanAn || ''} ở màn Phân công Hội đồng xét xử`).toBeVisible({ timeout: 60_000 });
+    let dong = await this.locTheoBanAn(soBanAn, d.ngayBanAn, d.toaAn, d.duongSu, true);
+    // Màn này KHÔNG có ô lọc theo đương sự và ba ô lọc bản án của nó nối sang BAN_AN (vụ GĐ2 không có)
+    // → dòng thường không mang số bản án. Không khớp được thì tìm theo TÊN ĐƯƠNG SỰ trên bảng, rồi mới
+    // đến "chỉ còn đúng một dòng".
+    if (!(await hienTrong(dong, 15_000)) && d.duongSu) {
+      const theoNguoi = page.locator('.ant-table-row:visible').filter({ hasText: d.duongSu });
+      if (await hienTrong(theoNguoi.first(), 5_000)) {
+        dong = theoNguoi.first();
+        console.log(`    · Phân công HĐXX: khớp dòng theo tên đương sự "${d.duongSu}"`);
+      }
+    }
+    if (!(await hienTrong(dong, 15_000))) {
+      const ds = page.locator('.ant-table-row:visible');
+      const soDong = await ds.count();
+      const chu = (await ds.allInnerTexts()).slice(0, 3).map(t => t.replace(/s+/g, ' ').trim().slice(0, 160));
+      if (soDong === 1) {
+        dong = ds.first();
+        console.log(`    · Phân công HĐXX: chỉ còn một dòng → dùng dòng đó: ${chu[0] || ''}`);
+      } else {
+        throw new Error(
+          `Không thấy hội đồng của bản án ${soBanAn} ${d.ngayBanAn || ''} ở màn Phân công Hội đồng xét xử ` +
+            `(đương sự: ${d.duongSu || '-'}). Dòng đang hiện (${soDong}): ${chu.join(' || ') || '(trống)'}`,
+        );
+      }
+    }
     await dong.locator('button, a').filter({ has: page.locator('[aria-label="eye"]') }).first().click();
     await choHetSpin(page);
     await nghi(page, 2000, 3000);

@@ -416,7 +416,7 @@ export function dangKyLuongGdtTT(dsVu: VuLuongGdtTT[], { tenSoCai, vuGdkt = VU_G
         const { page, context } = await moTrangVaiCauHinh(browser, testInfo, vuGdkt.thamTraVien);
         const gdt = new GdtPage(page);
 
-        const idVuAn = await gdt.moVuAn(b.soBanAn, b.ngayBanAn, b.toaAn);
+        const idVuAn = await gdt.moVuAn(b.soBanAn, b.ngayBanAn, b.toaAn, dauHieuVu(b)[1]);
         ghi('id vụ án', idVuAn);
         const daCoDuThao = await gdt.taoDuThaoKetQuaGiaiQuyet(idVuAn, {
           ketQua: gt('ketQuaGiaiQuyet'),
@@ -442,7 +442,7 @@ export function dangKyLuongGdtTT(dsVu: VuLuongGdtTT[], { tenSoCai, vuGdkt = VU_G
         testInfo.setTimeout(10 * 60_000);
         const { page, context } = await moTrangVaiCauHinh(browser, testInfo, vuGdkt.thamTraVien);
         const gdt = new GdtPage(page);
-        const idVuAn = await gdt.moVuAn(b.soBanAn, b.ngayBanAn, b.toaAn);
+        const idVuAn = await gdt.moVuAn(b.soBanAn, b.ngayBanAn, b.toaAn, dauHieuVu(b)[1]);
         // canTieuHoSo = false: dự thảo kết quả giải quyết không phải tờ trình nên không có bước
         // tiểu hồ sơ (DanhSachVanBanToTrinh.tsx chỉ render nút đó cho mã biểu mẫu tờ trình)
         khoaDuThao = await gdt.trinhToTrinhThamTra(
@@ -541,7 +541,7 @@ export function dangKyLuongGdtTT(dsVu: VuLuongGdtTT[], { tenSoCai, vuGdkt = VU_G
         testInfo.setTimeout(8 * 60_000);
         const ghi = (type: string, description: string) => testInfo.annotations.push({ type, description });
         const { page, context } = await moTrangVaiCauHinh(browser, testInfo, vuGdkt.vuTruong);
-        ghi('thụ lý GĐT', (await new GdtPage(page).thuLyVuAnGdt(b.soBanAn, b.ngayBanAn, b.toaAn)) ? 'vừa thụ lý' : 'đã thụ lý từ trước');
+        ghi('thụ lý GĐT', (await new GdtPage(page).thuLyVuAnGdt(b.soBanAn, b.ngayBanAn, b.toaAn, dauHieuVu(b)[1])) ? 'vừa thụ lý' : 'đã thụ lý từ trước');
         ghiSoCai(b, { xongBuoc: 'thuLyXetXu' });
         await context.close();
       });
@@ -571,14 +571,22 @@ export function dangKyLuongGdtTT(dsVu: VuLuongGdtTT[], { tenSoCai, vuGdkt = VU_G
         // Duyệt theo id văn bản (không lấy "đề xuất mới nhất" để khỏi duyệt nhầm tờ trình của vụ khác).
         // Tờ trình MS_02_TC mở ở màn "Ký số văn bản" (Ký số / Ký logic / Từ chối ký) → Ký logic.
         // moChiTietTheoId tự mở menu — không gọi pd.mo() trước (mở 2 lần có thể thu gọn menu Công tác lãnh đạo).
+        // Không có id (hoặc id không còn trong danh sách) → duyệt lần lượt các tờ trình cùng tên và chốt
+        // danh tính vụ ở từng cái. Lọc theo "Người tạo đề xuất" là không đủ: tờ trình có thể do người
+        // khác của Vụ tạo, khi đó B17 báo "không có đề xuất" và B21 sau đó hỏng vì vụ chưa có thẩm phán
+        // chủ tọa (đo 29/09/2026 với D03, D10).
+        const tuLucTpTc = new Date(Date.now() - 7 * 24 * 3600_000);
+        let conKyTpTc = false;
         if (khoa) {
-          if (await pd.moChiTietTheoId(khoa)) await pd.ykienVaKyLogicVanBan('Đồng ý phân công Thẩm phán TANDTC theo tờ trình.');
-        } else if (
-          (await pd.mo(), true) &&
-          await pd.moChiTietNeuCon('Tờ trình phân công thẩm phán tối cao', taiKhoan(vuGdkt.vuTruong).ten, new Date(Date.now() - 24 * 3600_000))
-        ) {
-          await pd.ykienVaKyLogicVanBan('Đồng ý phân công Thẩm phán TANDTC theo tờ trình.');
+          try {
+            conKyTpTc = await pd.moChiTietTheoId(khoa);
+          } catch {
+            conKyTpTc = await pd.moChiTietDungVu(/Tờ trình phân công thẩm phán tối cao/i, dauHieuVu(b), tuLucTpTc);
+          }
+        } else {
+          conKyTpTc = await pd.moChiTietDungVu(/Tờ trình phân công thẩm phán tối cao/i, dauHieuVu(b), tuLucTpTc);
         }
+        if (conKyTpTc) await pd.ykienVaKyLogicVanBan('Đồng ý phân công Thẩm phán TANDTC theo tờ trình.');
         ghiSoCai(b, { xongBuoc: 'duyetPhanCongTPTC' });
         await context.close();
       });
@@ -611,7 +619,7 @@ export function dangKyLuongGdtTT(dsVu: VuLuongGdtTT[], { tenSoCai, vuGdkt = VU_G
         const ghi = (type: string, description: string) => testInfo.annotations.push({ type, description });
         const { page, context } = await moTrangVaiCauHinh(browser, testInfo, vuGdkt.vuTruong);
         const gdt = new GdtPage(page);
-        ghi('danh sách vụ xét xử', (await gdt.taoDanhSachVuXetXu(b.soBanAn, gt('loaiHoiDong'), b.ngayBanAn, b.toaAn)) ? 'vừa tạo' : 'đã có từ trước');
+        ghi('danh sách vụ xét xử', (await gdt.taoDanhSachVuXetXu(b.soBanAn, gt('loaiHoiDong'), b.ngayBanAn, b.toaAn, dauHieuVu(b)[1])) ? 'vừa tạo' : 'đã có từ trước');
         const khoaChuongTrinh = await gdt.laySoVaTrinhKyThamMuu(b.soBanAn, b.ngayBanAn, b.toaAn);
         if (khoaChuongTrinh) ghi('id chương trình làm việc', khoaChuongTrinh);
         ghiSoCai(b, { ...(khoaChuongTrinh ? { khoaChuongTrinh } : {}), xongBuoc: 'danhSachXetXu' });
@@ -626,28 +634,24 @@ export function dangKyLuongGdtTT(dsVu: VuLuongGdtTT[], { tenSoCai, vuGdkt = VU_G
         const { page, context } = await moTrangVaiCauHinh(browser, testInfo, 'chanhAn');
         const pd = new PheDuyetPage(page);
         const khoaChuongTrinh = docDong(b)?.khoaChuongTrinh;
+        // Mở theo id văn bản B19 đã trình: màn Phê duyệt đề xuất phân trang 10 dòng và có đề xuất cùng
+        // tên của vụ khác. Không có id (B19 chạy ở luồng khác chưa kịp gộp sổ cái) thì duyệt lần lượt
+        // các đề xuất "Chương trình làm việc" và CHỐT DANH TÍNH VỤ ở từng cái — lọc theo người tạo là
+        // không đủ vì văn bản có thể do người khác của Vụ trình (đo 29/09/2026: D03, D07, D10).
+        // KHÔNG nhận thêm nhãn "Tờ trình thẩm tra vụ việc": đo trên STG 28/09/2026, dòng đó là biểu mẫu
+        // MS_42 "Tờ trình vụ giải quyết" của một vụ giải quyết đơn khác, duyệt vào là duyệt sai văn bản.
+        const tuLucCtlv = new Date(Date.now() - 7 * 24 * 3600_000);
+        let conDuyetCtlv = false;
         if (khoaChuongTrinh) {
-          // Mở theo id văn bản B19 đã trình: màn Phê duyệt đề xuất phân trang 10 dòng và có đề xuất
-          // cùng tên của vụ khác, tìm theo tên dễ duyệt nhầm văn bản của vụ khác.
-          if (await pd.moChiTietTheoId(khoaChuongTrinh)) {
-            await pd.ykienVaPheDuyet('Đồng ý chương trình làm việc của Hội đồng xét xử.');
+          try {
+            conDuyetCtlv = await pd.moChiTietTheoId(khoaChuongTrinh);
+          } catch {
+            conDuyetCtlv = await pd.moChiTietDungVu(/Chương trình làm việc/, dauHieuVu(b), tuLucCtlv);
           }
         } else {
-          await pd.mo();
-          // Vụ chạy B19 trước khi có khoá trong sổ cái: tìm theo tên "Chương trình làm việc của HĐXX".
-          // KHÔNG nhận thêm nhãn "Tờ trình thẩm tra vụ việc": đo trên STG 28/09/2026, dòng đó là biểu mẫu
-          // MS_42 "Tờ trình vụ giải quyết" của một vụ giải quyết đơn khác, duyệt vào là duyệt sai văn bản.
-          // moChiTietNeuCon: không còn ở "Chờ duyệt" mà đã ở "Đã duyệt" thì coi như xong, không báo lỗi giả
-          if (
-            await pd.moChiTietNeuCon(
-              /Chương trình làm việc/,
-              taiKhoan(vuGdkt.vuTruong).ten,
-              new Date(Date.now() - 24 * 3600_000),
-            )
-          ) {
-            await pd.ykienVaPheDuyet('Đồng ý chương trình làm việc của Hội đồng xét xử.');
-          }
+          conDuyetCtlv = await pd.moChiTietDungVu(/Chương trình làm việc/, dauHieuVu(b), tuLucCtlv);
         }
+        if (conDuyetCtlv) await pd.ykienVaPheDuyet('Đồng ý chương trình làm việc của Hội đồng xét xử.');
         ghiSoCai(b, { xongBuoc: 'duyetChuongTrinh' });
         await context.close();
       });
@@ -664,6 +668,7 @@ export function dangKyLuongGdtTT(dsVu: VuLuongGdtTT[], { tenSoCai, vuGdkt = VU_G
           ngayThongBao: homNay,
           ngayBanAn: b.ngayBanAn,
           toaAn: b.toaAn,
+          duongSu: dauHieuVu(b)[1],
         });
         const khoaCu = docDong(b)?.khoaBieuMauHoiDong || [];
         ghiSoCai(b, { khoaBieuMauHoiDong: [...new Set([...khoaCu, ...dsId])], xongBuoc: 'bieuMauHoiDong' });
@@ -705,6 +710,7 @@ export function dangKyLuongGdtTT(dsVu: VuLuongGdtTT[], { tenSoCai, vuGdkt = VU_G
           nguyenNhan: (b as { nguyenNhan?: string }).nguyenNhan,
           ketQuaXetXu: (b as { ketQuaXetXu?: string }).ketQuaXetXu,
           toaAn: b.toaAn,
+          duongSu: dauHieuVu(b)[1],
         });
         ghi('vụ xét xử', idVuXetXu);
         ghiSoCai(b, { idVuXetXu });
