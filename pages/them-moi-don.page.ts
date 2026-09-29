@@ -59,10 +59,19 @@ export interface ThongTinDon {
   nguoiLienQuan: NguoiGia;
 }
 
-/** Loại án: quyết định tư cách tố tụng, ký hiệu bản án và Vụ nhận đơn */
+/**
+ * Loại án: quyết định tư cách tố tụng, ký hiệu bản án và Vụ nhận đơn.
+ *
+ * `donViChuyenDen` là giá trị ô "Đơn vị chuyển đến" ở tab Xử lý đơn (BƯỚC 2). Đặc tả
+ * `Playwright nhập data GDT-TT (1).txt` chỉ liệt kê Hình sự / Dân sự / Hành chính / Lao động —
+ * KHÔNG có Kinh doanh thương mại. Nghiệp vụ chốt ngày 30/09/2026: **KDTM chuyển đến Vụ giám đốc
+ * kiểm tra về DÂN SỰ**. Chọn sai đơn vị ở bước này thì tới BƯỚC 15 không tài khoản nào thấy vụ,
+ * vì màn "Quản lý xét xử GĐT" lọc theo đơn vị đã nhận hồ sơ kháng nghị.
+ */
 export const LOAI_AN = {
-  DAN_SU: { loaiAn: 'Dân sự', tuCach: 'Nguyên đơn', kyHieu: 'DS', tenAn: 'dân sự', donViChuyenDen: undefined },
+  DAN_SU: { loaiAn: 'Dân sự', tuCach: 'Nguyên đơn', kyHieu: 'DS', tenAn: 'dân sự', donViChuyenDen: 'dân sự' },
   HINH_SU: { loaiAn: 'Hình sự', tuCach: 'Bị cáo', kyHieu: 'HS', tenAn: 'hình sự', donViChuyenDen: 'hình sự' },
+  KDTM: { loaiAn: 'Kinh doanh thương mại', tuCach: 'Nguyên đơn', kyHieu: 'KDTM', tenAn: 'kinh doanh thương mại', donViChuyenDen: 'dân sự' },
 } as const;
 export type LoaiAn = keyof typeof LOAI_AN;
 

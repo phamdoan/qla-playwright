@@ -150,7 +150,31 @@ async function moRongCoTrang(page: Page) {
 }
 
 export class GdtPage {
+  /**
+   * Loại án của vụ đang thao tác ("Kinh doanh thương mại", "Dân sự", "Hình sự"…).
+   *
+   * BẮT BUỘC đặt trước các bước dùng màn "Quản lý xét xử GĐT" / "Danh sách vụ xét xử" / "Phân công
+   * Hội đồng xét xử": ô lọc "Loại án" của những màn này MẶC ĐỊNH LÀ "Hình sự" (đo trên STG
+   * 30/09/2026: các ô select đang chọn = "Hình sự | Tòa án nhân dân tối cao"). Không đổi ô đó thì
+   * mọi vụ không phải hình sự đều bị lọc mất — lọc theo số bản án ra 0 dòng dù vụ vẫn ở đó.
+   * Đây là nguyên nhân B15/B21/B23 của đợt KDTM 28/09/2026 luôn báo "Không thấy vụ án".
+   */
+  loaiAn?: string;
+
   constructor(readonly page: Page) {}
+
+  /** Đặt ô lọc "Loại án" đúng loại án của vụ (bỏ qua nếu màn không có ô này hoặc đã đúng) */
+  private async datLoaiAn() {
+    if (!this.loaiAn) return;
+    const { page } = this;
+    const o = page.getByLabel(/^Loại án$/).or(page.locator('#loaiAn')).first();
+    if (!(await hienTrong(o, 4_000))) return;
+    const khung = o.locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " ant-select ")][1]');
+    const dangChon = (await khung.locator('.ant-select-selection-item').first().innerText().catch(() => '')).trim();
+    if (dangChon === this.loaiAn) return;
+    await chonSelect(page, o, this.loaiAn);
+    console.log(`    · Ô lọc "Loại án" đang là "${dangChon || '(trống)'}" → đổi sang "${this.loaiAn}"`);
+  }
 
   /**
    * Mở "Tìm kiếm nâng cao" (nút link của SearchableProTable, nhãn "Tìm kiếm nâng cao"/"Thu gọn") rồi
@@ -1461,6 +1485,7 @@ export class GdtPage {
     // KHÔNG có bản ghi DON_DOITUONG_LIENQUAN, trong khi bộ lọc nguyên đơn của server là
     // EXISTS(VuGiaiQuyetDtlq WHERE idVuGiaiQuyet = Don.idVuGiaiQuyet ...) → LUÔN ra 0 dòng.
     // Ngược lại SO_BANAN_QD / NGAY_BANAN_QD trên đơn kỹ thuật đó ĐÚNG → lọc theo số BA/QĐ mới ra vụ.
+    await this.datLoaiAn();
     await this.locNangCaoBanAn(ngayBanAn, d?.toaAn, undefined, false);
     const oSo = await oSoBanAn(page, 10_000);
     if (!oSo) throw new Error('Màn Quản lý xét xử GĐT: không thấy ô lọc "Số BA/QĐ"');
@@ -1777,6 +1802,7 @@ export class GdtPage {
     // EXISTS(VuGiaiQuyetDtlq WHERE idVuGiaiQuyet = Don.idVuGiaiQuyet ...) nên LUÔN trả 0 dòng.
     // Số/ngày/tòa bản án trên đơn kỹ thuật đó thì ĐÚNG (PhanCongHoiDongXetXuServiceImpl và
     // XetXuGdtServiceImpl đều lọc trên Don.soBanAnQD của đơn chính) → lọc theo số BA/QĐ là cách chạy được.
+    await this.datLoaiAn();
     if (!khongLocSoBanAn) await this.locNangCaoBanAn(ngayBanAn, toaAn, undefined, false);
     const o = khongLocSoBanAn ? null : await oSoBanAn(page);
     if (o) {
@@ -1827,7 +1853,21 @@ export class GdtPage {
     await nghi(page, 1500, 2500);
     // Nút thật trên màn là "Thụ Lý" (L hoa) → không phân biệt hoa thường
     const nut = page.getByRole('button', { name: /^(\S+ )?Thụ lý$/i }).first();
-    if (!(await hienTrong(nut, 10_000))) return false; // đã thụ lý ở lượt trước
+    if (!(await hienTrong(nut, 10_000))) {
+      // KHÔNG mặc định "đã thụ lý ở lượt trước": phải thấy Số thụ lý trên tab mới được coi là xong.
+      // Trước đây trả về false vô điều kiện → bước ghi sổ cái "xong" trong khi VUAN.SO_THULY vẫn NULL
+      // (đo STG 30/09/2026, vụ VA26-004805). Đó là pass giả.
+      const chu = (await page.locator('.ant-tabs-tabpane-active, .ant-pro-card').first().innerText().catch(() => '')).replace(/\s+/g, ' ');
+      const soTL = (chu.match(/Số thụ lý[^0-9]{0,20}(\d{4,})/) || [])[1];
+      if (soTL) {
+        console.log(`    · Vụ đã thụ lý từ lượt trước — Số thụ lý ${soTL}`);
+        return false;
+      }
+      throw new Error(
+        'Không thấy nút "Thụ lý" mà tab Thụ lý cũng KHÔNG có Số thụ lý → vụ chưa thụ lý, không được ' +
+          `ghi sổ cái là xong. Chữ trên tab: ${chu.slice(0, 300) || '(trống)'}`,
+      );
+    }
     await nut.click();
     const hop = page.locator('.ant-modal:visible').last();
     if (await hienTrong(hop.getByRole('button', { name: /Xác nhận thụ lý|^(Đồng ý|Lưu)$/ }), 5_000)) {

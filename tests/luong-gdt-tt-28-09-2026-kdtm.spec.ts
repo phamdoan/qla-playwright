@@ -48,7 +48,10 @@ const chiDinh = (process.env.QLA_GDT_MA || '')
   .split(',')
   .map(s => s.trim())
   .filter(Boolean);
-const DS_CHAY = chiDinh.length ? DS_GDT_28_09.filter(v => chiDinh.includes(v.maSheet)) : DS_GDT_28_09;
+// CHỈ CHẠY NHÓM KDTM (chốt 30/09/2026): mục tiêu là xác nhận THÀNH CÔNG một vụ Kinh doanh
+// thương mại trước; 10 vụ dân sự của đợt này tạm bỏ khỏi luồng chạy.
+const CHI_KDTM = DS_GDT_28_09.filter(v => v.loaiAn === 'Kinh doanh thương mại');
+const DS_CHAY = chiDinh.length ? CHI_KDTM.filter(v => chiDinh.includes(v.maSheet)) : CHI_KDTM;
 
 const dong = (v: (typeof DS_CHAY)[number]) => ({
   tieuDe: `${v.maSheet} · ${v.loaiAn} · ${v.nguyenDon || v.maVuAn}-${v.soBanAn}-${v.ngayBanAn}-${v.toaAn}`,
@@ -59,4 +62,11 @@ const TEN_SO_CAI = 'gdt-kdtm-dan-su-28-09-2026';
 // này có DON_VI_KHOI_TAO = D01.107 — kể cả 10 vụ Kinh doanh thương mại (LOAI_AN = 004). Hai vụ ngoại lệ
 // nằm ở D01.121.KTNVTHA (đơn 10230 – bản án 4, đơn 10252 – bản án 142); tài liệu chưa khai tài khoản của
 // đơn vị này nên hai vụ đó cần nghiệp vụ xác nhận, không tự chọn tài khoản thay.
+// BỎ nhánh Vụ dân sự (30/09/2026): KDTM là một LOẠI ÁN riêng, không thuộc "Vụ dân sự". Lên GĐT/TT
+// chỉ khác nhau ở ô lọc "Loại án" — đã xử lý bằng GdtPage.loaiAn. Hai đặc tả gốc không nhắc tới tài
+// khoản Vụ dân sự nào; dùng đúng một bộ tài khoản mặc định (Vụ GĐKT hình sự) cho cả 23 bước.
+// Nhánh tài khoản KHÔNG phải theo loại án mà theo ĐƠN VỊ ĐÃ NHẬN hồ sơ kháng nghị ở B14.
+// Đo STG 30/09/2026: cùng ô lọc "Loại án" = Kinh doanh thương mại, tài khoản D01.107 TÌM THẤY vụ,
+// tài khoản Vụ hình sự ra 0 dòng — vì HOSO_KHANGNGHI_DEN.MA_DONVI_NHAN của 6 vụ KDTM này là D01.107.
+// Giữ bộ tài khoản D01.107 cho đợt dữ liệu đã tạo; đợt mới phải chốt "Đơn vị chuyển đến" cho KDTM.
 dangKyLuongGdtTT(DS_CHAY.map(dong), { tenSoCai: TEN_SO_CAI, vuGdkt: VU_GDKT_DAN_SU });

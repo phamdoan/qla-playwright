@@ -82,6 +82,17 @@ export interface VuLuongGdtTT {
  * Vụ Giám đốc kiểm tra xử lý nhánh B10+ — vai (khoá taiKhoan) và khoá nghiepVu riêng của Vụ đó
  * trong config/luong-gdt.json. Mặc định là Vụ GĐKT về hình sự.
  */
+/**
+ * GdtPage đã gắn sẵn loại án của vụ. Các màn 'Quản lý xét xử GĐT', 'Danh sách vụ xét xử' và
+ * 'Phân công Hội đồng xét xử' có ô lọc 'Loại án' MẶC ĐỊNH LÀ 'Hình sự' (đo STG 30/09/2026), không
+ * đổi thì mọi vụ không phải hình sự bị lọc mất và lọc theo số bản án ra 0 dòng.
+ */
+const gdtVoiLoaiAn = (page: import('@playwright/test').Page, b: BanAnSoTham) => {
+  const gdt = new GdtPage(page);
+  gdt.loaiAn = b.loaiAn;
+  return gdt;
+};
+
 export interface VuGdkt {
   thuKyVu: string;
   vuTruong: string;
@@ -541,7 +552,7 @@ export function dangKyLuongGdtTT(dsVu: VuLuongGdtTT[], { tenSoCai, vuGdkt = VU_G
         testInfo.setTimeout(8 * 60_000);
         const ghi = (type: string, description: string) => testInfo.annotations.push({ type, description });
         const { page, context } = await moTrangVaiCauHinh(browser, testInfo, vuGdkt.vuTruong);
-        ghi('thụ lý GĐT', (await new GdtPage(page).thuLyVuAnGdt(b.soBanAn, b.ngayBanAn, b.toaAn, dauHieuVu(b)[1])) ? 'vừa thụ lý' : 'đã thụ lý từ trước');
+        ghi('thụ lý GĐT', (await gdtVoiLoaiAn(page, b).thuLyVuAnGdt(b.soBanAn, b.ngayBanAn, b.toaAn, dauHieuVu(b)[1])) ? 'vừa thụ lý' : 'đã thụ lý từ trước');
         ghiSoCai(b, { xongBuoc: 'thuLyXetXu' });
         await context.close();
       });
@@ -618,7 +629,7 @@ export function dangKyLuongGdtTT(dsVu: VuLuongGdtTT[], { tenSoCai, vuGdkt = VU_G
         testInfo.setTimeout(15 * 60_000);
         const ghi = (type: string, description: string) => testInfo.annotations.push({ type, description });
         const { page, context } = await moTrangVaiCauHinh(browser, testInfo, vuGdkt.vuTruong);
-        const gdt = new GdtPage(page);
+        const gdt = gdtVoiLoaiAn(page, b);
         ghi('danh sách vụ xét xử', (await gdt.taoDanhSachVuXetXu(b.soBanAn, gt('loaiHoiDong'), b.ngayBanAn, b.toaAn, dauHieuVu(b)[1])) ? 'vừa tạo' : 'đã có từ trước');
         const khoaChuongTrinh = await gdt.laySoVaTrinhKyThamMuu(b.soBanAn, b.ngayBanAn, b.toaAn);
         if (khoaChuongTrinh) ghi('id chương trình làm việc', khoaChuongTrinh);
@@ -662,7 +673,7 @@ export function dangKyLuongGdtTT(dsVu: VuLuongGdtTT[], { tenSoCai, vuGdkt = VU_G
         testInfo.setTimeout(15 * 60_000);
         const { page, context } = await moTrangVaiCauHinh(browser, testInfo, vuGdkt.vuTruong);
         const homNay = new Date().toLocaleDateString('en-GB');
-        const dsId = await new GdtPage(page).themBieuMauHoiDong(b.soBanAn, {
+        const dsId = await gdtVoiLoaiAn(page, b).themBieuMauHoiDong(b.soBanAn, {
           dsBieuMau: (cauHinhLuong().nghiepVu.bieuMauHoiDong as unknown as string[]) || [],
           nguoiKy: gt('nguoiKyBieuMau'),
           ngayThongBao: homNay,
@@ -706,7 +717,7 @@ export function dangKyLuongGdtTT(dsVu: VuLuongGdtTT[], { tenSoCai, vuGdkt = VU_G
         test.skip(vaiThieu.length > 0, lyDoThieuVai);
         const ghi = (type: string, description: string) => testInfo.annotations.push({ type, description });
         const { page, context } = await moTrangVaiCauHinh(browser, testInfo, vuGdkt.vuTruong);
-        const idVuXetXu = await new GdtPage(page).moKetQuaXetXu(b.soBanAn, b.ngayBanAn, {
+        const idVuXetXu = await gdtVoiLoaiAn(page, b).moKetQuaXetXu(b.soBanAn, b.ngayBanAn, {
           nguyenNhan: (b as { nguyenNhan?: string }).nguyenNhan,
           ketQuaXetXu: (b as { ketQuaXetXu?: string }).ketQuaXetXu,
           toaAn: b.toaAn,
