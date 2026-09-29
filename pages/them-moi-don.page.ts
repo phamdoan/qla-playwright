@@ -734,8 +734,11 @@ export class ThemMoiDonPage {
     const dong = page.locator('.ant-table-row:visible').first();
     if (!(await hienTrong(dong, 5_000))) return null;
     const chu = (await dong.innerText()).replace(/\s+/g, ' ');
-    const maDon = (chu.match(/Mã đơn:s*(S+)/) || [])[1] || '';
-    const soThuLy = (chu.match(/Số TL:s*(d+)/) || [])[1] || '';
+    // ⚠ Hai regex này TỪNG MẤT DẤU GẠCH CHÉO NGƯỢC (`:s*(S+)` thay vì `:\s*(\S+)`) nên khớp chữ "s"
+    // và "S" nguyên văn → không bao giờ đọc được mã đơn → hàm luôn trả null → B1–B2 tưởng "chưa có đơn"
+    // và TẠO ĐƠN MỚI mỗi lần chạy lại. Đó là nguồn của 20 đơn phụ rác đợt KDTM 28/09/2026.
+    const maDon = (chu.match(/Mã đơn:\s*(\S+)/) || [])[1] || '';
+    const soThuLy = (chu.match(/Số TL:\s*(\d+)/) || [])[1] || '';
     return maDon ? { maDon, soThuLy } : null;
   }
 

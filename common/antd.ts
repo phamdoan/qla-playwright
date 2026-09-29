@@ -156,6 +156,11 @@ export async function chonSelect(
 ): Promise<string> {
   const khung = khungSelect(page, input);
   await choHetSpin(page);
+  // QLA_DO_THOI_GIAN=1: in thời gian mỗi lần chọn để đo chỗ tốn thời gian, không đổi hành vi
+  const batDau = process.env.QLA_DO_THOI_GIAN === '1' ? Date.now() : 0;
+  const doXong = (nhan: string, lan: number) => {
+    if (batDau) console.log(`    ⏱ chọn "${nhan}" ${((Date.now() - batDau) / 1000).toFixed(1)}s (lần thử ${lan + 1})`);
+  };
   let loiCuoi: unknown;
   for (let lan = 0; lan < 3; lan++) {
     try {
@@ -230,6 +235,7 @@ export async function chonSelect(
       await nghi(page);
       // Xác nhận ô đã hiển thị giá trị vừa chọn (form render lại có thể làm mất lựa chọn)
       await expect(khung.locator('.ant-select-selection-item').first()).toBeVisible({ timeout: 5_000 });
+      doXong(nhan, lan);
       return nhan;
     } catch (e) {
       loiCuoi = e;
