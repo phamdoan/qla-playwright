@@ -1488,10 +1488,10 @@ export class GdtPage {
         console.log(`    · Lọc số BA/QĐ "${soBanAn}" còn đúng một dòng → dùng dòng đó: ${chu.slice(0, 160)}`);
       }
     }
-    await expect(
+    await this.phaiThayDong(
       dong,
       `Không thấy vụ ${soBanAn}${ngayBanAn ? ` (${ngayBanAn})` : ''} ở màn Quản lý xét xử GĐT`,
-    ).toBeVisible({ timeout: 60_000 });
+    );
 
     await dong.locator('button, a').filter({ has: page.locator('[aria-label="eye"]') }).first().click();
     await page.waitForURL(/quan-ly-vu-xet-xu\/chi-tiet\?id=/, { timeout: 60_000 });

@@ -62,7 +62,10 @@ for (const b of danhSach) {
       'playwright', 'test',
       '--project=tai-khoan-moi',
       '--no-deps',
-      ...(soCai ? [`--output=test-results-${soCai}`] : []),
+      // Thư mục kết quả RIÊNG cho từng bước: Playwright dọn sạch --output mỗi lần chạy, nên dùng
+      // chung một thư mục thì bước sau xoá mất ảnh chụp trang (error-context.md) của bước trước —
+      // đúng lúc cần nó nhất để biết vì sao bước trước hỏng (gặp 30/09/2026 khi điều tra B15).
+      `--output=test-results-${soCai || 'x'}-${b}`,
       '-g', JSON.stringify(`${b.replace(/-/g, '.')} ·`),
       '--reporter=line',
       ...(loc ? [loc] : []),
