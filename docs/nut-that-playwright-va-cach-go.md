@@ -63,6 +63,26 @@ Các màn Quản lý vụ án / Phân công TTV / Phân công HĐXX đều join 
 **Cách gỡ:** thêm "Bước 0" — tra `/qla/quan-ly-don/danh-sach-don?tab=tong-so` theo Số BA/QĐ +
 Ngày BA/QĐ + Tòa ra BA/QĐ **trước khi tạo đơn**; đã có đơn chính thì dùng lại, không tạo thêm.
 
+**Nguyên nhân sâu hơn: số bản án đặt là số trần.** Dataset KDTM 28/09 dùng `1`–`10` làm số bản án.
+Đo trên STG 30/09/2026:
+
+| Số BA | Ngày | Số đơn cùng (số + ngày + tòa D01.133) | đơn chính |
+|---|---|---|---|
+| 3 | 24/09/2026 | 5 | 2 |
+| 1, 2, 4, 5, 6, 7, 9, 10 | — | 4 mỗi số | 1–2 |
+| 8 | 26/09/2026 | 3 | 1 |
+
+Riêng bản án số 3 có 5 đơn, tạo rải rác trong cùng ngày 28/09 (02:25 · 20:07 · 20:59 · 21:23 ·
+23:06) — tức **chính các lần chạy lại của Playwright tự sinh ra đơn trùng của nhau**, không phải
+chỉ đụng dữ liệu có sẵn.
+
+Cộng thêm việc server lọc `LIKE %x%`: gõ `3` trả về **551 đơn**; `1` khớp chính xác 29 đơn, `2`
+khớp 39 đơn. Trên STG hiện có **1.763/2.041 bản án là số trần**.
+
+Số bản án đúng phải là `<số>/<năm>/<ký hiệu>` — `377/2026/KDTM-ST`, `56/2026/KDTM-PT`,
+`122/2025/DS-ST`. Chạy end-to-end từ sơ thẩm thì hệ thống tự cấp số đúng dạng lúc "Lấy số"; chỉ
+cần bắt lại làm output và ghi sổ cái. Xem quy tắc R1b trong `e2e/CLAUDE.md`.
+
 ### 2b. Vụ giai đoạn 2 gần như "vô danh"
 B14 không dùng lại đơn đã nhập. Nó sinh **đơn kỹ thuật mới** (`LOAI_DON = HO_SO_KHANG_NGHI_GDT`,
 `IS_DON_CHINH = 1`) và neo vụ xét xử giai đoạn 2 vào đơn đó. Đơn kỹ thuật này:

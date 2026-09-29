@@ -23,6 +23,26 @@ const dong = await this.locTheoBanAn(soBanAn, ngayBanAn, toaAn, duongSu);
 await page.goto(`vu-an/gdt-tt/quan-ly-vu-xet-xu/chi-tiet?id=${soCai.idVuXetXu}`);
 ```
 
+## R1b — Số bản án phải ở dạng đầy đủ, KHÔNG dùng số trần
+
+Số bản án dùng để seed **bắt buộc** theo dạng `<số>/<năm>/<ký hiệu>`:
+
+```
+ĐÚNG   377/2026/KDTM-ST   ·   56/2026/KDTM-PT   ·   122/2025/DS-ST
+SAI    1   2   3   4   5   …
+```
+
+Đợt KDTM 28/09/2026 đặt số bản án là `1`–`10` và hỏng toàn bộ (đo trên STG 30/09/2026):
+
+- Mỗi (số + ngày + tòa) có **3–5 đơn** trùng nhau → đơn Playwright nhập thành **đơn phụ**
+  (`IS_DON_CHINH = 0`), mà mọi màn của luồng đều join `isDonChinh = true` → không bao giờ hiện.
+- Server lọc `LIKE %x%`: gõ `3` trả về **551 đơn**; `1` khớp chính xác 29 đơn, `2` khớp 39 đơn.
+- Trên STG hiện có **1.763/2.041 bản án là số trần** — rác tích tụ từ các đợt seed trước.
+
+Cách làm đúng: chạy end-to-end từ sơ thẩm thì số bản án do hệ thống cấp lúc "Lấy số" — tự nhiên
+đã đủ dạng và duy nhất; **bắt lại làm output, ghi sổ cái** (R1), các giai đoạn sau dùng lại.
+Không bịa số bản án rời rạc rồi nhập vào luồng GĐT/TT.
+
 ## R2 — Khi buộc phải lọc, chỉ lọc theo trường ĐỘC NHẤT
 
 Ưu tiên: `số thụ lý` > `mã đơn` > `mã vụ án` > `số bản án + ngày + tòa`.
