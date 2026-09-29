@@ -158,6 +158,20 @@ export async function chonSelect(
         : trungKhop && (await trungKhop.count()) > 0
           ? trungKhop.first()
           : dd.locator('.ant-select-item-option').filter({ hasText: chon }).first();
+      // Mục cần chọn không có trong danh mục → BÁO NGAY kèm các mục đang có, thay vì để getAttribute
+      // chờ hết 30s rồi chỉ báo "Timeout" (không biết vì sao). Thường là do tên khai trong config
+      // không thuộc đơn vị của tài khoản đang đăng nhập.
+      if (chon && !(await option.count())) {
+        const dsMuc = (
+          await dd.locator('.ant-select-item-option').evaluateAll(es =>
+            es.map(e => (e.getAttribute('title') || e.textContent || '').trim()),
+          )
+        ).filter(Boolean);
+        throw new Error(
+          `Danh mục không có mục "${typeof chon === 'string' ? chon : chon.source}". ` +
+            `Đang có: ${dsMuc.slice(0, 15).join(' | ') || '(trống)'}${dsMuc.length > 15 ? ' …' : ''}`,
+        );
+      }
       const nhan = ((await option.getAttribute('title')) || (await option.innerText())).trim();
       await nghi(page);
       await option.click({ timeout: 5_000 });

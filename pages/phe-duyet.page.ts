@@ -1,5 +1,5 @@
 import { Locator, Page, expect } from '@playwright/test';
-import { chonSelect, go, hienTrong, nghi, toastDaHien } from '../common/antd';
+import { choHetSpin, chonSelect, go, hienTrong, nghi, toastDaHien } from '../common/antd';
 import { moMenu } from '../common/menu';
 
 /**
@@ -112,17 +112,37 @@ export class PheDuyetPage {
   }
 
   async mo() {
-    // Tuỳ vai: "Công tác lãnh đạo" là menu lá (Trưởng phòng) hoặc menu cha có con "Phê duyệt đề xuất" (Chánh án)
     const { page } = this;
-    await moMenu(page, ['Công tác lãnh đạo']);
+    const tabCho = page.getByRole('tab', { name: /^Chờ duyệt/ });
+    // Menu "Công tác lãnh đạo" có HAI dạng tuỳ quyền của tài khoản:
+    //   · nhiều quyền  → là menu CHA, "Phê duyệt đề xuất" là mục con phải mở ra mới bấm được
+    //   · ít quyền     → chính nó là mục lá, bấm một lần là vào màn
+    // Đang ở sẵn màn phê duyệt (gọi mo() lần 2) thì KHÔNG đụng vào menu: bấm menu cha lúc đó làm
+    // submenu đóng lại giữa chừng → "element is not visible / intercepts pointer events" rồi hết 30s
+    // (lỗi B9 của K01, 29/09/2026).
+    if (await hienTrong(tabCho, 2_000)) {
+      await tabCho.click();
+      await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
+      return;
+    }
     const con = page.locator('.ant-layout-sider, aside').first().getByRole('menuitem', { name: /^Phê duyệt đề xuất/ }).first();
-    // Gọi mo() lần 2 (menu cha đang mở) thì bấm menu cha lại làm nó ĐÓNG → mục con ẩn; bấm lần nữa để mở lại
-    if (!(await hienTrong(con, 3_000)) && !(await hienTrong(this.page.getByRole('tab', { name: /^Chờ duyệt/ }), 2_000)))
-      await moMenu(page, ['Công tác lãnh đạo']);
-    if (await hienTrong(con, 3_000)) await con.click();
-    await expect(this.page.getByRole('tab', { name: /^Chờ duyệt/ })).toBeVisible({ timeout: 60_000 });
-    await this.page.getByRole('tab', { name: /^Chờ duyệt/ }).click();
-    await this.page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
+    for (let lan = 0; lan < 2 && !(await hienTrong(tabCho, 1_000)); lan++) {
+      await moMenu(page, ['Công tác lãnh đạo']).catch(() => {});
+      if (await hienTrong(con, 3_000)) await con.click({ timeout: 10_000 }).catch(() => {});
+      await choHetSpin(page);
+    }
+    // Menu đổi dạng hoặc submenu đóng mở không ổn định → vào thẳng bằng đường dẫn.
+    // Route thật khai trong qla-webapp/src/app.tsx là '/lanh-dao/phe-duyet-de-xuat' (KHÔNG có
+    // '/danh-sach' — đường dẫn cũ trả về trang trắng, gây lỗi "Không mở được màn" ở B20 ngày 29/09/2026).
+    for (const duong of ['lanh-dao/phe-duyet-de-xuat', 'lanh-dao/phe-duyet-de-xuat/danh-sach']) {
+      if (await hienTrong(tabCho, 3_000)) break;
+      await page.goto(duong);
+      await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => {});
+      await choHetSpin(page);
+    }
+    await expect(tabCho, 'Không mở được màn "Phê duyệt đề xuất"').toBeVisible({ timeout: 60_000 });
+    await tabCho.click();
+    await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
   }
 
   /**
@@ -186,6 +206,49 @@ export class PheDuyetPage {
       });
       return false;
     }
+  }
+
+  /**
+   * Mở đề xuất ĐÚNG VỤ khi không có id trong sổ cái: mọi vụ đều có đề xuất cùng tên loại văn bản nên
+   * dòng đầu tiên thường là của vụ khác. Duyệt lần lượt các dòng khớp loại, mở ra và đối chiếu dấu
+   * hiệu vụ (số bản án, tên đương sự); sai thì quay lại danh sách và thử dòng kế.
+   *
+   * Trả về true khi đã mở đúng vụ ở tab "Chờ duyệt"; false khi đề xuất của vụ này đã duyệt xong từ
+   * lần chạy trước (tìm thấy ở tab "Đã duyệt"); ném lỗi khi không thấy ở cả hai tab.
+   */
+  async moChiTietDungVu(loai: string | RegExp, dauHieu: string[], tuLuc: Date, toiDa = 6): Promise<boolean> {
+    const { page } = this;
+    const can = dauHieu.filter(Boolean);
+    const ten = loai instanceof RegExp ? loai.source : loai;
+    const dongKhop = () => page.locator('.ant-table-row').filter({ hasText: loai });
+
+    await this.mo();
+    await this.datBoLoc(typeof loai === 'string' ? loai : undefined, '');
+    const tong = Math.min(await dongKhop().count(), toiDa);
+    for (let i = 0; i < tong; i++) {
+      const t = docThoiGian(await dongKhop().nth(i).innerText().catch(() => ''));
+      if (t && t.getTime() < tuLuc.getTime() - 60_000) continue; // đề xuất cũ, không phải lượt này
+      await this.moChiTiet(dongKhop().nth(i));
+      try {
+        await this.xacNhanDungVu(can);
+        return true;
+      } catch {
+        await this.mo();
+        await this.datBoLoc(typeof loai === 'string' ? loai : undefined, '');
+      }
+    }
+    // Không còn ở "Chờ duyệt" → có thể đã duyệt xong từ lần chạy trước
+    await this.mo();
+    await page.getByRole('tab', { name: /^Đã duyệt/ }).click();
+    await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
+    await nghi(page, 1000, 1500);
+    if (can.length) {
+      const daDuyet = dongKhop().filter({ hasText: new RegExp(can.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')) });
+      if (await daDuyet.count()) return false;
+    }
+    throw new Error(
+      `Không thấy đề xuất "${ten}" của vụ này (dấu hiệu: ${can.join(' / ') || '-'}) ở cả "Chờ duyệt" lẫn "Đã duyệt"`,
+    );
   }
 
   /**
@@ -287,7 +350,19 @@ export class PheDuyetPage {
       .locator('.ant-card, .ant-pro-card, .ant-collapse-item')
       .filter({ hasText: /Tờ trình và dự thảo kèm theo/ })
       .last();
-    await expect(khoi, 'Không thấy khối "Tờ trình và dự thảo kèm theo"').toBeVisible({ timeout: 30_000 });
+    if (!(await hienTrong(khoi, 30_000))) {
+      // Dự thảo đã được duyệt ở lượt chạy trước → trang mở ra không còn khối tick + nút Duyệt.
+      // Chỉ coi là xong khi trang thật sự hiện trạng thái đã duyệt/đã ký, để không nuốt lỗi thật.
+      const chu = (await page.locator('body').innerText().catch(() => '')).replace(/\s+/g, ' ');
+      if (/(Đã duyệt|Đã ký|Đã ban hành)/i.test(chu)) {
+        console.log('    · Dự thảo kèm theo đã ở trạng thái đã duyệt/đã ký → bỏ qua thao tác Duyệt');
+        return;
+      }
+      throw new Error(
+        'Không thấy khối "Tờ trình và dự thảo kèm theo" và trang cũng không hiện trạng thái đã duyệt. ' +
+          `Chữ trên trang: ${chu.slice(0, 200)}`,
+      );
+    }
     const oTick = khoi.locator('.ant-checkbox-input');
     const n = await oTick.count();
     expect(n, 'Không thấy ô tick dự thảo nào trong khối kèm theo').toBeGreaterThan(0);

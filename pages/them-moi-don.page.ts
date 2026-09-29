@@ -1,6 +1,6 @@
 import { Locator, Page, expect } from '@playwright/test';
 import path from 'path';
-import { chonNgay, chonSelect, chonTreeSelect, ghiNhanToast, go, hienTrong, nghi, toast, toastDaHien } from '../common/antd';
+import { choHetSpin, chonNgay, chonSelect, chonTreeSelect, ghiNhanToast, go, hienTrong, nghi, toast, toastDaHien } from '../common/antd';
 import { NguoiGia, ddmmyyyy, nguoiNgauNhien, soBanAn, soNgau, truocNgay } from '../common/du-lieu';
 import { DiaChiDayDu, NguoiDayDu, PhapNhanDayDu, dienFormNguoi, dienNguoiDayDu, dienPhapNhanDayDu } from '../common/form-nguoi';
 import { moMenu } from '../common/menu';
@@ -266,6 +266,67 @@ export class ThemMoiDonPage {
    * Danh sách đơn → bấm "Thêm mới" → màn Thêm mới Đơn đề nghị GĐT/TT.
    * `quaMenu`: mở Danh sách đơn bằng menu trái như người dùng thay vì vào thẳng URL.
    */
+  /**
+   * BƯỚC 0 (nghiệp vụ chốt 29/09/2026): trước khi tạo đơn, tìm ở "Quản lý đơn › Danh sách đơn" xem bản
+   * án này ĐÃ CÓ đơn chưa — lọc theo Số BA/QĐ + Ngày BA/QĐ + Tòa ra BA/QĐ.
+   *
+   * Vì sao: tạo thêm đơn cho bản án đã có đơn thì đơn mới thành ĐƠN PHỤ (DON.IS_DON_CHINH = 0) của
+   * cùng một vụ án, mà các màn GĐT/TT (Nhận đơn và TL vụ án, Phân công TTV…) CHỈ hiện đơn chính — nên
+   * về sau không tìm thấy đơn vừa tạo. Ví dụ trên STG: bản án 3 – 24/09/2026 – TAND TP Hải Phòng có
+   * đơn chính 9870 (về Vụ dân sự D01.107, đã phân công TTV), còn 10234/10185/10146 là đơn phụ nằm ở
+   * D01.106 và D01.108.
+   *
+   * Trả về mã đơn đã có (nếu tìm thấy) để luồng dùng lại thay vì tạo thêm.
+   */
+  async timDonDaCoTheoBanAn(b: { soBanAn: string; ngayBanAn?: string; toaAn?: string }): Promise<string | undefined> {
+    const { page } = this;
+    await moMenu(page, ['Quản lý đơn', 'Danh sách đơn']);
+    await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
+    await choHetSpin(page);
+
+    const oSo = page.getByLabel(/^Số BA\/QĐ$/).first();
+    if (!(await hienTrong(oSo, 10_000))) {
+      console.log('    · Bước 0: màn Danh sách đơn không có ô lọc "Số BA/QĐ" → bỏ qua kiểm tra trùng đơn');
+      return undefined;
+    }
+    await go(oSo, b.soBanAn);
+    if (b.ngayBanAn) {
+      const oNgay = page.getByLabel(/^Ngày BA\/QĐ$/).first();
+      if (await hienTrong(oNgay, 5_000)) {
+        const laKhoang = await oNgay.evaluate(el => !!el.closest('.ant-picker-range')).catch(() => false);
+        await oNgay.click();
+        await oNgay.fill(b.ngayBanAn);
+        await page.keyboard.press('Enter');
+        if (laKhoang) {
+          await nghi(page, 400, 800);
+          await page.keyboard.type(b.ngayBanAn);
+          await page.keyboard.press('Enter');
+        }
+        await page.keyboard.press('Escape');
+      }
+    }
+    if (b.toaAn) {
+      const oToa = page.getByLabel(/^Tòa ra BA\/QĐ$/).first();
+      if (await hienTrong(oToa, 5_000)) await chonSelect(page, oToa, b.toaAn, { goDeLoc: true }).catch(() => undefined);
+    }
+    const nut = page.getByRole('button', { name: /Tìm kiếm$/ }).first();
+    if (await hienTrong(nut, 5_000)) {
+      await nut.click();
+      await choHetSpin(page);
+      await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
+      await nghi(page, 1200, 2000);
+    }
+    const dong = page.locator('.ant-table-row:visible').first();
+    if (!(await hienTrong(dong, 8_000))) return undefined;
+    const chu = (await dong.innerText()).replace(/\s+/g, ' ').trim();
+    const maDon = /Mã đơn:\s*(\d+)/.exec(chu)?.[1];
+    console.log(
+      `    · Bước 0: bản án ${b.soBanAn}${b.ngayBanAn ? ' ngày ' + b.ngayBanAn : ''} ĐÃ CÓ đơn` +
+        `${maDon ? ' (mã ' + maDon + ')' : ''} → tạo thêm sẽ thành đơn phụ. ${chu.slice(0, 160)}`,
+    );
+    return maDon || '(không đọc được mã đơn)';
+  }
+
   async moTuDanhSachDon({ quaMenu = false }: { quaMenu?: boolean } = {}) {
     const { page } = this;
     await ghiNhanToast(page);
@@ -672,7 +733,7 @@ export class ThemMoiDonPage {
 
     const dong = page.locator('.ant-table-row:visible').first();
     if (!(await hienTrong(dong, 5_000))) return null;
-    const chu = (await dong.innerText()).replace(/s+/g, ' ');
+    const chu = (await dong.innerText()).replace(/\s+/g, ' ');
     const maDon = (chu.match(/Mã đơn:s*(S+)/) || [])[1] || '';
     const soThuLy = (chu.match(/Số TL:s*(d+)/) || [])[1] || '';
     return maDon ? { maDon, soThuLy } : null;
