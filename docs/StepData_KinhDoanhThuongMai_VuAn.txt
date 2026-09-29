@@ -2,7 +2,7 @@ LUỒNG VỤ ÁN KINH DOANH, THƯƠNG MẠI: ĐƠN KHỞI KIỆN -> SƠ THẨM -
 
 Đăng nhập và tạo đơn
 
-b1. login vào tài khoản 001072038795 (Tòa án cấp sơ thẩm)
+b1. login vào tài khoản <CCCD:chanhAnDanSu> (Tòa án cấp sơ thẩm)
 b2. vào màn hình Danh sách đơn /qla/quan-ly-don/don-khoi-kien-va-yeu-cau/danh-sach?tab=ALL
 b3. Click "Thêm mới đơn"
 b4. Tại bước "Thông tin đơn" nhập thông tin bắt buộc
@@ -169,7 +169,7 @@ Step8: Chuyển hồ sơ lên phúc thẩm
 ================================================================================================================
 Phúc thẩm vụ án
 
-b1. Mở profile trình duyệt mới, login vào tài khoản Tòa án cấp phúc thẩm (001075009057 : tài khoản của ông Nguyễn Xuân Kỳ)
+b1. Mở profile trình duyệt mới, login vào tài khoản Tòa án cấp phúc thẩm (<CCCD:chanhAnPhucThamHanhChinh> : tài khoản của ông Nguyễn Xuân Kỳ)
 b2. Vào menu "Quản lý phúc thẩm" > "Hồ sơ chuyển đến" - màn hình "Hồ sơ sơ thẩm chuyển đến để xét xử phúc thẩm"
 b3. Chọn tab "Chờ tiếp nhận", tìm theo mã vụ án sơ thẩm
 b4. Tại dòng vụ án click "Tiếp nhận"
