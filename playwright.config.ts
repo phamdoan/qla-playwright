@@ -59,7 +59,7 @@ export default defineConfig({
     {
       name: 'chromium',
       // Luồng "tài khoản mới" dùng session + tài khoản riêng → chạy ở project 'tai-khoan-moi', không chạy ở đây
-      testIgnore: [/-tai-khoan-moi\.spec\.ts$/, /luong-gdt-tt-\d{2}-\d{2}-\d{4}(-[\w-]+)?\.spec\.ts$/, /mau-.*\.spec\.ts$/, /tao-don-khong-ocr-ban-an-excel\.spec\.ts$/, /don-khoi-kien-dan-su(-\d{2}-\d{2}-\d{4})?\.spec\.ts$/, /vu-an-hinh-su-so-tham\.spec\.ts$/, /don-hanh-chinh-so-tham\.spec\.ts$/],
+      testIgnore: [/-tai-khoan-moi\.spec\.ts$/, /luong-gdt-tt-\d{2}-\d{2}-\d{4}(-[\w-]+)?\.spec\.ts$/, /mau-.*\.spec\.ts$/, /tao-don-khong-ocr-ban-an-excel\.spec\.ts$/, /don-khoi-kien-dan-su(-\d{2}-\d{2}-\d{4})?\.spec\.ts$/, /vu-an-hinh-su-so-tham\.spec\.ts$/, /don-hanh-chinh-so-tham\.spec\.ts$/, /kinh-doanh-thuong-mai.*\.spec\.ts$/],
       // viewport sau devices[...] để không bị ghi đè về 1280x720 (màn OCR có panel PDF bên phải, form rất hẹp)
       use: { ...devices['Desktop Chrome'], viewport: { width: 1600, height: 900 }, storageState: AUTH_FILE },
       dependencies: ['setup'],
@@ -70,7 +70,7 @@ export default defineConfig({
     // session riêng để không ảnh hưởng các test cũ
     {
       name: 'tai-khoan-moi',
-      testMatch: [/-tai-khoan-moi\.spec\.ts$/, /luong-gdt-tt-\d{2}-\d{2}-\d{4}(-[\w-]+)?\.spec\.ts$/, /mau-.*\.spec\.ts$/, /tao-don-khong-ocr-ban-an-excel\.spec\.ts$/, /don-khoi-kien-dan-su(-\d{2}-\d{2}-\d{4})?\.spec\.ts$/, /vu-an-hinh-su-so-tham\.spec\.ts$/, /don-hanh-chinh-so-tham\.spec\.ts$/],
+      testMatch: [/-tai-khoan-moi\.spec\.ts$/, /luong-gdt-tt-\d{2}-\d{2}-\d{4}(-[\w-]+)?\.spec\.ts$/, /mau-.*\.spec\.ts$/, /tao-don-khong-ocr-ban-an-excel\.spec\.ts$/, /don-khoi-kien-dan-su(-\d{2}-\d{2}-\d{4})?\.spec\.ts$/, /vu-an-hinh-su-so-tham\.spec\.ts$/, /don-hanh-chinh-so-tham\.spec\.ts$/, /kinh-doanh-thuong-mai.*\.spec\.ts$/],
       use: { ...devices['Desktop Chrome'], viewport: { width: 1600, height: 900 }, storageState: AUTH_FILE_TKM },
       dependencies: ['setup-tai-khoan-moi'],
     },
