@@ -31,7 +31,7 @@ const LOAI_AN_THEO_KY_HIEU: Record<string, string> = { HS: 'Hình sự', DS: 'D�
 const CAP_XET_XU_THEO_KY_HIEU: Record<string, string> = { ST: 'Sơ thẩm', PT: 'Phúc thẩm' };
 
 /**
- * Vụ nhận đơn tương ứng loại án — ĐÚNG như tài liệu "Playwright nhập data GDT-TT-báo cáo thống kê.txt"
+ * Vụ nhận đơn tương ứng loại án — ĐÚNG như tài liệu "docs/stepdata/GDT-TT-bao-cao-thong-ke.txt"
  * Bước 2 mục 6 ghi: Hình sự → Vụ giám đốc kiểm tra về hình sự; Dân sự → Vụ giám đốc kiểm tra về dân sự.
  * Tài liệu KHÔNG nói loại án khác (kinh doanh thương mại, lao động…) chuyển về Vụ nào → không tự suy,
  * chờ nghiệp vụ bổ sung rồi mới thêm dòng vào đây.

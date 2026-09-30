@@ -2,10 +2,11 @@
  * Các bước của "Luồng nhập data.txt" (GĐT/TT) cho MỘT bản án, dùng chung cho các file theo ngày
  * tests/luong-gdt-tt-<dd-mm-yyyy>.spec.ts — file theo ngày chỉ khai bộ dữ liệu rồi gọi dangKyLuongGdtTT.
  *
- * Nguồn nghiệp vụ và bảng đối chiếu bước ↔ code: docs/Playwright nhập data GDT-TT.(docx|txt) và
- * docs/doi-chieu-luong-gdt-tt.md — thêm/sửa bước ở tài liệu thì cập nhật bảng đối chiếu cùng lúc.
+ * Nguồn nghiệp vụ và bảng đối chiếu bước ↔ code: docs/stepdata/GDT-TT-bao-cao-thong-ke.txt và
+ * Bảng đối chiếu tài liệu ↔ code đã chuyển ra backup 30/09/2026 (backup-e2e-20260930/cu-20260930/docs/doi-chieu-luong-gdt-tt.md);
+ * bản đồ bước hiện hành là flows/kinh-doanh-thuong-mai/flow-001-st-pt-gdt-bao-cao/flow.ts (bước 24–43).
  *
- * SỐ BƯỚC KHỚP 100% tài liệu "Playwright nhập data GDT-TT-báo cáo thống kê.txt" (23 bước). Hai bước có
+ * SỐ BƯỚC KHỚP 100% tài liệu "docs/stepdata/GDT-TT-bao-cao-thong-ke.txt" (23 bước). Hai bước có
  * trên hệ thống mà tài liệu thiếu thì mang số phụ: B10b (Giao tiểu hồ sơ) và B13b (Người ký ban hành
  * Quyết định kháng nghị). Bước 23 của tài liệu là đăng nhập lại rồi mở màn Quản lý vụ xét xử — spec làm phần kiểm chứng.
  *
@@ -41,8 +42,8 @@
  *   B23    Vụ trưởng      · Quản lý xét xử GĐT › lọc Số/Ngày BA/QĐ › mở chi tiết tab "Kết quả xét xử"
  *                           (còn TODO: làm gì ở tab đó — chờ nghiệp vụ)
  * B17–B22 đã chạy xác nhận trên STG với VA017 (VA26-004096, 27/09/2026); B17+B18 đạt 22/22 lượt cho
- * 22 vụ. Tài liệu nghiệp vụ: docs/Playwright nhập data GDT-TT.(docx|txt) bản 27/09/2026.
- * Đối chiếu tài liệu ↔ code: docs/doi-chieu-luong-gdt-tt.md.
+ * 22 vụ. Tài liệu nghiệp vụ: docs/stepdata/GDT-TT-bao-cao-thong-ke.txt (bản 29/09/2026, đã che CCCD).
+ * Đối chiếu tài liệu ↔ code: docs/flow-kdtm-gdt-tt.md (bước 24–43).
  *
  * Thứ tự chạy KHÁC thứ tự tài liệu ở một chỗ: B5 (Thông báo phân công) chạy SAU B8–B9, vì chỉ lập được
  * thông báo khi tờ trình đã được Phó Chánh án phê duyệt.

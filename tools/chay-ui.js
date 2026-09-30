@@ -44,7 +44,14 @@ if (lay('so-thu-ly')) env.QLA_TKM_SO_THU_LY = lay('so-thu-ly');
 // Luồng GĐT/TT
 if (lay('ma')) env.QLA_GDT_MA = lay('ma');
 if (lay('so-cai')) env.QLA_SO_CAI_HAU_TO = lay('so-cai');
-if (args.includes('--nhanh')) env.QLA_GO_PHIM_MS = '0';
+// Khung FLOW/CASE/STEP: chọn case chạy qua luồng (cả luồng nằm trong một file spec)
+if (lay('case')) env.QLA_CASE = lay('case');
+if (lay('so-case')) env.QLA_SO_CASE = lay('so-case');
+if (args.includes('--bo-qua-da-xong')) env.QLA_BO_QUA_DA_XONG = '1';
+// --hien: mở trình duyệt thật để thao tác/quan sát (dùng với spec mo-tay có page.pause())
+if (args.includes('--hien')) env.QLA_MO_TAY = '1';
+// Mặc định CHẠY NHANH (gõ tức thì, thời gian nghỉ x0.3). Cần quan sát thì thêm --cham.
+if (!args.includes('--cham')) env.QLA_GO_PHIM_MS = '0';
 
 /** --buoc=B15..B23 hoặc --buoc=B15,B16,B19 → biểu thức -g khớp tiêu đề test */
 const danhSachBuoc = [
@@ -53,7 +60,11 @@ const danhSachBuoc = [
 ];
 const buoc = lay('buoc');
 let locBuoc = [];
-if (buoc && buoc.includes('..')) {
+/** Mã bước hai chữ số (01, 02…) là khung FLOW/CASE/STEP mới; B1–B23 là luồng GĐT/TT cũ */
+const laBuocSo = /^\d{2}([.,]|$)/.test(buoc || '');
+if (laBuocSo) {
+  /* xử lý ở khối "Khung FLOW/CASE/STEP" bên dưới */
+} else if (buoc && buoc.includes('..')) {
   const [dau, cuoi] = buoc.split('..');
   const i = danhSachBuoc.indexOf(dau);
   const j = danhSachBuoc.indexOf(cuoi);
@@ -63,8 +74,32 @@ if (buoc && buoc.includes('..')) {
   locBuoc = buoc.split(',').map(x => x.trim()).filter(Boolean);
 }
 
+/**
+ * Khung FLOW/CASE/STEP: --buoc=01..05 hoặc --buoc=01,03 (mã bước hai chữ số).
+ *
+ * Cả luồng nằm trong MỘT file spec nên lọc bằng `-g` trên tên test: mỗi test mở đầu bằng mã bước
+ * ("01-tao-don-khoi-kien · …") nên biểu thức "(01|02|03)-" khớp đúng các bước cần chạy.
+ */
+let gBuocSo = '';
+if (laBuocSo) {
+  let ds = [];
+  if (buoc.includes('..')) {
+    const [dau, cuoi] = buoc.split('..').map(Number);
+    for (let i = Math.min(dau, cuoi); i <= Math.max(dau, cuoi); i++) ds.push(String(i).padStart(2, '0'));
+  } else {
+    ds = buoc.split(',').map(x => x.trim().padStart(2, '0')).filter(Boolean);
+  }
+  // Tiền tố "buoc " là bắt buộc: tên flow/case có chứa "01-" nên "(01)-" trần sẽ khớp mọi bước
+  gBuocSo = `buoc (${ds.join('|')})-`;
+  locBuoc = []; // danh sách B1–B23 của luồng cũ không dùng tới
+}
+
 // --kiem-tra: chỉ liệt kê test để xem cấu hình có đúng không, không mở giao diện
-const cheDo = args.includes('--kiem-tra') ? ['--list'] : args.includes('--cli') ? ['--reporter=list,html'] : ['--ui'];
+const cheDo = args.includes('--kiem-tra')
+  ? ['--list']
+  : args.includes('--cli')
+    ? ['--reporter=list,html', ...(args.includes('--hien') ? ['--headed'] : [])]
+    : ['--ui'];
 // --file=<chuỗi>: chỉ nạp spec có tên khớp (vd. --file=24-09-2026 để chạy riêng đợt đó)
 const loc = lay('file');
 // Hai cửa sổ Playwright chạy trong CÙNG một thư mục sẽ xoá test-results của nhau lúc khởi động
@@ -77,8 +112,13 @@ const lenh = [
   ...cheDo,
   '--project=tai-khoan-moi',
   ...thuMucKq,
-  ...(locBuoc.length ? ['-g', JSON.stringify(locBuoc.map(b => b.replace(/-/g, '.')).join('|'))] : []),
-  ...(loc ? [loc] : []),
+  // Bọc nháy: chuỗi có "|" mà không bọc thì cmd.exe hiểu là pipe rồi báo "'02' is not recognized"
+  ...(gBuocSo
+    ? ['-g', JSON.stringify(gBuocSo)]
+    : locBuoc.length
+      ? ['-g', JSON.stringify(locBuoc.map(b => b.replace(/-/g, '.')).join('|'))]
+      : []),
+  ...(loc ? [JSON.stringify(loc)] : []),
 ];
 
 console.log(`Môi trường: ${moiTruong.toUpperCase()} | ghi dữ liệu: ${choPhepGhi ? 'CÓ (tạo đơn thật)' : 'KHÔNG'}`);
@@ -86,9 +126,13 @@ if (env.QLA_TKM_DONG) console.log(`Dòng Excel: ${env.QLA_TKM_DONG}`);
 if (env.QLA_TKM_SO_DONG) console.log(`Số dòng Excel: ${env.QLA_TKM_SO_DONG}`);
 if (loc) console.log(`Chỉ chạy spec khớp: ${loc}`);
 if (env.QLA_GDT_MA) console.log(`Vụ GĐT/TT: ${env.QLA_GDT_MA}`);
+if (env.QLA_CASE) console.log(`Case: ${env.QLA_CASE}`);
+if (env.QLA_SO_CASE) console.log(`Số case đầu: ${env.QLA_SO_CASE}`);
+if (env.QLA_BO_QUA_DA_XONG) console.log('Bỏ qua bước đã xong ở lượt trước: CÓ');
 if (locBuoc.length) console.log(`Bước: ${locBuoc.join(' ')}`);
 if (env.QLA_SO_CAI_HAU_TO) console.log(`Sổ cái hậu tố: ${env.QLA_SO_CAI_HAU_TO}`);
-if (env.QLA_GO_PHIM_MS === '0') console.log('Chế độ nhanh: gõ tức thì, rút thời gian nghỉ');
+console.log(env.QLA_GO_PHIM_MS === '0' ? 'Tốc độ: NHANH (gõ tức thì, nghỉ x0.3)' : 'Tốc độ: chậm (--cham)');
+if (env.QLA_MO_TAY) console.log('Chế độ MỞ TAY: trình duyệt hiện lên, kịch bản dừng lại cho bạn thao tác');
 if (env.QLA_TKM_MA_DON) console.log(`Đơn có sẵn: mã ${env.QLA_TKM_MA_DON}${env.QLA_TKM_SO_THU_LY ? ` – số thụ lý ${env.QLA_TKM_SO_THU_LY}` : ''}`);
 console.log(`→ npx ${lenh.join(' ')}\n`);
 

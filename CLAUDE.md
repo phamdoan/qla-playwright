@@ -6,6 +6,31 @@
 Chi tiết nguyên nhân: `docs/nut-that-playwright-va-cach-go.md`. Bản đồ dữ liệu: `docs/mo-hinh-du-lieu-gdt.md`.
 (Workspace `toa-an` còn có skill `qla-playwright-seed` trỏ về hai file này.)
 
+## R0 — Code mới đi theo khung PHÂN HỆ → FLOW → CASE → STEP
+
+Quy ước cấu trúc: **`docs/cau-truc-flow-case-step.md`**. Flow KDTM→GĐT/TT đã xác minh bằng code FE:
+**`docs/flow-kdtm-gdt-tt.md`** (44 bước, mỗi bước một màn hình) — đọc trước khi thêm spec mới.
+
+* **MỘT LUỒNG = MỘT FILE SPEC** (`tests/<phan-he>/flows/<flow>.spec.ts`). Bước mới → khai vào
+  `flows/<phan-he>/<flow>/flow.ts` rồi thêm một dòng vào `cai-dat.ts`. Case mới → thêm vào `cases.ts`.
+  **Không tạo file spec cho từng bước hay từng case** — dự án có hàng nghìn case.
+* Thân nghiệp vụ ở `flows/**.flow.ts`, dữ liệu gieo ở `data/**/input.ts`, thao tác UI ở `common/`+`pages/`.
+* State ở `state/<phan-he>/<flow>/<case>.<env>.state.json` (không phải `seed-output/`).
+* Chưa cài đặt thì thiếu mã bước trong `cai-dat.ts` → khung đánh `fixme`. **Không viết thân đoán mò
+  để có màu xanh.**
+* **Không hard-code lại dữ liệu bước trước đã sinh**: lấy bằng `can('<khoá>')`. Khai `vao`/`ra`
+  cho mỗi bước trong `flow.ts`, rồi `npm run flow:lineage` — sai lineage là thoát mã 1.
+* **Tài liệu .txt của Tester chỉ là tham khảo nghiệp vụ, không phải nguồn chân lý.** Lệch thì theo
+  hệ thống thật: ưu tiên 1 là code FE `qla-webapp/src` (route, tab, field, API), ưu tiên 2 là chạy
+  thật. Ghi mức `xacMinh` (FE/RUNTIME/TAI-LIEU/UNKNOWN) + bằng chứng vào chính bước đó.
+
+Đặc tả gốc của Tester nằm ở `docs/stepdata/` (đã che CCCD — repo này public); `docs/README.md` nói rõ
+cái gì được vào `docs/`.
+
+`tests/` chỉ còn khung mới + 2 file setup: **mọi spec cũ đã chuyển ra**
+`D:/gtel/backup-e2e-20260930/cu-20260930/tests` (30/09/2026) để không nhầm với flow mới, và đã bỏ
+khỏi `testDir` nên `npx playwright test` không nạp nữa. Cần lại thì xem `README-cu.md` trong đó.
+
 ## R1 — Điều hướng bằng KHÓA, không bằng bộ lọc
 
 Đây là quy tắc quan trọng nhất; vi phạm nó sinh ra 96% số lỗi.

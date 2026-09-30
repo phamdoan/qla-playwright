@@ -5,45 +5,74 @@
  * mại dùng lại, không chép code. Không thêm logic mới ở đây.
  */
 import { Locator, Page, expect } from '@playwright/test';
-import { chonNgay, chonSelect, choHetSpin, go, hienTrong, nghi, nguyenNhanLoi, toastDaHien } from './antd';
+import { chonNgay, chonSelect, chonSelectTheoThuTu, choHetSpin, go, hienTrong, nghi, xacNhanLuu } from './antd';
 import { giaTri } from './cau-hinh-luong';
 import { dienFormNguoi } from './form-nguoi';
 
 export const khungSelectCua = (o: import('@playwright/test').Locator) =>
   o.locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " ant-select ")][1]');
 
-export async function chonDanhMucThongKe(
+/**
+ * Chọn "Quan hệ pháp luật (Thống kê)" bằng TÊN ĐÚNG TRONG DANH MỤC — không dò từ khoá.
+ *
+ * Đối chiếu FE 30/09/2026:
+ *   · ô là `<TreeSelect showSearch treeNodeFilterProp="title">`
+ *     (`QuanLyDon/DonKhoiKienYeuCau/ThemMoi/steps/Step1ThongTinDon/ThongTinTiepNhanSection.tsx:212`)
+ *     → gõ chữ chỉ LỌC THEO TITLE **trên các nút ĐÃ NẠP**, không gọi máy chủ tìm kiếm.
+ *   · cây nạp lười theo `maGoc = tinhMaQhplThongKeGoc(loaiDon, phanLoai)`; với KDTM + Đơn khởi kiện
+ *     thì `maGoc = QHPL_TC_KDTM` và 29 mục con đều là LÁ, nạp hết ngay từ đầu
+ *     (`qla/db-structure/ddl-qhpl.sql`) → gõ đúng tên là ra.
+ *   · `handleSelect` từ chối nút còn cấp con ("Nhóm danh mục này còn cấp con") → phải chọn đúng lá.
+ *
+ * Vì thế dò từ khoá kiểu "thử lần lượt tới khi ra mục" vừa chậm vừa sai: tên trong danh mục ghi
+ * "Mua bán hàng hoá" (hoá) chứ không phải "mua bán hàng hóa" (hóa), và không có mục nào tên
+ * "Tranh chấp hợp đồng mua bán hàng hóa". Lệch một dấu là danh sách rỗng, treo ở đây cả phút.
+ */
+export async function chonQhplThongKe(
   page: import('@playwright/test').Page,
   o: import('@playwright/test').Locator,
-  tuKhoa: string,
-): Promise<{ qhplDaChon: string; soMuc: number }> {
+  ten: string,
+): Promise<string> {
   const khung = khungSelectCua(o);
-  const daChon = async () => (await khung.locator('.ant-select-selection-item').first().innerText().catch(() => '')).trim();
+  const daChon = async () =>
+    (await khung.locator('.ant-select-selection-item').first().innerText().catch(() => '')).trim();
+  const thoat = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
   for (let lan = 0; lan < 3; lan++) {
-    await khung.click();
-    await o.fill(tuKhoa);
-    await nghi(page, 1500, 2500);
+    if ((await daChon()) === ten) return ten;
 
-    const idList = (await o.getAttribute('aria-controls')) || '';
-    const soMuc = await page.evaluate(id => {
-      const list = id ? document.getElementById(id) : null;
-      const hop = (list && list.closest('.ant-select-dropdown')) || document;
-      return hop.querySelectorAll('.ant-select-item-option').length;
-    }, idList);
-    if (!soMuc) {
-      await page.keyboard.press('Escape');
+    await khung.click();
+    await o.fill(ten);
+    await nghi(page, 600, 1000);
+
+    const muc = page
+      .locator('.ant-select-dropdown:visible .ant-select-tree-title')
+      .filter({ hasText: new RegExp(`^${thoat(ten)}$`) })
+      .first();
+
+    if (await hienTrong(muc, 8_000)) {
+      await muc.click();
+      await nghi(page, 500, 900);
+      if ((await daChon()) === ten) return ten;
       continue;
     }
 
-    // Lấy mục đầu tiên trong danh sách đã lọc (chọn bất kỳ, không random để khỏi chập chờn)
-    await o.press('Enter');
-    await nghi(page, 800, 1200);
-
-    const ten = await daChon();
-    if (ten) return { qhplDaChon: ten, soMuc };
+    // Không thấy: liệt kê đúng những gì danh mục đang có để sửa dữ liệu gieo, không dò mò tiếp
+    const dsHien = await page
+      .locator('.ant-select-dropdown:visible .ant-select-tree-title')
+      .allInnerTexts()
+      .catch(() => [] as string[]);
+    await page.keyboard.press('Escape');
+    if (lan === 2) {
+      throw new Error(
+        `Danh mục "Quan hệ pháp luật (Thống kê)" không có mục tên đúng "${ten}". ` +
+          `Đang hiện: ${dsHien.length ? dsHien.slice(0, 10).join(' | ') : '(rỗng)'}. ` +
+          `Tra tên đúng trong qla/db-structure/ddl-qhpl.sql theo mã gốc của loại đơn ` +
+          `(KDTM + Đơn khởi kiện → QHPL_TC_KDTM).`,
+      );
+    }
   }
-  throw new Error(`Không chọn được "Quan hệ pháp luật (Thống kê)" với từ khoá "${tuKhoa}"`);
+  throw new Error(`Không chọn được "Quan hệ pháp luật (Thống kê)" = "${ten}"`);
 }
 
 async function chonTuCachThamGia(
@@ -85,6 +114,8 @@ export async function themNguoiThamGia(
   tuCach: string,
   nguoi: import('../common/du-lieu-dan-su').NguoiDanSu,
   nutKetThuc: 'Lưu & Thêm mới' | 'Lưu',
+  /** Ghi sổ cái — không bắt buộc, chỉ để nói rõ đã chọn tỉnh/phường nào */
+  ghi?: (khoa: string, giaTri: string) => void,
 ) {
   // "Lưu & Thêm mới" giữ nguyên drawer và tự xoá trắng form → người thứ hai trở đi không bấm lại
   // nút "Thêm người tham gia" (nút nằm dưới lớp phủ của drawer, bấm sẽ bị chặn).
@@ -116,15 +147,53 @@ export async function themNguoiThamGia(
   await expect(oChuaXacDinh, 'Không tick được "Chưa xác định" của Số định danh cá nhân').toBeChecked({ timeout: 10_000 });
   await nghi(page, 500, 900);
 
-  // Thông tin địa chỉ: Excel không có địa chỉ → tick "Không có thông tin" cho mọi dòng địa chỉ.
-  // Panel đã mở sẵn, không bấm tiêu đề panel.
+  // ───────── Thông tin địa chỉ ─────────
+  // Đối chiếu FE 30/09/2026 (`components/FormDuongSu/sections/ThongTinDiaChiSection.tsx`, QLN-12466):
+  //   · Nhóm KHỞI KIỆN bắt buộc "Nơi thường trú" (LoaiDiaChi.NOI_DANG_KI_HKTT = 2) và
+  //     "Nơi ở hiện tại" (NOI_O_HIEN_TAI = 4).
+  //   · Nhóm BỊ KIỆN bắt buộc "Nơi ở hiện tại"; trên ĐƠN còn bắt buộc cả "Nơi thường trú"
+  //     (`TableDuongSu/index.tsx:1249` truyền batBuocThuongTruNhomBiKien={nguonDuLieu === 'don'}).
+  //   · Dòng bắt buộc thì FE ẨN ô "Không có thông tin" và effect còn TỰ BỎ TICK nếu đã tick
+  //     → cách cũ (tick hết "Không có thông tin") không bao giờ qua được, form báo
+  //     "Vui lòng nhập nơi thường trú" rồi treo ở bước chờ toast.
+  //   · Chỉ ô "Địa chỉ chi tiết" (soNha) có rule required; Phường/Xã, Quận/Huyện, Tỉnh/TP, Quốc gia
+  //     KHÔNG bắt buộc → chỉ cần gõ text, không phải mở dropdown địa giới (nhanh và tất định).
+  const diaChi = (nguoi as { diaChi?: string }).diaChi || 'Số 1, đường Trần Phú';
+  for (const loai of [2, 4]) {
+    const o = form.locator(`#diaChi_${loai}_soNha`);
+    if (!(await hienTrong(o, 5_000))) continue;
+    await go(o, diaChi);
+
+    /**
+     * ĐÍNH CHÍNH 30/09/2026: ghi chú ở trên nói Tỉnh/TP và Phường/Xã KHÔNG bắt buộc — nay form
+     * chặn lưu bằng "Vui lòng chọn Tỉnh/Thành phố | Vui lòng chọn Phường/xã" (chỉ hai cấp, không
+     * còn Quận/Huyện). Điền lần lượt MỌI ô chọn của chính dòng địa chỉ đó theo thứ tự DOM —
+     * tỉnh trước, phường sau — vì danh mục phường nạp theo tỉnh vừa chọn.
+     */
+    const cb = form.locator(`[role="combobox"][id^="diaChi_${loai}_"]`);
+    const soCb = await cb.count();
+    for (let i = 0; i < soCb; i++) {
+      const oChon = cb.nth(i);
+      const id = await oChon.getAttribute('id');
+      if (!id) continue;
+      const khung = form.locator('.ant-select').filter({ has: page.locator(`#${id}`) }).first();
+      if (await khung.locator('.ant-select-selection-item').count()) continue; // đã có giá trị
+      const gt = await chonSelectTheoThuTu(page, oChon, 0).catch(() => '');
+      if (gt) ghi?.(`địa chỉ ${loai}`, `${id} = ${gt}`);
+      await choHetSpin(page);
+    }
+  }
+  // Dòng KHÔNG bắt buộc (tạm trú, địa chỉ liên lạc) vẫn còn ô "Không có thông tin" → tick cho gọn
   const oKhongCo = form.locator('input[type="checkbox"][id^="khongCoDiaChiTheoLoai"]');
-  await expect(oKhongCo.first(), 'Không thấy ô "Không có thông tin" của địa chỉ').toBeVisible({ timeout: 30_000 });
   const soO = await oKhongCo.count();
-  for (let i = 0; i < soO; i++) await oKhongCo.nth(i).check({ force: true });
+  for (let i = 0; i < soO; i++) await oKhongCo.nth(i).check({ force: true }).catch(() => {});
   await nghi(page, 600, 1000);
 
   await form.getByRole('button', { name: nutKetThuc === 'Lưu' ? /^Lưu$/ : /^Lưu & Thêm mới$/ }).last().click();
-  await toastDaHien(page, /Đã lưu đương sự|thành công/i, 60_000, /Không thể lưu|Vui lòng|thất bại/i);
+
+  // Hỏng nhanh, nói rõ lý do: xem `xacNhanLuu` ở common/antd.ts
+  await xacNhanLuu(page, form, /Đã lưu đương sự|thành công/i, {
+    viec: `lưu đương sự "${nguoi.hoTen}"`,
+  });
   await nghi(page, 1200, 2000);
 }

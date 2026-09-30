@@ -1960,7 +1960,7 @@ export class GdtPage {
       const tt = (await vuKhac.allInnerTexts()).map(t => t.replace(/\s+/g, ' ').slice(0, 80));
       throw new Error(
         `Lịch vừa chọn đã có danh sách vụ xét xử (${tt.join(' | ') || 'có nút Xem biểu mẫu'}) — Lưu sẽ ghi đè danh sách đó. ` +
-          `MỖI VỤ CẦN MỘT LỊCH XÉT XỬ RIÊNG (xem docs/Playwright nhập data GDT-TT: ghi chú sau Bước 15). ` +
+          `MỖI VỤ CẦN MỘT LỊCH XÉT XỬ RIÊNG (xem docs/stepdata/GDT-TT-bao-cao-thong-ke.txt: ghi chú sau BƯỚC 15). ` +
           `Hãy tạo thêm lịch xét xử GĐT/TT rồi chạy lại cho vụ ${soBanAn}.`,
       );
     }

@@ -1,0 +1,80 @@
+Đăng nhập và tạo đơn
+
+b1. login vào tài khoản <CCCD:chua-khai-trong-config>
+Đọc file Data Test Kinh doanh thương mại : "Data Test KDTM _ Sơ Thẩm - Phúc Thẩm - GĐT_TT.xlsx" và sheet: "Sơ thẩm 4E"
+b2. vào màn hình Danh sách đơn /qla/quan-ly-don/don-khoi-kien-va-yeu-cau/danh-sach?tab=ALL
+b3. Click "Thêm mới đơn"
+b4. Nhập thông tin bắt buộc
+	1. Hình thức nhận đơn
+	2. Ngày làm đơn
+	3. Ngày nhận đơn
+	4. Số tiếp nhận
+	5. Người nhận đơn
+	6. Người nhận đơn Nguyễn Mậu Trường
+        7. Loại đơn chọn "Phục hồi"
+	8. Quan hệ pháp luật (Thống kê) chon random
+b5. Click button "Tiếp theo"
+b6. Tại màn hình "Thêm mới đơn khởi kiện và yêu cầu". "Đương sự"
+	6.1. Click button "Thêm người tham gia", chọn "Tư cách tham gia tố tụng" là "Người yêu cầu". nhập các thông tin bắt buộc
+		- Đặc điểm của "Đặc điểm của người, cơ quan nộp đơn yêu cầu áp dụng thủ tục PS/PH" - Chọn "Người lao động"
+		- Họ và tên - Random
+		- Giới tính - Random
+		- Ngày sinh - Random ( định dạng dd:mm:yyyy hoặc yyyy (năm sinh trong khoảng 1960 - 2016))
+		- Tick vào số định danh cá nhân
+	6.2. Tại section "Thông tin chung" nhập thông tin người dùng
+	6.3. Tại thông tin "Thông tin địa chỉ" chọn "Không có thông tin"
+	6.4. "Số định danh cá nhân" chọn tick
+	6.5 Click "Lưu & Thêm mới", chờ thành công
+	6.6 Tại "Phân loại người tham gia tố tụng" chọn "Doanh nghiệp / Tổ chức".
+		- chọn "Tư cách tham gia tố tụng" là "Doanh nghiệp, HTX bị tuyên bố phá sản/phục hồi"
+		- Tên Doanh nghiệp - Random
+		- Địa chỉ chi tiết - Random
+		- Chọn Quy mô doanh nghiệp - Random
+	6.7 Click "Lưu", chờ thành công
+	6.8 Click "Tiếp theo" 3 lần
+b7. Tại màn hình "Thêm mới đơn khởi kiện và yêu cầu"."Hoàn thành"
+b8 Chọn "Xử lý đơn"
+================================================================================================================
+Xử lý "Chi tiết đơn"
+
+1. Chọn tab "Phân công"
+2. Click "Phân công" chọn "Phân công Thẩm phán giải quyết đơn" hiện thị pop "Quyết định phân công Thẩm phán xem xét đơn khởi kiện (Dành cho Chánh án/Phó Chánh án được phân quyền)"
+	1. Tại cột "Người ký/người phân công" chọn "Dương Văn Hải"
+	2. "Vai trò" chọn "Thẩm phán xử lý đơn"
+	3. "Tên người được phân công" Chọn một người
+	4. Click button "button" arrow-down
+	5. Click "Luu"
+	6. Click button "Lấy số" => ký logic => đóng
+	7. Chọn "Thêm thông báo" Chọn "Thông báo yêu cầu sửa đổi, bổ sung đơn yêu cầu (TBXL002)"
+	8. Chọn Lý do xử lý "Đơn yêu cầu thiếu nội dung theo quy định"
+	9. Chọn "Hạn sửa đổi, bổ sung" = "30/09/2026"
+	10. Chọn "Lưu"
+	11. Chọn "Lấy số"
+	12. Chọn "Ký logic"
+ 	13. Chọn "Đóng"
+	14. Chọn "Xác nhận chế độ thủ tục"
+	15. Chọn "Thêm thông báo" - Chọn "Thông báo lệ phí"
+	16. Chọn "Người yêu cầu phải nộp" - Random
+	17. Nhập số tiền - Nhập số Random
+	18. Chọn "Cơ quan thi hành án thu tiền" - Random
+	19. Chọn "Lưu" -> "Lấy số" -> "Ký logic"
+	20. Chọn "Xác nhận đã nộp phí"
+	21. Tại pop up hiển thị lên nhập "Số biên lai" - nhập số Random
+	22. Chọn file có đuôi .png, .jpg, .pdf, ... => Chọn "Xác minh biên lai"
+	23. Chọn "Thụ lý việc"
+	24. Sau khi "Thụ lý việc" thành công sẽ hiển thị mã ngay tại vụ trí ấn thụ lý hãy chọn thêm 1 lần nữa để hiển thị Màn hình "Chi tiết vụ việc"
+	
+Step3: Chuyển sang tab "Phân công"
+  3.1. Click "Phân công"
+  3.2. Click "Quyết định phân công Thẩm phán giải quyết vụ việc"
+  3.3. Chọn "Ngày quyết định" - Random
+  3.4. Nhập "Số quyết định" = "Số thụ lý"
+  3.5. Chọn "Ký logic"
+
+Step4: Chuyển sang tab "Thụ lý"
+  3.1. Click "Thụ lý"
+  3.2. Chọn "Ngày thụ lý" - Random
+  3.3. Chọn "Người ký" = Dương Văn Hải
+  3.4. Nhập "Trường hợp người yêu cầu" - Random
+  3.5. Chọn "Căn cứ vào" - Random
+  3.6. Chọn "Nơi nhận" - Random => Chọn "Ký logic"

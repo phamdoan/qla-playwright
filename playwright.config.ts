@@ -58,21 +58,25 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      // Luồng "tài khoản mới" dùng session + tài khoản riêng → chạy ở project 'tai-khoan-moi', không chạy ở đây
-      testIgnore: [/-tai-khoan-moi\.spec\.ts$/, /luong-gdt-tt-\d{2}-\d{2}-\d{4}(-[\w-]+)?\.spec\.ts$/, /mau-.*\.spec\.ts$/, /tao-don-khong-ocr-ban-an-excel\.spec\.ts$/, /don-khoi-kien-dan-su(-\d{2}-\d{2}-\d{4})?\.spec\.ts$/, /vu-an-hinh-su-so-tham\.spec\.ts$/, /don-hanh-chinh-so-tham\.spec\.ts$/, /kinh-doanh-thuong-mai.*\.spec\.ts$/],
+      // Mọi spec cũ đã chuyển ra backup 30/09/2026 (backup-e2e-20260930/cu-20260930/tests) nên
+      // project này hiện KHÔNG còn spec nào — giữ lại làm chỗ cho spec dùng AUTH_FILE mặc định.
+      // Khung FLOW/CASE/STEP chạy ở project 'tai-khoan-moi' (session riêng theo vai).
+      testIgnore: [/kinh-doanh-thuong-mai.*\.spec\.ts$/],
       // viewport sau devices[...] để không bị ghi đè về 1280x720 (màn OCR có panel PDF bên phải, form rất hẹp)
       use: { ...devices['Desktop Chrome'], viewport: { width: 1600, height: 900 }, storageState: AUTH_FILE },
       dependencies: ['setup'],
     },
     // Đăng nhập SSO một lần (QLA_LOGIN_USER), lưu cookie/localStorage vào AUTH_FILE
     { name: 'setup', testMatch: /auth\.setup\.ts/ },
-    // Luồng "Thêm mới đơn theo bản án sơ thẩm" (Luông nhập data.txt): tài khoản QLA_TKM_USER,
-    // session riêng để không ảnh hưởng các test cũ
+    // Khung FLOW/CASE/STEP: mọi bước của flow chạy ở đây. Mỗi bước tự mở phiên đúng vai
+    // (khung/buoc.ts → moTrangVaiCauHinh), storageState dưới đây chỉ là session mặc định.
     {
       name: 'tai-khoan-moi',
-      testMatch: [/-tai-khoan-moi\.spec\.ts$/, /luong-gdt-tt-\d{2}-\d{2}-\d{4}(-[\w-]+)?\.spec\.ts$/, /mau-.*\.spec\.ts$/, /tao-don-khong-ocr-ban-an-excel\.spec\.ts$/, /don-khoi-kien-dan-su(-\d{2}-\d{2}-\d{4})?\.spec\.ts$/, /vu-an-hinh-su-so-tham\.spec\.ts$/, /don-hanh-chinh-so-tham\.spec\.ts$/, /kinh-doanh-thuong-mai.*\.spec\.ts$/],
+      testMatch: [/kinh-doanh-thuong-mai.*\.spec\.ts$/],
       use: { ...devices['Desktop Chrome'], viewport: { width: 1600, height: 900 }, storageState: AUTH_FILE_TKM },
-      dependencies: ['setup-tai-khoan-moi'],
+      // KHÔNG phụ thuộc 'setup-tai-khoan-moi': khung FLOW tự mở phiên theo vai
+      // (khung/luong.ts → moTrangVaiCauHinh, mỗi vai một file auth riêng) nên 4 lần đăng nhập SSO
+      // của project setup là thừa — đo 30/09/2026: 53s mỗi lượt chạy.
     },
     { name: 'setup-tai-khoan-moi', testMatch: /tai-khoan-moi\.setup\.ts/ },
   ],

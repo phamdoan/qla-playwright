@@ -451,14 +451,429 @@ export async function loiForm(khung: Locator): Promise<string[]> {
     .catch(() => [] as string[]);
 }
 
+/**
+ * Chụp nhanh TOÀN BỘ ô của một form: nhãn · giá trị đang hiển thị · lỗi của riêng ô đó.
+ *
+ * Vì sao cần: có ô "hiện mà chưa vào state" — màn hình in ra giá trị nhưng antd Form vẫn báo
+ * "không được để trống" (đo 30/09/2026 ở ô giờ của lịch xét xử). Lúc đó phải thấy được cả form
+ * mới biết lỗi thuộc ô nào, chứ đọc riêng câu lỗi thì hai ô trùng nhãn không phân biệt được.
+ */
+export async function moTaForm(khung: Locator): Promise<string[]> {
+  return khung
+    .locator('.ant-form-item')
+    .evaluateAll(ds =>
+      ds.map(el => {
+        const nhan = el.querySelector('label')?.textContent?.trim() || '(không nhãn)';
+        const chon = [...el.querySelectorAll('.ant-select-selection-item')]
+          .map(x => x.textContent?.trim() || '')
+          .filter(Boolean)
+          .join(', ');
+        const o = [...el.querySelectorAll('input, textarea')]
+          .map(x => (x as HTMLInputElement).value?.trim() || '')
+          .filter(Boolean)
+          .join(' → ');
+        const loi = el.querySelector('.ant-form-item-explain-error')?.textContent?.trim() || '';
+        return `${nhan} = ${chon || o || '(trống)'}${loi ? ` ⚠ ${loi}` : ''}`;
+      }),
+    )
+    .catch(() => [] as string[]);
+}
+
 /** Gộp lỗi validate trên form và toast gần đây thành một câu để đưa vào thông báo lỗi của test. */
-export async function nguyenNhanLoi(page: Page, khung?: Locator): Promise<string> {
+export async function nguyenNhanLoi(page: Page, khung?: Locator, trongMs = 180_000): Promise<string> {
   // Hộp xác nhận đang mở cũng là lý do thao tác dừng lại (vd. "Lịch xét xử đang trùng phòng…")
   const hopHoi = await page
     .locator('.ant-modal-confirm-title')
     .allInnerTexts()
     .then(ds => ds.map(s => `đang chờ xác nhận: ${s.trim()}`).filter(s => s.length > 22))
     .catch(() => [] as string[]);
-  const ds = [...(khung ? await loiForm(khung) : []), ...hopHoi, ...(await toastGanDay(page))];
+  // Cửa sổ đọc toast phải PHỦ HẾT thời gian vừa chờ: chờ 120s mà chỉ đọc 30s gần nhất thì toast
+  // báo lỗi (hiện ngay lúc bấm) đã rơi ra ngoài → lỗi trơ ra "(không đọc được thông báo nào)".
+  const ds = [...(khung ? await loiForm(khung) : []), ...hopHoi, ...(await toastGanDay(page, trongMs))];
   return ds.length ? ds.join(' | ') : '(không đọc được thông báo lỗi nào trên màn hình)';
+}
+
+/**
+ * Xác nhận một thao tác LƯU đã thành công — hỏng nhanh, nói rõ lý do.
+ *
+ * Vì sao cần: chờ mù toast thành công là cái bẫy tốn thời gian nhất của bộ này. Form hỏng validate
+ * thì toast KHÔNG BAO GIỜ đến, Playwright chờ hết `timeout` rồi ném `TimeoutError` trống rỗng —
+ * trong khi antd đã hiện lý do ngay trên form từ giây đầu (`.ant-form-item-explain-error`).
+ * Đo 30/09/2026: bước lưu đương sự treo đúng 60s chỉ vì thiếu ô "Địa chỉ chi tiết".
+ *
+ * Thứ tự kiểm: lỗi validate trên form (ngay) → toast thành công (chờ) → nêu mọi thứ đang hiện.
+ */
+export async function xacNhanLuu(
+  page: Page,
+  khung: Locator,
+  mauThanhCong: string | RegExp,
+  tuyChon: { viec?: string; timeout?: number; mauLoi?: RegExp; choValidateMs?: number } = {},
+) {
+  const {
+    viec = 'lưu',
+    timeout = 30_000,
+    mauLoi = /Không thể|thất bại|Vui lòng|không hợp lệ/i,
+    choValidateMs = 1_200,
+  } = tuyChon;
+
+  // antd gắn thông báo lỗi ngay khi submit hỏng → chờ một nhịp ngắn là đủ, không cần chờ hết timeout
+  await page.waitForTimeout(choValidateMs);
+  const loi = await loiForm(khung);
+  if (loi.length) throw new Error(`Không ${viec} được, form còn lỗi: ${loi.join(' | ')}`);
+
+  try {
+    await toastDaHien(page, mauThanhCong, timeout, mauLoi);
+  } catch (e) {
+    throw new Error(`Không ${viec} được (không thấy báo thành công). Màn hình đang báo: ${await nguyenNhanLoi(page, khung)}`, {
+      cause: e,
+    });
+  }
+}
+
+/**
+ * Chọn một mục trong danh sách theo THỨ TỰ CHỮ CÁI — dùng khi dữ liệu gieo không chỉ đích danh được
+ * (danh mục phụ thuộc đơn vị đăng nhập, mỗi môi trường một bộ).
+ *
+ * Vì sao không "lấy mục đầu danh sách": thứ tự máy chủ trả về KHÔNG ổn định. Đo 30/09/2026 trên STG,
+ * ô "Người nhận đơn" của cùng một tài khoản: lượt 1 ra "Lê Tiến", lượt 2 ra "Ngô Tiến Hùng" → hai
+ * lượt chạy cùng một case sinh dữ liệu khác nhau, không đối chiếu được.
+ * Sắp xếp rồi lấy mục đầu thì chạy bao nhiêu lần cũng ra một giá trị.
+ */
+export async function chonSelectTheoThuTu(
+  page: Page,
+  input: Locator,
+  viTri = 0,
+  /** Bỏ qua các mục đã dùng — danh mục người tiến hành tố tụng KHÔNG tự loại người đã phân công,
+   *  nên lần chọn thứ hai sẽ trúng lại đúng người đó và hệ thống từ chối thêm dòng trùng. */
+  tru: string[] = [],
+): Promise<string> {
+  const khung = khungSelect(page, input);
+  await khung.scrollIntoViewIfNeeded();
+  await khung.click();
+  const dd = await dropdownCua(page, input);
+  await expect(dd).toBeVisible({ timeout: 15_000 });
+  await choDanhSachOnDinh(dd);
+
+  const ds = (await dd.locator('.ant-select-item-option').allInnerTexts())
+    .map(s => s.trim())
+    .filter(Boolean);
+  if (!ds.length) throw new Error('Danh sách rỗng, không chọn được mục nào');
+
+  const conLai = ds.filter(x => !tru.includes(x));
+  if (!conLai.length) {
+    await page.keyboard.press('Escape');
+    throw new Error(`Danh sách chỉ còn các mục đã dùng: ${tru.join(' | ')}`);
+  }
+  const daSap = [...conLai].sort((a, b) => a.localeCompare(b, 'vi'));
+  const nhan = daSap[Math.min(viTri, daSap.length - 1)];
+  await dd.locator('.ant-select-item-option').filter({ hasText: nhan }).first().click();
+  await nghi(page);
+  return nhan;
+}
+
+/**
+ * Ô nhập của một `.ant-form-item` theo NHÃN của nó.
+ *
+ * Vì sao cần: antd Select KHÔNG đặt thuộc tính `placeholder` lên input — chữ mờ là
+ * `<span class="ant-select-selection-placeholder">`. Nên `getByPlaceholder('Vai trò')` không khớp
+ * dù nhìn trên màn thấy đúng chữ đó (đo 30/09/2026 ở modal 10-VDS). Bám theo `<label>` là cách
+ * ổn định cho cả Select, DatePicker và Input.
+ */
+export function oTheoNhan(page: Page, khung: Locator, nhan: string | RegExp): Locator {
+  return khung
+    .locator('.ant-form-item')
+    .filter({ has: page.locator('label').filter({ hasText: nhan }) })
+    .first()
+    .locator('input, textarea, [role="combobox"]')
+    .first();
+}
+
+/**
+ * Ô antd Select theo CHỮ GỢI Ý của nó (placeholder hiển thị bằng span, không phải thuộc tính).
+ * Dùng khi trong một khối có nhiều select và nhãn không nằm trong `.ant-form-item`
+ * (đo 30/09/2026: tab Kết quả sơ thẩm — lấy `.ant-select-selection-item` cuối khối thì trúng
+ * select "Bộ luật" chứ không phải "Người ký").
+ */
+export function oSelectTheoGoiY(khung: Locator, goiY: string | RegExp): Locator {
+  return khung.locator('.ant-select').filter({ hasText: goiY }).locator('[role="combobox"]').first();
+}
+
+/**
+ * Chọn một mục của antd Select bằng VAI TRÒ ARIA — bám đúng thứ màn hình phơi ra, không đoán CSS.
+ *
+ * `getByRole('combobox', { name })` dùng tên trợ năng thật (vd. "* Người ký" — CÓ dấu sao của ô bắt
+ * buộc), rồi `getByRole('option')` lấy danh sách đang mở. Cách này không phụ thuộc cấu trúc
+ * `.ant-select-dropdown`/`aria-controls` vốn hay đổi theo phiên bản và từng render trượt ở
+ * tab Kết quả sơ thẩm (đo 30/09/2026: dropdown mở, `[expanded] [active]`, mà click mục vẫn hết giờ).
+ *
+ * Vẫn TẤT ĐỊNH: sắp theo chữ cái rồi lấy mục đầu chưa dùng.
+ */
+export async function chonComboboxTheoTen(
+  page: Page,
+  ten: string | RegExp,
+  tru: string[] = [],
+): Promise<string> {
+  const o = page.getByRole('combobox', { name: ten }).first();
+  await expect(o, `Không thấy ô chọn "${ten}"`).toBeVisible({ timeout: 30_000 });
+  await o.scrollIntoViewIfNeeded();
+
+  // TÌM ô bằng vai trò ARIA (tên trợ năng ổn định), nhưng ĐỌC danh sách bằng CSS của lớp dropdown
+  // đang mở: antd gắn aria-hidden cho lớp đó trong lúc animate nên `getByRole('option')` không thấy
+  // mục nào (đo 30/09/2026 ở ô "* Người ký": dropdown mở, combobox [expanded], mà role=option rỗng).
+  const muc = page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option');
+  for (let lan = 0; lan < 3 && !(await muc.count()); lan++) {
+    // force: thanh tiêu đề dính (sticky) của màn chi tiết che mép trên ô sau khi cuộn → click
+    // thường bị "intercepts pointer events" rồi chờ hết 30s (đo 30/09/2026 ở ô "* Người ký").
+    await o.click({ force: true, timeout: 10_000 }).catch(() => {});
+    await nghi(page, 400, 700);
+  }
+  await expect(muc.first(), `Bấm ô "${ten}" nhưng danh sách không mở`).toBeVisible({ timeout: 15_000 });
+
+  const ds = (await muc.allInnerTexts()).map(s => s.replace(/\s+/g, ' ').trim()).filter(Boolean);
+  const conLai = ds.filter(x => !tru.includes(x));
+  if (!conLai.length) throw new Error(`Ô "${ten}" chỉ còn các mục đã dùng: ${tru.join(' | ')}`);
+
+  const chon = [...conLai].sort((a, b) => a.localeCompare(b, 'vi'))[0];
+
+  // CHỌN BẰNG BÀN PHÍM, không click: ở ô "* Người ký" của tab Kết quả sơ thẩm, click vào mục bị
+  // chặn kể cả `force` (đo 30/09/2026 — hết 15s). antd Select luôn sáng mục đầu khi mở, nên
+  // ArrowDown đúng `viTri` lần rồi Enter là chọn được, và vẫn TẤT ĐỊNH vì `viTri` tính từ danh sách.
+  const viTri = ds.indexOf(chon);
+  for (let i = 0; i < viTri; i++) await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await nghi(page);
+
+  // Kiểm chứng đã ăn: ô hết chữ gợi ý và có một giá trị được chọn.
+  // (Không so khớp chuỗi: nhãn trong danh sách dài hơn nhãn hiển thị lại trong ô — danh sách ghi
+  //  "Điều Văn Hằng - 10/12/1970 Thẩm phán", ô chỉ hiện "Điều Văn Hằng".)
+  const khungO = page.locator('.ant-select').filter({ has: page.getByRole('combobox', { name: ten }) }).first();
+  await expect(
+    khungO.locator('.ant-select-selection-item'),
+    `Chọn "${chon}" ở ô "${ten}" nhưng giá trị không vào ô`,
+  ).toHaveCount(1, { timeout: 15_000 });
+  return chon;
+}
+
+/**
+ * Điền một ô theo NHÃN, giá trị lấy từ DỮ LIỆU GIEO.
+ *
+ * Vì sao: để code tự "chọn mục đầu" thì mỗi môi trường ra một giá trị khác, và khi locator trượt
+ * thì kẹt không biết điền gì. Khai sẵn trong `input.ts` thì biết rõ phải điền gì, sai thì thông báo
+ * liệt kê đúng những mục đang có.
+ *
+ * Bấm vào `.ant-select-selector` (vùng bấm thật của antd) chứ không bấm input bên trong: input bị
+ * phủ nên `scrollIntoViewIfNeeded` treo 30s (đo 30/09/2026 ở ô "Lý do/căn cứ cụ thể" của 32DS).
+ */
+export async function dienOTheoNhan(
+  page: Page,
+  khung: Locator,
+  nhan: string | RegExp,
+  giaTri?: string,
+  /** Ghi đè cả khi ô ĐÃ CÓ giá trị — cần cho các ô "Người ký ban hành" được nạp sẵn */
+  ghiDe = false,
+): Promise<string> {
+  // Nhãn có thể là <label> (ô bắt buộc) hoặc chỉ là text thường (ô không bắt buộc) → thử cả hai
+  const theoLabel = khung
+    .locator('.ant-form-item')
+    .filter({ has: page.locator('label').filter({ hasText: nhan }) })
+    .first();
+  const oForm = (await theoLabel.count())
+    ? theoLabel
+    : khung.locator('.ant-form-item').filter({ hasText: nhan }).last();
+  await expect(oForm, `Không thấy ô "${nhan}"`).toBeVisible({ timeout: 30_000 });
+
+  // Nhánh DANH SÁCH CHECKBOX: "Lý do/căn cứ cụ thể" của 32DS là các checkbox chứ không phải Select
+  // (đo 30/09/2026 trên cây trợ năng) — đọc được chữ trong dropdown không có nghĩa là đã tick.
+  const ds0 = oForm.locator('input[type="checkbox"]');
+  if (await ds0.count()) {
+    const nhanO = oForm.locator('.ant-checkbox-wrapper');
+    const ten = (await nhanO.allInnerTexts()).map(s => s.replace(/\s+/g, ' ').trim());
+    const i = giaTri ? ten.findIndex(x => x.toLowerCase().includes(giaTri.toLowerCase())) : 0;
+    if (i < 0) throw new Error(`Ô "${nhan}" không có lựa chọn khớp "${giaTri}". Đang có: ${ten.join(' | ')}`);
+    if (!(await ds0.nth(i).isChecked())) await nhanO.nth(i).click({ force: true });
+    await expect(ds0.nth(i), `Tick "${ten[i]}" không ăn`).toBeChecked({ timeout: 10_000 });
+    return ten[i];
+  }
+
+  const select = oForm.locator('.ant-select-selector').first();
+  if (await select.count()) {
+    /**
+     * Ô đã có giá trị thì mặc định GIỮ NGUYÊN — trừ khi gọi với `ghiDe`.
+     *
+     * Vì sao cần `ghiDe`: các ô "Người ký ban hành" luôn được nạp sẵn một người (thường là Phó
+     * Chánh án). Giữ nguyên thì văn bản chỉ "Chờ ký" chứ không ban hành, và bước sau tắc mà không
+     * nói vì sao — đúng chuyện đã xảy ra với 62-DS (chặn bước 15) và 65-DS (đo 01/10/2026).
+     */
+    const dangCo = (await oForm.locator('.ant-select-selection-item').first().innerText().catch(() => '')).trim();
+    /**
+     * `ghiDe` chỉ có nghĩa khi giá trị đang khác thứ mình muốn. Ghi đè vô điều kiện thì mở lại
+     * dropdown của một ô VỐN ĐÃ ĐÚNG và có thể chọn trượt sang người khác — đo 01/10/2026 ở
+     * 84-DS: ô "Người ký/người phân công" sẵn là "Nguyễn Xuân Kỳ", ghi đè xong hoá "Vũ Minh Tuấn"
+     * và quyết định treo "Chờ ký".
+     */
+    const daDung = !!dangCo && !!giaTri && dangCo.toLowerCase().includes(giaTri.toLowerCase());
+    if (dangCo && (!ghiDe || daDung)) return dangCo;
+    // `force` bỏ qua kiểm tra che chắn nhưng KHÔNG tự cuộn: ô nằm dưới màn hình vẫn báo
+    // "Element is outside of the viewport" (đo 30/09/2026 ở form kháng cáo, ô "Tên người kháng cáo").
+    await select.scrollIntoViewIfNeeded().catch(() => {});
+    await select.click({ force: true });
+    /**
+     * ĐỌC DANH SÁCH NEO THEO CHÍNH Ô ĐÓ, không lấy "dropdown nào đang mở".
+     *
+     * rc-select gắn `aria-controls`/`aria-owns` của combobox trỏ tới đúng listbox của nó. Lấy
+     * chung chung thì khi dropdown của ô TRƯỚC còn mở, ô này đọc trúng danh sách cũ và cả form
+     * lệch đi một nấc — đo 30/09/2026 ở form kháng cáo: "Loại người kháng cáo" báo danh mục đang
+     * có "297 — ngày 30/09/2026 — Bản án dân sự sơ thẩm", rồi "Tên người kháng cáo" lại ra
+     * "Nguyên đơn | Bị đơn" (là danh mục của ô trước nữa).
+     */
+    const oCb = oForm.locator('[role="combobox"]').first();
+    const maList =
+      (await oCb.getAttribute('aria-controls').catch(() => null)) ||
+      (await oCb.getAttribute('aria-owns').catch(() => null));
+    const muc = maList
+      ? page.locator(`#${maList}`).locator('xpath=ancestor::div[contains(@class,"ant-select-dropdown")][1]')
+          .locator('.ant-select-item-option')
+      : page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option');
+    await expect(muc.first(), `Bấm ô "${nhan}" nhưng danh sách không mở`).toBeVisible({ timeout: 15_000 });
+    const ds = (await muc.allInnerTexts()).map(s => s.replace(/\s+/g, ' ').trim()).filter(Boolean);
+
+    const chon = giaTri
+      ? ds.find(x => x.toLowerCase().includes(giaTri.toLowerCase()))
+      : [...ds].sort((a, b) => a.localeCompare(b, 'vi'))[0];
+    if (!chon) {
+      await page.keyboard.press('Escape');
+      throw new Error(`Ô "${nhan}" không có mục khớp "${giaTri}". Đang có: ${ds.join(' | ') || '(rỗng)'}`);
+    }
+    /**
+     * Chọn rồi PHẢI ĐỌC LẠI ô. Đi bằng ArrowDown theo chỉ số của danh sách vừa đọc là không chắc:
+     * antd ảo hoá danh sách nên `allInnerTexts()` chỉ thấy phần đang render, còn ArrowDown chạy
+     * trên danh sách đầy đủ → dừng ở mục khác. Trả về chuỗi mong muốn mà không đối chiếu thì báo
+     * một đằng form nhận một nẻo: khai "Phòng xét xử 102 (PXX102)" mà lịch lưu thành
+     * "Phòng xử lưu động" (đo 30/09/2026 ở ô "Địa điểm xét xử" của lịch xét xử).
+     */
+    const daChon = oForm.locator('.ant-select-selection-item').first();
+    const dangChon = async () => (await daChon.innerText().catch(() => '')).replace(/\s+/g, ' ').trim();
+    const trung = (x: string) =>
+      !!x && (!giaTri || x.toLowerCase().includes(giaTri.toLowerCase()) || chon.toLowerCase().includes(x.toLowerCase()));
+
+    const viTri = ds.indexOf(chon);
+    for (let i = 0; i < viTri; i++) await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    await nghi(page);
+    if (trung(await dangChon())) return dangChon();
+
+    // Không trúng thì bấm THẲNG vào mục có đúng chữ đó.
+    await select.click({ force: true });
+    await muc.first().waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {});
+    await page
+      .locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option')
+      .filter({ hasText: chon })
+      .first()
+      .click({ force: true, timeout: 10_000 })
+      .catch(() => {});
+    await nghi(page);
+
+    const thuc = await dangChon();
+    if (giaTri && !trung(thuc)) {
+      throw new Error(`Ô "${nhan}": chọn "${chon}" nhưng ô đang là "${thuc || '(trống)'}"`);
+    }
+    return thuc || chon;
+  }
+
+  // Không phải Select: ô gõ (input/textarea/DatePicker/TimePicker)
+  const o = oForm.locator('input, textarea').first();
+  if (!(await o.isEditable().catch(() => false))) return '';
+  if (await o.inputValue().catch(() => '')) return (await o.inputValue()).trim();
+  if (giaTri === undefined) return '';
+  await go(o, giaTri);
+
+  /**
+   * PHẢI ĐÓNG PANEL của DatePicker/TimePicker sau khi gõ.
+   *
+   * Gõ xong mà không Enter thì antd giữ panel mở và giá trị CHƯA commit; cú click kế tiếp (vd. nút
+   * "Lưu") chỉ để ĐÓNG PANEL chứ không tới được nút → biểu mẫu không lưu, không toast, không lỗi.
+   * Đo 30/09/2026 với ô "Giờ mở phiên họp" của 32DS: bấm tay thì lưu được và hiện thêm
+   * "Lấy số / Trình ký", còn kịch bản thì im lặng.
+   */
+  const coPanel = await page.locator('.ant-picker-dropdown:not(.ant-picker-dropdown-hidden)').count();
+  if (coPanel) {
+    await o.press('Enter');
+    await expect(
+      page.locator('.ant-picker-dropdown:not(.ant-picker-dropdown-hidden)'),
+      `Gõ "${giaTri}" vào ô "${nhan}" nhưng panel chọn ngày/giờ không đóng`,
+    ).toHaveCount(0, { timeout: 10_000 });
+  }
+  return (await o.inputValue().catch(() => giaTri)).trim() || giaTri;
+}
+
+/**
+ * Điền một CẶP Ô trong cùng `.ant-form-item` — vd. "Ngày xét xử (từ → đến)" hay "Giờ xét xử"
+ * có hai ô bắt đầu/kết thúc.
+ *
+ * Gõ xong PHẢI Enter để đóng panel picker: không Enter thì giá trị chưa commit và panel còn mở sẽ
+ * nuốt cú click kế tiếp (đo 30/09/2026 — chính là thứ làm biểu mẫu 32DS không lưu được).
+ */
+export async function dienCapO(
+  page: Page,
+  khung: Locator,
+  nhan: string | RegExp,
+  giaTri: string[],
+  /**
+   * Ghi đè cả khi ô đã có giá trị. Cần cho "Giờ xét xử": form mở ra đã sẵn `00:00 → 00:00`, giữ
+   * nguyên thì hệ thống báo "Thời gian kết thúc phải lớn hơn thời gian bắt đầu" (đo 30/09/2026).
+   */
+  ghiDe = false,
+): Promise<string[]> {
+  const theoLabel = khung
+    .locator('.ant-form-item')
+    .filter({ has: page.locator('label').filter({ hasText: nhan }) })
+    .first();
+  const oForm = (await theoLabel.count())
+    ? theoLabel
+    : khung.locator('.ant-form-item').filter({ hasText: nhan }).first();
+  if (!(await oForm.count())) return [];
+
+  const o = oForm.locator('input:not([type="checkbox"])');
+  const ra: string[] = [];
+  for (let i = 0; i < Math.min(await o.count(), giaTri.length); i++) {
+    const ô = o.nth(i);
+    if (!(await ô.isEditable().catch(() => false))) continue;
+    if (!ghiDe && (await ô.inputValue().catch(() => ''))) {
+      ra.push((await ô.inputValue()).trim());
+      continue;
+    }
+    // Ô picker KHÔNG nhận `fill` khi đã có giá trị (antd giữ giá trị cũ rồi format lại) → mở ô,
+    // bôi đen, gõ, Enter.
+    await ô.click();
+    await ô.press('ControlOrMeta+a');
+    await ô.pressSequentially(giaTri[i], { delay: 20 });
+    await ô.press('Enter');
+    ra.push((await ô.inputValue().catch(() => giaTri[i])).trim() || giaTri[i]);
+  }
+
+  /**
+   * Chỉ kiểm panel SAU KHI điền hết cả cặp.
+   *
+   * Với RangePicker, Enter ở ô đầu chuyển focus sang ô cuối và GIỮ PANEL MỞ — đó là hành vi đúng,
+   * nên kiểm "panel đã đóng" ngay sau ô thứ nhất là sai và làm bước hỏng oan (đo 30/09/2026 ở
+   * "Giờ xét xử"). Panel còn mở sau khi xong cả cặp thì đóng bằng Escape, vì để mở sẽ nuốt cú
+   * click kế tiếp.
+   */
+  const panel = page.locator('.ant-picker-dropdown:not(.ant-picker-dropdown-hidden)');
+  if (await panel.count()) {
+    // KHÔNG dùng Escape: nó đóng luôn cả modal đang chứa form (đo 30/09/2026 — form "Thêm lịch
+    // xét xử" biến mất, các ô phía dưới và nút "Tạo mới" không còn). Rời ô bằng Tab là đủ.
+    await page.keyboard.press('Tab');
+    if (await panel.count()) await khung.click({ position: { x: 5, y: 5 }, force: true }).catch(() => {});
+    await expect(panel, `Điền xong "${nhan}" nhưng panel chọn ngày/giờ không đóng`).toHaveCount(0, {
+      timeout: 10_000,
+    });
+  }
+
+  // Đọc lại giá trị THẬT của cả cặp: ô thứ hai có thể bị ô thứ nhất ghi đè khi focus tự nhảy
+  const thuc: string[] = [];
+  for (let i = 0; i < Math.min(await o.count(), giaTri.length); i++) {
+    thuc.push((await o.nth(i).inputValue().catch(() => '')).trim());
+  }
+  return thuc.some(Boolean) ? thuc : ra;
 }

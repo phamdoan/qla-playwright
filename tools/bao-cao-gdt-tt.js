@@ -36,7 +36,7 @@ const DUMP =
   ) ||
   '';
 
-/** 23 bước theo tài liệu "Playwright nhập data GDT-TT-báo cáo thống kê.txt" ↔ khoá bước trong sổ cái */
+/** 23 bước theo tài liệu "docs/stepdata/GDT-TT-bao-cao-thong-ke.txt" ↔ khoá bước trong sổ cái */
 const BUOC = [
   ['B1-B2', 'nhapDon'],
   ['B3', 'phanCong'],
