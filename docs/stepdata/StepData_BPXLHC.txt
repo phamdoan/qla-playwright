@@ -1,0 +1,141 @@
+KỊCH BẢN NHẬP LIỆU ĐI LUỒNG — XỬ LÝ HÀNH CHÍNH (áp dụng biện pháp xử lý hành chính tại Tòa án; hệ thống QLTA, qla-webapp)
+Quy ước: (*) = trường bắt buộc. Đăng nhập qua SSO. Cần 2 tài khoản: TAND khu vực (quyền xem hồ sơ/vụ việc XLHC) và TAND cấp tỉnh (quyền khiếu nại hành chính KNHC).
+Mọi biểu mẫu mã XLHCxx/KNHCxx mở ở modal chọn biểu mẫu; phần đầu chung có "Ngày quyết định" (*), "Số quyết định" (điền qua nút Lấy số), "Người ký/người phân công" (XLHC13/14 nhãn là "Thẩm phán ký"). Footer chuẩn: "Lưu" → "Lấy số" → "Ký số"/"Ký logic" (khi người ký là tài khoản đang đăng nhập; nếu không là "Trình ký") → "In biểu mẫu" → "Đóng". Viết tắt: [Lưu → Lấy số → Ký → Đóng].
+Chỉ văn bản ĐÃ KÝ mới làm chuyển trạng thái vụ việc. Trạng thái vụ việc: Chưa thụ lý → Đang xem xét → (Tạm đình chỉ) → Đã giải quyết → Có khiếu nại, kiến nghị, kháng nghị. Vụ "Đã giải quyết"/"Có khiếu nại" khóa toàn bộ sửa dữ liệu.
+Dữ liệu gợi ý để lên báo cáo: Trường giáo dưỡng — người 12–17 tuổi, thời hạn 6–24 tháng (mẫu 7B Mục 1); Cai nghiện bắt buộc — 12–17 tuổi + "Nghiện ma túy = Có" (7B Mục 2) hoặc ≥18 tuổi (7A dòng 3); Cơ sở giáo dục bắt buộc — ≥18 tuổi. Tên người bị đề nghị đặt tiền tố [BCTK-TEST].
+PHẦN A. TIẾP NHẬN HỒ SƠ ĐỀ NGHỊ (tài khoản TAND khu vực)
+Đăng nhập và tạo hồ sơ mới
+b1. login vào tài khoản TAND khu vực
+b2. vào màn hình Tiếp nhận hồ sơ /xu-ly-hanh-chinh/tiep-nhan-ho-so (tab: Tất cả / Chưa nhận / Đã nhận (Chưa thụ lý) / Từ chối / "Cấp tỉnh trả — Giải quyết lại")
+b3. Click "Tạo hồ sơ mới" (nút "Liên thông" bên cạnh chưa có màn) → mở /vu-an/xu-ly-hanh-chinh/tiep-nhan/tao-moi
+b4. Nhập thông tin bắt buộc
+1. Người bị đề nghị (*) — Random họ tên, tiền tố [BCTK-TEST]
+2. Số định danh cá nhân — Random 12 số
+3. Ngày sinh — Random (12–17 tuổi nếu chọn trường giáo dưỡng / cai nghiện cho 7B; ≥18 tuổi với các trường hợp còn lại)
+4. Loại biện pháp đề nghị (*) — chọn "Đưa vào trường giáo dưỡng" / "Đưa vào cơ sở giáo dục bắt buộc" / "Đưa đi cai nghiện bắt buộc"
+5. Thời hạn đề nghị áp dụng — 6..24 (tháng); Nơi chấp hành đề nghị — text
+6. Cơ quan đề nghị (*) — "Công an phường X"; Số văn bản đề nghị (*) — VD 145/ĐN-CAP; Ngày văn bản đề nghị (*); Ngày giao (*) (không chọn ngày tương lai)
+7. Tổng số bút lục (*) — số
+8. BPNC sắp hết hạn — tùy chọn (danh sách biện pháp Điều 122–132 Luật XLVPHC) + "Chọn loại thời gian (BPNC)" + Thời hạn
+9. Hành vi vi phạm / Lý do đề nghị (*) — text
+10. Khối Tài liệu: tải ≥1 tệp (pdf/jpg/png) hoặc "Thêm vật chứng kèm theo" (Tên (*), Loại, Số lượng, Số trang, Ký hiệu / Số seri, Tình trạng, Mô tả) — chặn: "Hồ sơ phải có ít nhất một tài liệu hoặc một tài liệu, chứng cứ khác"
+b5. Click "Lưu" → "Đã tạo hồ sơ <mã>" → tự chuyển sang /vu-an/xu-ly-hanh-chinh/tiep-nhan/chi-tiet/:id, trạng thái "Chưa nhận"
+Xử lý "Chi tiết hồ sơ" tiếp nhận
+Step1: Khối "Đối chiếu đầu mục hồ sơ bắt buộc": với từng đầu mục bấm "Đủ" (hoặc "Thiếu" → nhập "Lý do" → "Lưu"). Còn đầu mục "Chưa đối chiếu" thì nút "Biên bản giao nhận" bị khóa
+Step2 — NHÁNH NHẬN: Click "Biên bản giao nhận" → modal "Biên bản về việc giao, nhận hồ sơ đề nghị áp dụng biện pháp xử lý hành chính" (XLHC02)
+- Ngày bắt đầu (*), Giờ bắt đầu (*), Ngày kết thúc (*), Giờ kết thúc (*), Địa điểm giao nhận (*) (mặc định trụ sở, khóa)
+- Người bị đề nghị (*), Biện pháp bị đề nghị áp dụng (*) (khóa theo hồ sơ)
+- Họ tên bên giao (*) — Random; Chức vụ / chức danh; Cán bộ nhận (*) — chọn; Chức danh bên nhận (*)
+- Hồ sơ đề nghị bao gồm (*) — gợi ý sẵn
+→ Click "Lưu" ("Đã lập biên bản giao nhận, chờ ký") → "In biểu mẫu" → "Đóng". Biên bản hiện ở bảng "Quyết định xử lý"
+Step3: Ký biên bản = tải bản đã ký lên khối "Tài liệu": chọn tệp, Loại tài liệu = "Hồ sơ tiếp nhận - Biên bản giao nhận" → thêm → "Đã ghi nhận biên bản giao nhận đã ký, hồ sơ chuyển sang Đã nhận" → hệ thống sinh vụ việc và chuyển tới /vu-an/xu-ly-hanh-chinh/chi-tiet?id=<idVuViec> (trạng thái "Chưa thụ lý"). Màn này không có nút Lấy số/Ký số
+Step2' — NHÁNH TRẢ LẠI (mẫu 7A/7B cột 4 "chuyển/trả hồ sơ"): Click "Văn bản trả lại" (khóa nếu đã có biên bản) → modal "Văn bản trả lại hồ sơ đề nghị" (XLHC01)
+- Ngày quyết định (*), Số quyết định (*) (tự gợi ý), Người ký (*), Người bị đề nghị (*), Loại biện pháp đề nghị, Ngày trả hồ sơ (*), Cơ quan Công an nhận lại hồ sơ (*)
+- Lý do trả lại (*) — chọn: Thiếu tài liệu theo quy định / Hồ sơ không đúng thẩm quyền của Tòa án / Đối tượng không thuộc trường hợp bị đề nghị / Lý do khác; Tình trạng hồ sơ đề nghị (*)
+→ Click "Ban hành & trả lại" ("Đã lập văn bản trả lại hồ sơ, chờ ký")
+Step3': Tải tệp đã ký, Loại tài liệu = "Hồ sơ tiếp nhận - Văn bản trả lại" → "Đã ghi nhận văn bản trả lại đã ký, hồ sơ chuyển sang Đã trả lại" (trạng thái "Từ chối", chỉ xem)
+PHẦN B. THỤ LÝ VÀ PHÂN CÔNG (màn Vụ việc /xu-ly-hanh-chinh/vu-viec → click dòng → /vu-an/xu-ly-hanh-chinh/chi-tiet?id=…)
+Tab: Thông tin chung / Thụ lý / Phân công / Xem xét giải quyết / Phiên họp XLHC / Kết quả giải quyết / Tài liệu, chứng cứ / Báo cáo
+Step1: Tab "Thụ lý" → Click "Thụ lý" → modal "Cấp số thụ lý đề nghị xem xét, quyết định áp dụng biện pháp xử lý hành chính"
+1.1. Số thụ lý (*) — bấm "Lấy số" → "Đã lấy số … từ sổ cấp số"
+1.2. Ngày thụ lý (*) — mặc định hôm nay (đổi sang ngày trước kỳ khi cần "cũ còn lại")
+1.3. Trường hợp thụ lý (*) — "Thụ lý hồ sơ đề nghị của cơ quan Công an" | "Thụ lý lại do Tòa án cấp trên hủy quyết định để xem xét lại"
+1.4. Checkbox "Vụ việc phức tạp (thời hạn ra quyết định 20 ngày)" — mặc định 10 ngày
+1.5. Các ô chỉ đọc: Loại biện pháp đề nghị, Cơ quan Công an đề nghị, Ngày nhận hồ sơ đề nghị, Số văn bản đề nghị, Ngày văn bản đề nghị, Số bút lục
+1.6. Click "Xác nhận thụ lý" ("Đã ghi nhận thụ lý vụ việc"; trạng thái Chưa thụ lý → Đang xem xét). Sửa: "Sửa thụ lý"
+Step2: Click "Thông báo thụ lý" (XLHC03)
+2.1. Khối nhân thân: Số định danh / CCCD / Căn cước / Hộ chiếu, Ngày cấp, Nơi cấp, Nghề nghiệp, Con ông, Và bà, Nơi cư trú
+2.2. Họ và tên người đề nghị (*), Chức vụ, Cơ quan đề nghị (khóa)
+2.3. Ngày gửi, Phương thức gửi (Giao trực tiếp / Dịch vụ bưu chính / Phương tiện điện tử / Niêm yết công khai / Qua cơ sở đang quản lý người bị đề nghị)
+2.4. [Lưu → Lấy số → Ký → Đóng]. Sau ký nút đổi thành "Xem thông báo thụ lý"
+Step3: Tab "Phân công" → khối "Danh sách quyết định phân công" → Click "Phân công" (XLHC04; khóa "Thụ lý vụ việc trước khi phân công")
+3.1. Vai trò (*) — Thẩm phán → Tên người được phân công → bấm nút mũi tên (↓) để thêm dòng
+3.2. Lặp cho Vai trò — Thư ký (mỗi vai trò 01 người)
+3.3. [Lưu → Lấy số → Ký → Đóng]. Sau ký: tên Thẩm phán/Thư ký ghi vào vụ việc, tình trạng "Đã phân công Thẩm phán"
+3.4. (Đổi người) "Thay đổi phân công" (XLHC05): Quyết định được thay thế (*), Người được thay thế (*), Căn cứ thay đổi (*), Diễn giải căn cứ thay đổi → ký
+Step4: Khối "Thành phần tham gia phiên họp" → Click "Ghi nhận thành phần" → modal "Kiểm sát viên tham gia phiên họp"
+4.1. Họ và tên Kiểm sát viên (*), Viện kiểm sát cùng cấp (*), Số văn bản phân công, Ngày văn bản phân công, Ngày Tòa án nhận được văn bản
+4.2. Click "Lưu" ("Đã ghi nhận Kiểm sát viên do Viện kiểm sát phân công"). BẮT BUỘC trước khi ra quyết định XLHC13/14/15
+PHẦN C. NGƯỜI BỊ ĐỀ NGHỊ VÀ NGƯỜI THAM GIA (tab "Thụ lý" hoặc "Xem xét giải quyết") — dữ liệu nhân thân cho mẫu 7A cột 17–32, 7B cột 14–32
+Step1: Khối "Người bị đề nghị" → nút Chỉnh sửa (icon) → drawer "Người bị đề nghị - <tên>", 4 mục
+1.1. "1. Thông tin người bị đề nghị": Họ và tên (*), Ngày tháng năm sinh (*) (định dạng dd/mm/yyyy — tuổi tính tại ngày quyết định áp dụng), loại giấy tờ (Số định danh cá nhân | Căn cước công dân | Căn cước | Hộ chiếu) + số (*) (hoặc tick "Không có giấy tờ tùy thân"), Tên gọi khác, Giới tính (*) (Nam/Nữ — cột 23/24), Quốc tịch (*), Dân tộc (chọn khác "Kinh" cho cột dân tộc thiểu số), "Cần người phiên dịch", Nơi sinh, Tôn giáo, Nơi cư trú (*), Nghề nghiệp, Trình độ văn hóa (chọn theo nhóm: Mù chữ/Chưa biết chữ · Lớp 1–5 · Lớp 6–9 · Lớp 10–12 — cột 25–28), Đang học tập tại, Số điện thoại liên hệ, Tình trạng sức khỏe, Đặc điểm nhân thân (multi: Trẻ mồ côi cha hoặc mẹ / Bố mẹ ly hôn / Trẻ lang thang / Bỏ học — 7B cột 21–24), Nghiện ma túy (Không | Có → Số giấy xác định tình trạng nghiện, Ngày xác định, Đơn vị xác định, Loại chất ma túy sử dụng — cột 21 / 7B cột 17, bắt buộc Có với cai nghiện bắt buộc)
+1.2. "2. Điều kiện áp dụng biện pháp": Loại biện pháp bị đề nghị áp dụng (chỉ đọc), Tình trạng nơi cư trú (*) (Có nơi cư trú ổn định / Không có nơi cư trú ổn định / Chưa xác định được), Hành vi vi phạm; bảng tiền đề: "Thêm quyết định đã áp dụng" (Số quyết định, Ngày, Cơ quan ra quyết định, Kết quả chấp hành) hoặc "Thêm hành vi vi phạm" (Ngày vi phạm, Số quyết định xử phạt, Hành vi vi phạm, Cơ quan xử phạt)
+1.3. "3. Nhân thân": Tiền án, Tiền sự, Tóm tắt nhân thân; bảng quan hệ (Bố, Mẹ cố định; thêm Người giám hộ / Vợ/Chồng / Con / Anh, chị, em ruột / Ông, bà / Người đại diện hợp pháp khác: Họ tên, Năm sinh, Địa chỉ thường trú, Ghi chú)
+1.4. "4. Người đại diện": chỉ đọc, lấy từ danh sách người tham gia
+1.5. Click "Lưu" ("Đã lưu thông tin người bị đề nghị")
+Step2: Khối "Người tham gia phiên họp" → Click "Thêm mới" → drawer "Thêm mới người tham gia phiên họp"
+2.1. Tư cách tham gia phiên họp (*) — Người bị đề nghị / Người đại diện hợp pháp của người bị đề nghị / Cha, mẹ hoặc người giám hộ của người bị đề nghị là người chưa thành niên / Người bảo vệ quyền và lợi ích hợp pháp của người bị đề nghị / Người đề nghị hoặc người được ủy quyền / Kiểm sát viên / Người phiên dịch, người dịch thuật / Người làm chứng / Người giám định / Chuyên gia y tế, tâm lý, giáo dục, xã hội học / Đại diện UBND cấp xã / Đại diện Ủy ban MTTQ VN cấp xã / Đại diện nhà trường / Đại diện cơ quan, tổ chức nơi làm việc / Người làm công tác bảo vệ trẻ em cấp xã / Người khác được Tòa án yêu cầu tham gia
+2.2. Với "Người bảo vệ quyền và lợi ích hợp pháp" (cột 29–31): Tổ chức hành nghề, Trung tâm trợ giúp pháp lý (*) — ghi "Trung tâm trợ giúp pháp lý…" để đếm vào Trợ giúp viên pháp lý, "Văn phòng luật sư…" cho Luật sư (FE không có ô chọn riêng loại người bảo vệ), Số thẻ, Ngày được chấp nhận tham gia, Văn bản chấp nhận
+2.3. Với "Cha, mẹ hoặc người giám hộ…": Quan hệ với người bị đề nghị (*)
+2.4. Khối "Thông tin con người": Họ và tên (*), Ngày sinh, Giới tính, Dân tộc, Giấy tờ tùy thân (loại + số), Số điện thoại (*), Email, Địa chỉ nhận tống đạt (*), Phương thức nhận văn bản, giấy triệu tập, Ghi chú
+2.5. Click "Lưu" ("Đã thêm người tham gia phiên họp"). Tạo tối thiểu: 1 Người bị đề nghị, 1 Cha, mẹ… (nếu chưa thành niên), 1 Người bảo vệ (cột 32 "không có người bảo vệ" = bỏ qua người này)
+PHẦN D. XEM XÉT (tab "Xem xét giải quyết", chỉ thao tác khi trạng thái "Đang xem xét")
+Step1: Khối "Văn bản áp dụng" → Click "Thêm biểu mẫu" → dropdown XLHC01…XLHC08
+1.1. XLHC06 Văn bản yêu cầu bổ sung tài liệu (7A cột 14): Kính gửi (*), Ngày Tòa án nhận hồ sơ, "Sau khi kiểm tra hồ sơ, Tòa án thấy rằng" (*), "Tài liệu, chứng cứ cần bổ sung" (*) → [Lưu → Lấy số → Ký → Đóng] (tình trạng "Đã yêu cầu bổ sung tài liệu")
+1.2. XLHC07 (yêu cầu cử người bảo vệ cho người chưa thành niên) / XLHC08 / XLHC10 dùng form văn bản chung: Cơ quan, tổ chức, cá nhân nhận văn bản (*), Hạn thực hiện, Lý do ban hành, Nội dung văn bản (*)
+Step2: Gia hạn: khối "Thông tin chung" ô "Thời hạn / Gia hạn" → Click "Gia hạn giải quyết" (XLHC26; khóa nếu đã đánh dấu phức tạp): Xét thấy (*), Thời hạn được gia hạn (ngày) (*), Kể từ ngày → ký
+Step3: Lý do quá hạn (7A cột 11/12): khi mốc "Quá hạn" hiện nút "Lý do quá hạn" → drawer "Lý do quá hạn": Nguyên nhân (*) (Nguyên nhân khách quan | Nguyên nhân chủ quan), Lý do chi tiết (*) → "Lưu" ("Đã ghi nhận lý do quá hạn"). Báo cáo quá hạn: tab "Báo cáo" → "Thêm báo cáo" → "Lưu báo cáo"
+Step4: Tạm đình chỉ / đình chỉ / tiếp tục — lập ở tab "Phiên họp XLHC", khối "Quyết định áp dụng" → Click "Thêm biểu mẫu"
+4.1. XLHC17 Tạm đình chỉ (7A cột 13): khối nhân thân + "Lý do tạm đình chỉ việc xem xét, quyết định" (*) → ký → trạng thái "Tạm đình chỉ". Sau đó tab "Kết quả giải quyết" hiện cảnh báo → Click "Ghi nhận" → "Ngày lý do tạm đình chỉ không còn" (*) → "Đã ghi nhận, đồng hồ sau tạm đình chỉ bắt đầu chạy"
+4.2. XLHC18 Tiếp tục xem xét (chỉ mở khi "đang tạm đình chỉ"): "Xét thấy (lý do tiếp tục)" (*), "Tiếp tục kể từ ngày" → ký → về "Đang xem xét"
+4.3. XLHC16 Đình chỉ (7A/7B cột 6): Thời hạn áp dụng, Thời gian được trừ, "Lý do, căn cứ" (*), "Nội dung quyết định" (*) → ký → "Đã giải quyết" (tình trạng "Đình chỉ việc xem xét"). Mỗi vụ chỉ 1 quyết định kết thúc (13/14/15/16)
+Step5: Mở phiên họp: tab "Phiên họp XLHC" → Click "Mở phiên họp" (XLHC09; khóa khi "Vụ việc chưa thụ lý" / không ở "đang xem xét")
+5.1. Bấm "Chọn lịch phiên họp" (*) → chọn/tạo lịch → tự điền ngày, giờ, Hình thức (Trực tiếp/Trực tuyến), Địa điểm
+5.2. Bảng tick người tham gia; khối nhân thân (Số định danh / CCCD / Căn cước / Hộ chiếu (*), Ngày cấp, Nơi cấp, Nghề nghiệp, Con ông, Và bà, Nơi cư trú)
+5.3. [Lưu → Lấy số → Ký → Đóng]. Sau Lưu: "Đã mở phiên họp theo quyết định vừa ban hành" → thẻ "Phiên họp XLHC - <tên> (lần 1)". Khối "Giấy triệu tập tham gia phiên họp" → "Lập giấy triệu tập" (XLHC10)
+Step6: Hoãn (nhánh): trên thẻ phiên họp → "Thêm quyết định" → "Thông báo hoãn phiên họp" (XLHC11): Lý do hoãn phiên họp (*) (Người đề nghị hoặc người được ủy quyền vắng mặt / Người bị đề nghị vắng mặt lần thứ nhất có lý do chính đáng / Phải thay đổi Thẩm phán hoặc Thư ký / Người phiên dịch vắng mặt / Lý do khác), Diễn giải thêm, Người vắng mặt, Ngày mở lại phiên họp (*), Giờ mở lại phiên họp, Địa điểm mở lại, Hình thức mở lại, Kính gửi → "Lưu" ("Đã ghi nhận hoãn phiên họp…") → ký. Rồi "Mở phiên họp" lại (lần 2)
+Step7: Điểm danh: trong thẻ phiên họp → "Ghi nhận điểm danh" → modal: Tư cách tham gia (*), Có mặt (switch), Lý do vắng, Vắng có lý do chính đáng → "Đã ghi nhận điểm danh" (ghi cho từng thành phần)
+PHẦN E. PHIÊN HỌP VÀ QUYẾT ĐỊNH (tab "Phiên họp XLHC")
+Step1: Khối "Biên bản phiên họp" → Click "Lập biên bản" (XLHC12; khóa "Chưa có phiên họp để lập biên bản"): Thời gian bắt đầu, Thời gian kết thúc, Tổng số bút lục, Địa điểm lập biên bản (*), Thành phần tham gia (*), Nội dung, diễn biến (*) → [Lưu → Lấy số → Ký → Đóng] ("Đã gắn biên bản vào phiên họp"). Sau đó trên thẻ phiên họp Click "Kết thúc" → xác nhận "Kết thúc"
+Step2: Khối "Quyết định áp dụng" → Click "Quyết định tại phiên họp" → XLHC13 (áp dụng — 7A cột 8, 7B cột 9) hoặc XLHC14 (không áp dụng — cột 7); hoặc "Thêm biểu mẫu" → XLHC15 (giáo dục dựa vào cộng đồng — 7B cột 8, chỉ khi biện pháp đề nghị là trường giáo dưỡng) / XLHC16 (đình chỉ)
+2.1. Điều kiện (tooltip "Chưa đủ điều kiện ban hành"): phải có QĐ mở phiên họp đã ký + Biên bản phiên họp đã ký + đã ghi nhận Kiểm sát viên
+2.2. Form XLHC13/14: Ngày quyết định (*), Số quyết định, Thẩm phán ký; khối "Phiên họp": Số quyết định mở phiên họp, Ngày quyết định mở phiên họp, Người bị đề nghị (Có mặt | Vắng mặt), Ngày mở phiên họp, Địa điểm mở phiên họp; Đại diện cơ quan đề nghị, Đại diện Viện kiểm sát, Người đại diện hợp pháp, Người bảo vệ quyền, lợi ích hợp pháp, Những người khác; Nhận thấy (*), Xét thấy (*)
+2.3. Riêng XLHC13: "Thời gian chấp hành" (*) — ghi "12 tháng" (6–12 tháng → cột 15 / 7B cột 12; 13–24 tháng → cột 16 / 7B cột 13), "Cơ quan thi hành quyết định"; "Quyền khiếu nại, kiến nghị, kháng nghị"
+2.4. Form XLHC15: Thời hạn áp dụng (VD "12 tháng"), Thời gian được trừ, Lý do, căn cứ (*), Nội dung quyết định (*)
+2.5. [Lưu → Lấy số → Ký → Đóng] → trạng thái "Đã giải quyết", tình trạng "Đã áp dụng biện pháp" / "Không áp dụng biện pháp" / "Áp dụng biện pháp giáo dục dựa vào cộng đồng"
+Step3: Gửi quyết định / hiệu lực: FE không có ô nhập riêng; hiệu lực do BE tự tính (Chưa có hiệu lực / Đã có hiệu lực / Bị khiếu nại / Bị sửa / Bị hủy); tab "Kết quả giải quyết" hiển thị quyết định + trạng thái. Phương thức gửi (Điều 6a) chỉ có ở XLHC03 và KNHC02
+PHẦN F. KHIẾU NẠI, KIẾN NGHỊ, KHÁNG NGHỊ (mẫu 7D)
+F1 — TAND khu vực (tab "Kết quả giải quyết", vụ ở "Đã giải quyết")
+Step1: Khối "Khiếu nại, kiến nghị, kháng nghị đối với quyết định" gồm 3 bảng "Đơn khiếu nại" / "Văn bản kiến nghị" / "Quyết định kháng nghị", mỗi bảng có "Thêm mới" → drawer "Thêm mới đơn khiếu nại" (loại đơn khóa theo bảng — 7D tách cột theo loại; một hồ sơ vừa có kháng nghị thì đếm vào cột kháng nghị)
+1.1. Ngày Tòa án nhận (*), Số tiếp nhận, "Phương thức nhận — Điều 6a" (*)
+1.2. "Quyết định của Tòa án — danh sách đóng theo Điều 30" (*) (chọn quyết định đã ký XLHC13–24), "Khoản Điều 30 tương ứng" (*)
+1.3. Loại đơn (*) (Khiếu nại | Kiến nghị | Kháng nghị), "Tư cách khiếu nại — khoản 1 Điều 31" (*) (Người bị đề nghị / Người đại diện hợp pháp / Cha, mẹ hoặc người giám hộ…)
+1.4. Họ và tên (*), Năm sinh, Số định danh cá nhân, Nơi cư trú (*), Số điện thoại
+1.5. "Tại phiên họp công bố quyết định — quyết định mốc thời hạn" (*) (Có mặt | Vắng mặt → "Ngày nhận được quyết định" (*)), Số đơn, Ngày làm đơn khiếu nại, Ngày nộp đơn (*)
+1.6. "Lý do, căn cứ khiếu nại — Điều 33" (*), Nội dung khiếu nại (*), "Yêu cầu — theo các hướng giải quyết tại Điều 36" (checkbox), Bất khả kháng: Từ ngày / Đến ngày / Lý do bất khả kháng, "Lý do nộp quá hạn" (hiện khi quá hạn). Nút "Đối chiếu thời hạn" (3 ngày làm việc) → "Trong hạn"/"Quá hạn"
+1.7. Click "Lưu" ("Đã ghi nhận đơn khiếu nại, kiến nghị, kháng nghị") → vụ việc sang "Có khiếu nại, kiến nghị, kháng nghị"
+Step2: Trên dòng đơn Click "Đủ điều kiện" → xác nhận "Xác nhận" ("Đã kết luận đơn đủ điều kiện chuyển"). Phiếu chuyển chỉ nhận đơn đã kết luận đủ điều kiện
+Step3: Khối phiếu chuyển → Click "Lập phiếu chuyển" → modal "Lập phiếu chuyển hồ sơ lên Tòa án nhân dân cấp trên trực tiếp" (KNHC01): Đơn chuyển kèm (*), Số phiếu chuyển, Ngày chuyển (*) (7D: mốc "mới thụ lý" tạm tính theo ngày chuyển), Tòa án nhân dân cấp trên trực tiếp (*) (tự lấy), Phương thức gửi, Tổng số bút lục, Ghi chú → "Lập phiếu chuyển" ("Đã lập phiếu chuyển — hồ sơ đã sang danh sách Hồ sơ chuyển đi"). Cách khác: màn /xu-ly-hanh-chinh/ho-so-chuyen-di tick đơn → "Chuyển hồ sơ đi"; "Thu hồi" (Lý do thu hồi) khi còn "Chờ tiếp nhận"
+Step4: Khối "Văn bản của giai đoạn khiếu nại, kiến nghị, kháng nghị" → "Thêm biểu mẫu" → KNHC02 Thông báo về việc KN/KN/KN: Ngày ra quyết định (*), Số quyết định, Người ký (*), "Nội dung thông báo và nơi nhận…" (*), Ngày gửi, Phương thức gửi → ký
+Step5 (chỉ khi cấp tỉnh không dùng chung hệ thống): "Ghi nhận kết quả cấp tỉnh" → Tòa án giải quyết (*), Số quyết định, Ngày quyết định (*), Kết quả (*) (khoản Điều 36), Nội dung, Ngày Tòa án nhận được. Rút đơn ở khu vực chưa có nút riêng — xử lý ở cấp tỉnh bằng KNHC25
+F2 — TAND cấp tỉnh
+b1. login vào tài khoản TAND cấp tỉnh
+b2. vào màn hình /khieu-nai-xlhc/tiep-nhan-ho-so — hồ sơ do phiếu chuyển sinh ra, trạng thái "Chưa nhận"; click dòng → /khieu-nai-xlhc/tiep-nhan-ho-so/chi-tiet?id=…
+b3. Đối chiếu đầu mục (Đủ / Thiếu) → Click "Biên bản giao nhận" → modal "Biên bản về việc giao, nhận hồ sơ khiếu nại, kiến nghị, kháng nghị" (01-KNKNKN): Ngày giao nhận (*), Giờ, phút nhận hồ sơ, Số biên bản, Địa điểm giao nhận, Người bị đề nghị áp dụng (*), Biện pháp bị áp dụng, Quyết định bị khiếu nại / kiến nghị / kháng nghị, Đơn vị giao hồ sơ (*), Người đại diện bên giao, Cán bộ nhận (*), Chức vụ / chức danh, Hồ sơ bàn giao bao gồm → "Lưu" ("Đã tạo biên bản giao nhận — xem ở mục Quyết định xử lý"). Nhánh trả: "Văn bản trả lại" (02-KNKNKN): Ngày ban hành (*), Số văn bản (*), Người ký (*), Người bị đề nghị áp dụng (*), Ngày trả hồ sơ (*), Cơ quan nhận lại hồ sơ (*), Lý do trả lại (*), Nội dung ý kiến (*), Căn cứ trả lại hồ sơ (*), Yêu cầu bổ sung (*) → "Lưu"
+b4. Khối "Tài liệu" tab "Tải file": "Chọn tệp", Loại tài liệu = "Hồ sơ tiếp nhận" → "Thêm mới" → "Đã tiếp nhận hồ sơ và sinh vụ việc giải quyết khiếu nại" → tự mở /khieu-nai-xlhc/vu-viec/chi-tiet?id=…
+Step1: Tab "Thụ lý" → Click "Thụ lý vụ việc" → modal "Cấp số thụ lý vụ việc": Số thụ lý (*), Ngày thụ lý (*), Trường hợp thụ lý (*) (TAND khu vực chuyển… (khoản 1 Điều 34) | Đợt KN/KN/KN tiếp theo), Nộp quá hạn (+ Giải trình lý do quá hạn (*)), Số quyết định bị KN (*), Ngày ra quyết định (*), Số bút lục (*), Ngày nhận đơn, văn bản kèm hồ sơ (*), Tòa án đã ra quyết định (*), Viện kiểm sát cùng cấp → "Xác nhận thụ lý". Rồi "Gửi thông báo thụ lý" (KNHC06) → [Lưu → Lấy số → Ký → Đóng]. Người tham gia phiên họp: "Thêm mới" (tư cách: Người bị đề nghị áp dụng biện pháp / Cha, mẹ hoặc người đại diện hợp pháp / Người bảo vệ / Đại diện Viện kiểm sát / Đại diện cơ quan đề nghị / Người phiên dịch / Người làm chứng)
+Step2: Tab "Phân công" → "Phân công" → "Quyết định phân công Thẩm phán xem xét, giải quyết" (KNHC07): Vai trò Thẩm phán → chọn người → ↓ → ký; tiếp "Quyết định phân công Thư ký phiên họp" / "Quyết định phân công Thẩm tra viên". "Thay đổi phân công" → KNHC09 / KNHC28. "Thêm Kiểm sát viên tham gia phiên họp" ở khối Thành phần tham gia
+Step3: Tab "Xem xét xử lý hồ sơ" → khối "Quyết định tố tụng" → "Thêm quyết định" → "Quyết định mở phiên họp giải quyết KN/KN/KN" (QDMPH; chặn: chưa thụ lý / chưa phân công TP) → ký → tự tạo lịch ("Đã tạo lịch phiên họp theo quyết định vừa lập"); nhánh khác: KNHC15 Tạm đình chỉ / KNHC17 Đình chỉ / KNHC25 Đình chỉ do rút đơn ("Ngày rút khiếu nại, kiến nghị, kháng nghị" (*) — 7D cột 9–11). Khối "Văn bản tố tụng khác": KNHC11 Thông báo bổ sung tài liệu / KNHC16 Quyết định phục hồi / KNHC26, KNHC27 trưng cầu giám định
+Step4: Tab "Phiên họp XLHC": nếu chưa có lịch, "Mở phiên họp" → modal: Tiêu đề phiên họp, Ngày phiên họp (*), giờ bắt đầu, Hình thức phiên họp (*) (Trực tiếp → Phòng họp | Trực tuyến → Đường dẫn phòng họp trực tuyến (*)), Người nhận thông báo, Ghi chú → "Đăng ký lịch". Trên thẻ phiên: "Thêm quyết định" → "Biên bản phiên họp xem xét, giải quyết" (KNHC19 — lập trước khi ra quyết định giải quyết) / "Thông báo hoãn phiên họp" (KNHC20) / KNHC21 / KNHC13; "Hoãn" (Lý do hoãn (*), Diễn giải thêm, Số quyết định hoãn, Thời gian dự kiến mở lại → "Lưu"); "Kết thúc"; sau hoãn có "Mở lại"
+Step5: Khối "Quyết định giải quyết" → "Thêm quyết định" → chọn 1 trong 8 mục (7D cột 22–30 theo khoản Điều 36): "Không chấp nhận khiếu nại, kiến nghị, kháng nghị" (k.1) / "Chấp nhận khiếu nại và sửa một phần quyết định" (k.2) / "Chấp nhận hủy quyết định, trả hồ sơ cho TAND khu vực giải quyết lại" (k.5) / "Chấp nhận hủy quyết định và đình chỉ" (k.6) / "…buộc chấp hành quyết định" (k.8) / "…chấp nhận đề nghị" (k.9) / "Đình chỉ giải quyết do rút đơn" (k.13, KNHC25) / "Tạm đình chỉ" (KNHC15). Chặn: "Chưa ban hành Quyết định mở phiên họp" / "Đã ban hành quyết định giải quyết" / đang tạm đình chỉ
+5.1. Drawer quyết định giải quyết (Mẫu số 15): Ngày ban hành (*), khối nhân thân (Tôn giáo, Nguyên quán, Tại phiên họp: Có mặt/Vắng mặt, Hộ khẩu thường trú, Chỗ ở, Tiền án, Tiền sự), "Căn cứ Điều 36" (*); k.2: Hướng sửa (*) (Giảm thời hạn | Tăng thời hạn) + "Thời hạn mới (tháng)" (*); k.3: "Thời hạn áp dụng biện pháp giáo dục dựa vào cộng đồng (tháng)" (*); k.13: Ngày rút (*); Nhận thấy, "Xét thấy" (*), "Nội dung quyết định" (*)
+5.2. Click "Trình ký" ("Đã lập quyết định, chuyển sang chờ ký") → ký số tại dòng văn bản vừa tạo trên bảng "Quyết định giải quyết" → "In tài liệu" → "Đóng". Vụ việc → "Đã giải quyết"; BE tự ghi kết quả về vụ việc khu vực (k.4/5/7 → "Bị hủy, trả hồ sơ để xem xét lại")
+Step6: Tab "Kết quả xử lý hồ sơ" (chỉ khi k.4/5/7): khối "Chuyển hồ sơ về Tòa án nhân dân khu vực để xem xét, giải quyết lại" → Click "Chuyển hồ sơ về Tòa án nhân dân khu vực" → "Chuyển hồ sơ" ("Đã chuyển hồ sơ…"). Hoặc màn /khieu-nai-xlhc/ho-so-chuyen-di → "Chuyển hồ sơ" → modal: Ngày chuyển hồ sơ (*) → "Chuyển hồ sơ đi". Khu vực nhận ở tab "Cấp tỉnh trả — Giải quyết lại" của màn Tiếp nhận hồ sơ → tiếp nhận như Phần A → thụ lý với "Thụ lý lại do Tòa án cấp trên hủy quyết định để xem xét lại". ("Công bố", "Nhập lưu trữ" chưa gắn vào màn nào; nút "Chuyển VKS" (KNHC23) ở header chi tiết vụ việc)
+PHẦN G. HOÃN / MIỄN / GIẢM / TẠM ĐÌNH CHỈ CHẤP HÀNH (mẫu 7C)
+Step1: Tài khoản TAND khu vực → vụ việc đã có quyết định áp dụng đã ký (XLHC13/15) → tab "Kết quả giải quyết" → khối "Chấp hành quyết định (Điều 27 - 29)" → Click "Lập quyết định"
+1.1. Chọn: XLHC19 Hoãn chấp hành (7C cột 11) / XLHC20 Miễn chấp hành (cột 12) / XLHC21 Không chấp nhận hoãn, miễn (cột 6) / XLHC22 Giảm thời hạn (cột 13, chỉ trường giáo dưỡng, cơ sở giáo dục bắt buộc) / XLHC23 Tạm đình chỉ hoặc miễn phần còn lại (cột 14, 15) / XLHC24 Hủy bỏ hoãn, tạm đình chỉ và buộc chấp hành
+1.2. [Lưu → Lấy số → Ký → Đóng]. Chặn: khóa khi "Chưa có quyết định áp dụng biện pháp xử lý hành chính đã ký". Trạng thái dòng: Chưa có hiệu lực / Đang bị khiếu nại, kiến nghị, kháng nghị / Đang chấp hành
+Step2: Lưu ý: FE không có màn tiếp nhận/thụ lý ĐƠN đề nghị hoãn, miễn, giảm (Điều 27.2, 28.3) — chỉ lập thẳng quyết định. Báo cáo 7C hiện đọc bộ bảng riêng XLHC_CH_* (tạo và insert bằng script, xem docs/BCTK/7C-canh-bao-ky-thuat.md), CHƯA đọc các quyết định XLHC19–24 lập trên màn này. Muốn 7C có số từ dữ liệu màn hình phải chờ nối package với XLHC_QUYET_DINH/VANBAN
+PHẦN H. BIẾN THỂ DỮ LIỆU ĐỂ LÊN TỪNG CỘT BÁO CÁO (cùng luồng A→E, chỉ đổi giá trị)
+- 7A dòng 1/2/3 (trường giáo dưỡng / cơ sở giáo dục bắt buộc / cai nghiện bắt buộc): Phần A b4.4 chọn Loại biện pháp đề nghị tương ứng; mỗi biện pháp làm ≥ 1 hồ sơ
+- 7A cột 2 (cũ còn lại): Ngày thụ lý trước kỳ, không ra quyết định; cột 3 (mới thụ lý): Ngày thụ lý trong kỳ; cột 4: Phần A nhánh trả lại (XLHC01) ký trong kỳ
+- 7A cột 6 / 7 / 8 (đình chỉ / không áp dụng / áp dụng): Phần E Step2 lập XLHC16 / XLHC14 / XLHC13 với Ngày quyết định trong kỳ
+- 7A cột 11/12 (quá hạn chủ quan/khách quan): Ngày thụ lý lùi > 10 ngày, không ra quyết định, Phần D Step3 khai Nguyên nhân
+- 7A cột 13 (tạm đình chỉ): Phần D Step4.1 XLHC17, không lập XLHC18; cột 14 (yêu cầu bổ sung): Phần D Step1.1 XLHC06 chưa bổ sung (gói báo cáo hiện chưa đọc bảng yêu cầu bổ sung)
+- 7A cột 15/16: XLHC13 "Thời gian chấp hành" 6–12 tháng / 13–24 tháng
+- 7A cột 17–20 (tuổi 12–14 / 14–16 / 16–18 / ≥18): Ngày sinh người bị đề nghị tính tại ngày XLHC13; cột 21 nghiện ma túy = Có; cột 22 Dân tộc ≠ Kinh; cột 23/24 Giới tính Nữ/Nam; cột 25–28 Trình độ văn hóa theo nhóm
+- 7A cột 29–32: Phần C Step2 thêm "Người bảo vệ quyền và lợi ích hợp pháp" với Tổ chức = Trung tâm trợ giúp pháp lý / Văn phòng luật sư / khác; cột 32 = không thêm người bảo vệ
+- 7B (chỉ trường giáo dưỡng và cai nghiện 12–17 tuổi nghiện ma túy): như 7A; cột 8 lập XLHC15 (giáo dục dựa vào cộng đồng); cột 21–24 chọn Đặc điểm nhân thân; dòng 1.1–1.5 (nhóm hành vi) hiện chưa có trường nguồn
+- 7D: Phần F1 nhập 3 loại đơn (khiếu nại / kiến nghị / kháng nghị) + lập phiếu chuyển; F2 ra quyết định giải quyết theo từng khoản Điều 36 (cột 22–30); rút đơn → KNHC25 (cột 9–11); quá hạn mở phiên họp → cột 20/21
+- Kỳ thống kê: mỗi kịch bản chạy 2 lượt (ngày trong kỳ và ngày trước kỳ) để có "cũ còn lại"
+Ghi chú lệch / chưa hoàn thiện cần biết khi viết tool: (1) tiếp nhận hồ sơ XLHC ký bằng cách tải tệp đã ký, không có nút Ký số; (2) nhánh liên thông chưa có màn; (3) không có ô nhập ngày gửi/ngày hiệu lực quyết định áp dụng; (4) gói báo cáo 7B trên DEV chưa đọc bảng XLHC_QUYET_DINH và XLHC_NGUOI_BI_DE_NGHI (cột 6–9, 12–28 luôn 0 cho tới khi cập nhật gói); gói 7D đọc bộ bảng mockup VU_VIEC_XLHC_KHIEU_NAI (0 dòng) cho hầu hết cột, chỉ cột 20–21 đọc bảng thật; bản sao bảng XLHC_* trong schema BCTK đang 0 dòng — cần đồng bộ trước khi chạy báo cáo.

@@ -681,7 +681,25 @@ export async function dienOTheoNhan(
     ? theoLabel
     : khung.locator('.ant-form-item').filter({ hasText: nhan }).last();
   await expect(oForm, `Không thấy ô "${nhan}"`).toBeVisible({ timeout: 30_000 });
+  return dienTrongO(page, oForm, nhan, giaTri, ghiDe);
+}
 
+/**
+ * Điền một ô ĐÃ ĐỊNH VỊ SẴN — cùng toàn bộ phần thân của `dienOTheoNhan`, chỉ khác là nhận thẳng
+ * `.ant-form-item` thay vì đi tìm theo nhãn.
+ *
+ * Vì sao cần: có màn dùng CÙNG MỘT NHÃN nhiều lần. Drawer bị can hình sự có 5 nhóm địa chỉ
+ * (Nơi sinh / Quê quán / HKTT / Nơi tạm trú / Nơi ở hiện tại), nhóm nào cũng có "Phường/Xã" và
+ * "Tỉnh/Thành phố" → tìm theo nhãn thì luôn trúng nhóm đầu hoặc nhóm cuối. Gọi hàm này với
+ * `.nth(i)` của đúng nhóm cần điền (đo 01/10/2026).
+ */
+export async function dienTrongO(
+  page: Page,
+  oForm: Locator,
+  nhan: string | RegExp,
+  giaTri?: string,
+  ghiDe = false,
+): Promise<string> {
   // Nhánh DANH SÁCH CHECKBOX: "Lý do/căn cứ cụ thể" của 32DS là các checkbox chứ không phải Select
   // (đo 30/09/2026 trên cây trợ năng) — đọc được chữ trong dropdown không có nghĩa là đã tick.
   const ds0 = oForm.locator('input[type="checkbox"]');
@@ -735,6 +753,28 @@ export async function dienOTheoNhan(
           .locator('.ant-select-item-option')
       : page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option');
     await expect(muc.first(), `Bấm ô "${nhan}" nhưng danh sách không mở`).toBeVisible({ timeout: 15_000 });
+
+    /**
+     * DANH SÁCH DÀI: GÕ ĐỂ LỌC rồi mới đọc.
+     *
+     * antd ảo hoá danh sách nên `allInnerTexts()` chỉ trả về phần ĐANG RENDER. Danh mục dài thì
+     * mục cần tìm không bao giờ xuất hiện và ta kết luận sai là "danh mục không có giá trị này" —
+     * đo 01/10/2026 ở ô "Dân tộc" của bị can: khai "Kinh", báo lỗi "không có mục khớp", danh sách
+     * in ra chỉ tới "Ba-na | Bố Y | Brâu | Bru-Vân Kiều | Chăm | Cơ-ho".
+     *
+     * Lọc ra rỗng (ô không bật tìm kiếm, hoặc chữ lọc khác cách viết trong danh mục) thì BỎ LỌC để
+     * quay về lối cũ, không để việc gõ làm hỏng những ô vốn đang chạy được.
+     */
+    const oLoc = oForm.locator('input.ant-select-selection-search-input').first();
+    if (giaTri && (await oLoc.isEditable().catch(() => false))) {
+      await oLoc.fill(giaTri).catch(() => {});
+      await nghi(page, 500, 800);
+      if (!(await muc.count())) {
+        await oLoc.fill('').catch(() => {});
+        await nghi(page, 400, 700);
+      }
+    }
+
     const ds = (await muc.allInnerTexts()).map(s => s.replace(/\s+/g, ' ').trim()).filter(Boolean);
 
     const chon = giaTri

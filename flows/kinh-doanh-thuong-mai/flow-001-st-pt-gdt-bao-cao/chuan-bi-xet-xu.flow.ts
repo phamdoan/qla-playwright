@@ -167,6 +167,204 @@ async function lapBieuMau(page: Page, ghi: GhiChu, opt: ThamSoLapBieuMau): Promi
   return dong;
 }
 
+/**
+ * TẠO VÀ GẮN LỊCH XÉT XỬ cho quyết định đưa vụ án ra xét xử — 47-DS (sơ thẩm) và 66-DS (phúc thẩm).
+ *
+ * Tách dùng chung vì hai biểu mẫu đi cùng một màn: bấm "Chọn lịch xét xử" → lịch THÁNG → click
+ * ngày → form "Thêm lịch xét xử (mở phiên tòa)" → điền → "Tạo mới" → xác nhận các cảnh báo trùng
+ * phòng xử / trùng thành viên HĐXX.
+ *
+ * @param ngayThuLy dd/mm/yyyy — ngày cần đặt lịch
+ * @param nhan      tiền tố ghi sổ, vd. "47DS · lịch" / "66DS · lịch"
+ * @returns ngày xét xử đã đặt, đọc lại từ form (bằng chứng, không gieo)
+ */
+export async function taoLichXetXu(
+  page: Page,
+  bm: Locator,
+  ghi: GhiChu,
+  ngayThuLy: string,
+  input: DuLieuVao,
+  nhan: string,
+): Promise<string> {
+  let ngayChon = '';
+  /**
+   * 47DS đòi CHỌN MỘT LỊCH XÉT XỬ, không phải gõ ngày vào ô — hệ thống báo
+   * "Vui lòng chọn 1 lịch xét xử đã đặt trước".
+   * Màn "Chọn lịch xét xử cho vụ án" là LỊCH THÁNG (đo 30/09/2026), không phải bảng.
+   * Tài liệu (StepData sơ thẩm_KDTM · 7.2–7.4): bấm "Chọn lịch xét xử" → click ngày trùng
+   * ngày thụ lý → tick "Cả ngày".
+   */
+  const nutLich = bm.getByRole('button', { name: /Chọn lịch xét xử/i }).first();
+  if (!(await hienTrong(nutLich, 5_000))) {
+    const ds = (await bm.getByRole('button').allInnerTexts()).map(s => s.replace(/\s+/g, ' ').trim());
+    throw new Error(`${nhan} không có nút "Chọn lịch xét xử". Nút đang có: ${ds.filter(Boolean).join(' | ')}`);
+  }
+  await nutLich.scrollIntoViewIfNeeded();
+  await nutLich.click();
+  await choHetSpin(page);
+
+  const hop = bieuMauDangMo(page);
+  await expect(hop, 'Bấm "Chọn lịch xét xử" nhưng không mở được màn chọn lịch').toBeVisible({ timeout: 30_000 });
+
+  // Tài liệu Step 7.3: "Click vào ngày trùng với ngày ở Số thụ lý".
+  // Ngày thụ lý LẤY TỪ STATE (bước 07 sinh `ngayThuLySoTham`), không đọc lại từ màn: đọc bằng
+  // regex trên header biểu mẫu từng trượt rồi rơi về ngày mặc định ở THÁNG KHÁC, và báo
+  // "không thấy ô ngày" dù lịch đang hiện đúng tháng của ngày thụ lý.
+  const ngay = ngayThuLy.split('/');
+  ghi('47DS · ngày chọn trên lịch', ngayThuLy);
+
+  // Lịch này KHÔNG phải antd Calendar (không có td/.ant-picker-cell) — ô ngày là div chứa số.
+  // Khớp theo TEXT CHÍNH XÁC của số ngày, thử cả dạng có số 0 đứng đầu ("01" và "1").
+  const soNgay = Number(ngay[0]);
+  const oNgay = hop
+    .getByText(new RegExp(`^\\s*0?${soNgay}\\s*$`))
+    .last();
+  if (!(await hienTrong(oNgay, 5_000))) {
+    const chu = (await hop.innerText()).replace(/\s+/g, ' ').slice(0, 300);
+    throw new Error(`Không thấy ô ngày ${ngay.join('/')} trên lịch. Màn đang hiện: ${chu}`);
+  }
+  await oNgay.click();
+  await choHetSpin(page);
+
+  /**
+   * Click ngày mở lớp thứ ba: form "Thêm lịch xét xử (mở phiên tòa)" với nút "Đóng | Tạo mới".
+   * ⚠ "Tạo mới" CHÍNH LÀ NÚT LƯU của form này, không phải nút mở form mới — bấm khi chưa điền
+   * thì nó báo "Thời gian kết thúc phải lớn hơn thời gian bắt đầu" và "Vui lòng chọn tính chất
+   * phiên tòa" (đo 30/09/2026). Tick "Cả ngày" là xong phần giờ.
+   */
+  /**
+   * NGÀY ĐÃ CÓ LỊCH thì click chỉ CHỌN lịch đó, KHÔNG mở form tạo mới. Đó là đường đi của lượt
+   * thứ hai: lượt đầu tạo lịch (và biểu mẫu quyết định bị đóng mất), lượt sau mở lại quyết định
+   * rồi chỉ chọn lịch sẵn có (người dùng xác nhận 01/10/2026).
+   */
+  const formLich = page
+    .locator('.ant-modal-content:visible, .ant-drawer-content:visible')
+    .filter({ hasText: /Thêm lịch xét xử/i })
+    .first();
+  if (!(await hienTrong(formLich, 10_000))) {
+    ghi(nhan, `ngày ${ngayThuLy} đã có lịch — chỉ chọn, không tạo mới`);
+    return ngayThuLy;
+  }
+
+  // Điền THẲNG cặp ngày và cặp giờ (từ → đến). Chỉ tick "Cả ngày" thì hệ thống vẫn báo
+  // "Thời gian kết thúc phải lớn hơn thời gian bắt đầu" (đo 30/09/2026).
+  /**
+   * PHẢI GHI ĐÈ ngày. Click ô ngày trên lịch THÁNG đã điền sẵn một giá trị, và ô đó có thể rơi vào
+   * tháng kế (ô ngày của tháng sau cũng hiển thị trong lưới lịch) — không ghi đè thì giữ nguyên
+   * ngày sai và mỗi lượt chạy lại trôi thêm một tháng: 30/09 → 01/12/2026 → 01/01/2027
+   * (đo 01/10/2026).
+   */
+  const dsNgay = await dienCapO(page, formLich, /Ngày xét xử/i, [ngayThuLy, ngayThuLy], true);
+  if (dsNgay.length) ghi(nhan, `ngày xét xử: ${dsNgay.join(' → ')}`);
+  ngayChon = dsNgay[0] || '';
+  /**
+   * "Giờ xét xử" — hai ô picker, mặc định `00:00 → 00:00`, phải đè cả hai.
+   * Ba cách đã THẤT BẠI (đo 30/09/2026): `fill` (báo giá trị nhập không đúng), gõ rồi Escape
+   * (đóng luôn cả modal), gõ rồi Tab (antd hoàn tác về 00:00). Cách ăn: mở panel rồi CHỌN
+   * trong panel, hoặc gõ rồi Enter ngay trên chính ô đó.
+   */
+  const dsGio = [
+    await datGioTrongPanel(page, formLich.getByRole('textbox', { name: /Giờ xét xử/ }).first(), input.gioBatDauXetXu, 'Giờ xét xử (bắt đầu)'),
+    await datGioTrongPanel(page, formLich.getByRole('textbox', { name: /^Kết thúc$/ }).first(), input.gioKetThucXetXu, 'Giờ xét xử (kết thúc)'),
+  ];
+  ghi(nhan, `giờ xét xử: ${dsGio.join(' → ')}`);
+
+  const caNgay = formLich.getByRole('checkbox', { name: /Cả ngày/i }).first();
+  if (await hienTrong(caNgay, 5_000)) {
+    if (!(await caNgay.isChecked().catch(() => false))) await caNgay.click({ force: true });
+    ghi(nhan, 'đã tick "Cả ngày"');
+  }
+
+  for (const [nhan, giaTri] of [
+    [/Tiêu đề lịch xét xử/i, input.tieuDeLichXetXu],
+    [/Tính chất phiên tòa/i, input.tinhChatPhienToa],
+  ] as [RegExp, string | undefined][]) {
+    const gt = await dienOTheoNhan(page, formLich, nhan, giaTri).catch((e: Error) => {
+      ghi(nhan, `không điền được ${String(nhan)}: ${e.message.slice(0, 80)}`);
+      return '';
+    });
+    if (gt) ghi(nhan, `${String(nhan)} = ${gt}`);
+    await choHetSpin(page);
+  }
+
+  /**
+   * "Địa điểm xét xử" (thông báo lỗi gọi là "Phòng xét xử") — DANH MỤC THEO ĐƠN VỊ.
+   * TANDTC có "Phòng xét xử 102 (PXX102)", "Phòng xử lưu động"…; Tòa án nhân dân khu vực 9 -
+   * Hà Nội chỉ có ĐÚNG MỘT mục tên "X" (đo 30/09/2026). Vì vậy ưu tiên giá trị gieo, không có
+   * thì lùi về mục đầu theo thứ tự chữ cái — vẫn tất định, và ghi rõ đã lấy gì.
+   */
+  let diaDiem = await dienOTheoNhan(page, formLich, /Địa điểm xét xử/i, input.diaDiemXetXu).catch(
+    () => '',
+  );
+  if (!diaDiem) {
+    diaDiem = await dienOTheoNhan(page, formLich, /Địa điểm xét xử/i);
+    ghi(nhan, `đơn vị không có "${input.diaDiemXetXu}" → lấy mục đầu danh mục: ${diaDiem}`);
+  } else {
+    ghi(nhan, `địa điểm xét xử = ${diaDiem}`);
+  }
+  await choHetSpin(page);
+
+  // Chọn phòng xử lưu động thì màn ĐẺ THÊM ô bắt buộc "Địa điểm xét xử (chi tiết)".
+  const oChiTiet = oTheoNhan(page, formLich, /Địa điểm xét xử \(chi tiết\)/i);
+  if (await hienTrong(oChiTiet, 2_000)) {
+    await go(oChiTiet, input.diaDiemXetXuChiTiet);
+    ghi(nhan, `địa điểm xét xử (chi tiết) = ${input.diaDiemXetXuChiTiet}`);
+  }
+
+  // Soi cả form TRƯỚC khi lưu: ô nào "hiện mà chưa vào state" chỉ lộ ra khi nhìn đủ các ô.
+  for (const d of await moTaForm(formLich)) ghi('${nhan} · ô', d);
+
+  const nutTaoLich = formLich.getByRole('button', { name: /^Tạo mới$/ }).first();
+  await expect(nutTaoLich, 'Form lịch xét xử không có nút "Tạo mới"').toBeVisible({ timeout: 15_000 });
+  await nutTaoLich.click();
+  /**
+   * Hệ thống hỏi xác nhận NHIỀU LẦN NỐI TIẾP, mỗi kiểu trùng một hộp (đo 30/09/2026):
+   *   "Lịch xét xử đang trùng phòng xét xử Phòng xét xử 102 với Tuấn Test"
+   *   "Lịch xét xử đang trùng thành viên hội đồng xét xử với …"
+   * Đây là cảnh báo, không phải lỗi — nhưng bỏ sót một hộp thì lịch KHÔNG lưu mà cũng
+   * KHÔNG báo lỗi gì. Vì vậy xác nhận cho tới khi không còn hộp nào.
+   */
+  const tieuDeHoi = page.locator('.ant-modal-confirm-title:visible');
+  for (let lan = 0; lan < 4; lan++) {
+    /**
+     * PHẢI CHỜ hộp hiện rồi mới kiểm. Hỏi `count()` ngay sau cú bấm thì hộp chưa render, vòng lặp
+     * thoát luôn và lịch không được lưu — lỗi hiện ra ở chỗ khác ("form lịch không đóng — đang chờ
+     * xác nhận: Lịch xét xử đang trùng phòng xét xử …", đo 01/10/2026 ở 66-DS).
+     */
+    if (!(await hienTrong(tieuDeHoi.first(), lan === 0 ? 8_000 : 2_000))) break;
+    const cauHoi = (await tieuDeHoi.first().innerText().catch(() => '')).replace(/\s+/g, ' ').trim();
+    await xacNhanHopThoai(page);
+    await choHetSpin(page);
+    if (cauHoi) ghi(nhan, `đã xác nhận cảnh báo: ${cauHoi}`);
+    await nghi(page, 500, 800);
+  }
+  await choHetSpin(page);
+  /**
+   * Lưu được thì form lịch ĐÓNG; còn mở nghĩa là validate chặn — mà form lịch còn mở thì nút
+   * "Lưu" của 47DS bên dưới bị che, click sẽ hết giờ 30s không nói được vì sao.
+   *
+   * Phải neo theo ĐÚNG TIÊU ĐỀ modal lịch: `formLich` là "lớp đang mở ngoài cùng", modal lịch
+   * đóng rồi thì nó trỏ ngay sang hộp 47DS và báo nhầm là chưa đóng (đo 30/09/2026 — lúc đó
+   * toast đã là "Lưu lịch xét xử thành công").
+   */
+  const modalLich = page
+    .locator('.ant-modal-content:visible, .ant-drawer-content:visible')
+    .filter({ hasText: /Thêm lịch xét xử \(mở phiên tòa\)/ });
+  const daDong = await modalLich
+    .first()
+    .waitFor({ state: 'hidden', timeout: 15_000 })
+    .then(() => true)
+    .catch(() => false);
+  if (!daDong && (await modalLich.count())) {
+    for (const d of await moTaForm(modalLich.first())) ghi('${nhan} · sau khi lưu', d);
+    throw new Error(
+      `Bấm "Tạo mới" nhưng form lịch xét xử không đóng — ${await nguyenNhanLoi(page, modalLich.first())}`,
+    );
+  }
+  ghi(nhan, 'đã lưu lịch xét xử (form đã đóng)');
+  return ngayChon;
+}
+
 // ═════════ BƯỚC 09 · Thông báo phiên họp kiểm tra chứng cứ (32DS) ═════════
 /**
  * ĐO THẬT 30/09/2026 — danh mục "Chọn loại biểu mẫu" của tab có 6 mục:
@@ -223,159 +421,7 @@ export async function soThamDuaRaXetXu(page: Page, input: DuLieuVao, ghi: GhiChu
     ten: '47DS (đưa vụ án ra xét xử)',
     tieuDeKhoi: /Danh sách quyết định|Chuẩn bị xét xử/i,
     dienThem: async bm => {
-      /**
-       * 47DS đòi CHỌN MỘT LỊCH XÉT XỬ, không phải gõ ngày vào ô — hệ thống báo
-       * "Vui lòng chọn 1 lịch xét xử đã đặt trước".
-       * Màn "Chọn lịch xét xử cho vụ án" là LỊCH THÁNG (đo 30/09/2026), không phải bảng.
-       * Tài liệu (StepData sơ thẩm_KDTM · 7.2–7.4): bấm "Chọn lịch xét xử" → click ngày trùng
-       * ngày thụ lý → tick "Cả ngày".
-       */
-      const nutLich = bm.getByRole('button', { name: /Chọn lịch xét xử/i }).first();
-      if (!(await hienTrong(nutLich, 5_000))) {
-        const ds = (await bm.getByRole('button').allInnerTexts()).map(s => s.replace(/\s+/g, ' ').trim());
-        throw new Error(`47DS không có nút "Chọn lịch xét xử". Nút đang có: ${ds.filter(Boolean).join(' | ')}`);
-      }
-      await nutLich.scrollIntoViewIfNeeded();
-      await nutLich.click();
-      await choHetSpin(page);
-
-      const hop = bieuMauDangMo(page);
-      await expect(hop, 'Bấm "Chọn lịch xét xử" nhưng không mở được màn chọn lịch').toBeVisible({ timeout: 30_000 });
-
-      // Tài liệu Step 7.3: "Click vào ngày trùng với ngày ở Số thụ lý".
-      // Ngày thụ lý LẤY TỪ STATE (bước 07 sinh `ngayThuLySoTham`), không đọc lại từ màn: đọc bằng
-      // regex trên header biểu mẫu từng trượt rồi rơi về ngày mặc định ở THÁNG KHÁC, và báo
-      // "không thấy ô ngày" dù lịch đang hiện đúng tháng của ngày thụ lý.
-      const ngay = ngayThuLy.split('/');
-      ghi('47DS · ngày chọn trên lịch', ngayThuLy);
-
-      // Lịch này KHÔNG phải antd Calendar (không có td/.ant-picker-cell) — ô ngày là div chứa số.
-      // Khớp theo TEXT CHÍNH XÁC của số ngày, thử cả dạng có số 0 đứng đầu ("01" và "1").
-      const soNgay = Number(ngay[0]);
-      const oNgay = hop
-        .getByText(new RegExp(`^\\s*0?${soNgay}\\s*$`))
-        .last();
-      if (!(await hienTrong(oNgay, 5_000))) {
-        const chu = (await hop.innerText()).replace(/\s+/g, ' ').slice(0, 300);
-        throw new Error(`Không thấy ô ngày ${ngay.join('/')} trên lịch. Màn đang hiện: ${chu}`);
-      }
-      await oNgay.click();
-      await choHetSpin(page);
-
-      /**
-       * Click ngày mở lớp thứ ba: form "Thêm lịch xét xử (mở phiên tòa)" với nút "Đóng | Tạo mới".
-       * ⚠ "Tạo mới" CHÍNH LÀ NÚT LƯU của form này, không phải nút mở form mới — bấm khi chưa điền
-       * thì nó báo "Thời gian kết thúc phải lớn hơn thời gian bắt đầu" và "Vui lòng chọn tính chất
-       * phiên tòa" (đo 30/09/2026). Tick "Cả ngày" là xong phần giờ.
-       */
-      const formLich = bieuMauDangMo(page);
-      await expect(formLich, 'Click ngày nhưng không mở form "Thêm lịch xét xử"').toBeVisible({ timeout: 30_000 });
-
-      // Điền THẲNG cặp ngày và cặp giờ (từ → đến). Chỉ tick "Cả ngày" thì hệ thống vẫn báo
-      // "Thời gian kết thúc phải lớn hơn thời gian bắt đầu" (đo 30/09/2026).
-      const dsNgay = await dienCapO(page, formLich, /Ngày xét xử/i, [ngayThuLy, ngayThuLy]);
-      if (dsNgay.length) ghi('47DS · lịch', `ngày xét xử: ${dsNgay.join(' → ')}`);
-      ngayMoPhienToaSoTham = dsNgay[0] || '';
-      /**
-       * "Giờ xét xử" — hai ô picker, mặc định `00:00 → 00:00`, phải đè cả hai.
-       * Ba cách đã THẤT BẠI (đo 30/09/2026): `fill` (báo giá trị nhập không đúng), gõ rồi Escape
-       * (đóng luôn cả modal), gõ rồi Tab (antd hoàn tác về 00:00). Cách ăn: mở panel rồi CHỌN
-       * trong panel, hoặc gõ rồi Enter ngay trên chính ô đó.
-       */
-      const dsGio = [
-        await datGioTrongPanel(page, formLich.getByRole('textbox', { name: /Giờ xét xử/ }).first(), input.gioBatDauXetXu, 'Giờ xét xử (bắt đầu)'),
-        await datGioTrongPanel(page, formLich.getByRole('textbox', { name: /^Kết thúc$/ }).first(), input.gioKetThucXetXu, 'Giờ xét xử (kết thúc)'),
-      ];
-      ghi('47DS · lịch', `giờ xét xử: ${dsGio.join(' → ')}`);
-
-      const caNgay = formLich.getByRole('checkbox', { name: /Cả ngày/i }).first();
-      if (await hienTrong(caNgay, 5_000)) {
-        if (!(await caNgay.isChecked().catch(() => false))) await caNgay.click({ force: true });
-        ghi('47DS · lịch', 'đã tick "Cả ngày"');
-      }
-
-      for (const [nhan, giaTri] of [
-        [/Tiêu đề lịch xét xử/i, input.tieuDeLichXetXu],
-        [/Tính chất phiên tòa/i, input.tinhChatPhienToa],
-      ] as [RegExp, string | undefined][]) {
-        const gt = await dienOTheoNhan(page, formLich, nhan, giaTri).catch((e: Error) => {
-          ghi('47DS · lịch', `không điền được ${String(nhan)}: ${e.message.slice(0, 80)}`);
-          return '';
-        });
-        if (gt) ghi('47DS · lịch', `${String(nhan)} = ${gt}`);
-        await choHetSpin(page);
-      }
-
-      /**
-       * "Địa điểm xét xử" (thông báo lỗi gọi là "Phòng xét xử") — DANH MỤC THEO ĐƠN VỊ.
-       * TANDTC có "Phòng xét xử 102 (PXX102)", "Phòng xử lưu động"…; Tòa án nhân dân khu vực 9 -
-       * Hà Nội chỉ có ĐÚNG MỘT mục tên "X" (đo 30/09/2026). Vì vậy ưu tiên giá trị gieo, không có
-       * thì lùi về mục đầu theo thứ tự chữ cái — vẫn tất định, và ghi rõ đã lấy gì.
-       */
-      let diaDiem = await dienOTheoNhan(page, formLich, /Địa điểm xét xử/i, input.diaDiemXetXu).catch(
-        () => '',
-      );
-      if (!diaDiem) {
-        diaDiem = await dienOTheoNhan(page, formLich, /Địa điểm xét xử/i);
-        ghi('47DS · lịch', `đơn vị không có "${input.diaDiemXetXu}" → lấy mục đầu danh mục: ${diaDiem}`);
-      } else {
-        ghi('47DS · lịch', `địa điểm xét xử = ${diaDiem}`);
-      }
-      await choHetSpin(page);
-
-      // Chọn phòng xử lưu động thì màn ĐẺ THÊM ô bắt buộc "Địa điểm xét xử (chi tiết)".
-      const oChiTiet = oTheoNhan(page, formLich, /Địa điểm xét xử \(chi tiết\)/i);
-      if (await hienTrong(oChiTiet, 2_000)) {
-        await go(oChiTiet, input.diaDiemXetXuChiTiet);
-        ghi('47DS · lịch', `địa điểm xét xử (chi tiết) = ${input.diaDiemXetXuChiTiet}`);
-      }
-
-      // Soi cả form TRƯỚC khi lưu: ô nào "hiện mà chưa vào state" chỉ lộ ra khi nhìn đủ các ô.
-      for (const d of await moTaForm(formLich)) ghi('47DS · lịch · ô', d);
-
-      const nutTaoLich = formLich.getByRole('button', { name: /^Tạo mới$/ }).first();
-      await expect(nutTaoLich, 'Form lịch xét xử không có nút "Tạo mới"').toBeVisible({ timeout: 15_000 });
-      await nutTaoLich.click();
-      /**
-       * Hệ thống hỏi xác nhận NHIỀU LẦN NỐI TIẾP, mỗi kiểu trùng một hộp (đo 30/09/2026):
-       *   "Lịch xét xử đang trùng phòng xét xử Phòng xét xử 102 với Tuấn Test"
-       *   "Lịch xét xử đang trùng thành viên hội đồng xét xử với …"
-       * Đây là cảnh báo, không phải lỗi — nhưng bỏ sót một hộp thì lịch KHÔNG lưu mà cũng
-       * KHÔNG báo lỗi gì. Vì vậy xác nhận cho tới khi không còn hộp nào.
-       */
-      const tieuDeHoi = page.locator('.ant-modal-confirm-title:visible');
-      for (let lan = 0; lan < 4; lan++) {
-        if (!(await tieuDeHoi.count())) break;
-        const cauHoi = (await tieuDeHoi.first().innerText().catch(() => '')).replace(/\s+/g, ' ').trim();
-        await xacNhanHopThoai(page);
-        await choHetSpin(page);
-        if (cauHoi) ghi('47DS · lịch', `đã xác nhận cảnh báo: ${cauHoi}`);
-        await nghi(page, 500, 800);
-      }
-      await choHetSpin(page);
-      /**
-       * Lưu được thì form lịch ĐÓNG; còn mở nghĩa là validate chặn — mà form lịch còn mở thì nút
-       * "Lưu" của 47DS bên dưới bị che, click sẽ hết giờ 30s không nói được vì sao.
-       *
-       * Phải neo theo ĐÚNG TIÊU ĐỀ modal lịch: `formLich` là "lớp đang mở ngoài cùng", modal lịch
-       * đóng rồi thì nó trỏ ngay sang hộp 47DS và báo nhầm là chưa đóng (đo 30/09/2026 — lúc đó
-       * toast đã là "Lưu lịch xét xử thành công").
-       */
-      const modalLich = page
-        .locator('.ant-modal-content:visible, .ant-drawer-content:visible')
-        .filter({ hasText: /Thêm lịch xét xử \(mở phiên tòa\)/ });
-      const daDong = await modalLich
-        .first()
-        .waitFor({ state: 'hidden', timeout: 15_000 })
-        .then(() => true)
-        .catch(() => false);
-      if (!daDong && (await modalLich.count())) {
-        for (const d of await moTaForm(modalLich.first())) ghi('47DS · lịch · sau khi lưu', d);
-        throw new Error(
-          `Bấm "Tạo mới" nhưng form lịch xét xử không đóng — ${await nguyenNhanLoi(page, modalLich.first())}`,
-        );
-      }
-      ghi('47DS · lịch', 'đã lưu lịch xét xử (form đã đóng)');
+      ngayMoPhienToaSoTham = await taoLichXetXu(page, bm, ghi, ngayThuLy, input, '47DS · lịch');
 
       const oDiaDiem = oTheoNhan(page, bm, /Phòng số|Địa điểm/i);
       if ((await hienTrong(oDiaDiem, 3_000)) && (await oDiaDiem.isEditable().catch(() => false))) {

@@ -38,7 +38,7 @@ export async function luuBieuMau(
   /** Tên nút lưu, khi biểu mẫu không dùng chữ "Lưu" (vd. bản án sơ thẩm: "Thêm mới bản án") */
   tenNutLuu: RegExp = /^Lưu$/,
 ) {
-  const nut = bm.getByRole('button', { name: tenNutLuu }).first();
+  const nut = nutTheoChu(bm, tenNutLuu);
   if (!(await hienTrong(nut, 5_000))) return false;
   await nut.click();
   // Một số biểu mẫu mở hộp xác nhận sau khi bấm Lưu; không bấm thì bản ghi không được tạo mà cũng
@@ -87,6 +87,21 @@ async function trinhDuyetKy(page: Page, ghi: GhiChu, ten: string) {
   ghi(`ký ${ten}`, 'đã gửi trình duyệt ký');
 }
 
+/**
+ * Tìm NÚT trong một khung: thử theo tên trợ năng trước, không có thì lọc theo CHỮ HIỂN THỊ.
+ *
+ * Vì sao cần: ở màn phúc thẩm, tên trợ năng của nút KHÁC hẳn chữ hiển thị — `getByRole('button',
+ * { name })` không thấy "Lưu" dù nút ghi rõ "Lưu" (đo 01/10/2026 ở 66-DS: lớp có đúng ba nút
+ * `Chọn lịch xét xử | Lưu | Đóng`). Hậu quả tai hại vì `luuBieuMau` không thấy nút thì THOÁT IM
+ * LẶNG: biểu mẫu không được lưu, không lỗi, và bước sau mới vỡ ra.
+ */
+export function nutTheoChu(khung: Locator, ten: RegExp): Locator {
+  return khung
+    .getByRole('button', { name: ten })
+    .or(khung.locator('button').filter({ hasText: ten }))
+    .first();
+}
+
 /** Liệt kê nút đang có trên biểu mẫu — để thông báo lỗi nói được vì sao, thay vì đoán */
 async function dsNut(bm: Locator): Promise<string> {
   const ds = (await bm.getByRole('button').allInnerTexts().catch(() => []))
@@ -96,7 +111,7 @@ async function dsNut(bm: Locator): Promise<string> {
 }
 
 export async function laySoVaKyLogic(page: Page, bm: Locator, ghi: GhiChu, ten: string) {
-  const nutLaySo = bm.getByRole('button', { name: /Lấy số$/ }).first();
+  const nutLaySo = nutTheoChu(bm, /Lấy số$/);
   if (await hienTrong(nutLaySo, 10_000)) {
     await nutLaySo.click();
     try {
@@ -115,10 +130,10 @@ export async function laySoVaKyLogic(page: Page, bm: Locator, ghi: GhiChu, ten: 
    * Hai kiểu ký: quyết định ký SỐ có nút "Ký logic"; biên bản ký GIẤY (48-DS, 51-DS) chỉ có
    * "Xác nhận đã ký" cạnh ô tải bản scan (đo 30/09/2026). Thử cả hai, nút nào hiện thì dùng.
    */
-  let nutKy = bm.getByRole('button', { name: /Ký logic$/ }).first();
+  let nutKy = nutTheoChu(bm, /Ký logic$/);
   if (!(await hienTrong(nutKy, 10_000))) {
-    const nutXacNhan = bm.getByRole('button', { name: /Xác nhận đã ký/i }).first();
-    const nutTrinhKy = bm.getByRole('button', { name: /Trình ký$/i }).first();
+    const nutXacNhan = nutTheoChu(bm, /Xác nhận đã ký/i);
+    const nutTrinhKy = nutTheoChu(bm, /Trình ký$/i);
     if (await hienTrong(nutXacNhan, 5_000)) {
       nutKy = nutXacNhan;
       ghi(`ký ${ten}`, 'biểu mẫu ký giấy → dùng "Xác nhận đã ký"');

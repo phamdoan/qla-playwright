@@ -61,7 +61,7 @@ export default defineConfig({
       // Mọi spec cũ đã chuyển ra backup 30/09/2026 (backup-e2e-20260930/cu-20260930/tests) nên
       // project này hiện KHÔNG còn spec nào — giữ lại làm chỗ cho spec dùng AUTH_FILE mặc định.
       // Khung FLOW/CASE/STEP chạy ở project 'tai-khoan-moi' (session riêng theo vai).
-      testIgnore: [/kinh-doanh-thuong-mai.*\.spec\.ts$/],
+      testIgnore: [/kinh-doanh-thuong-mai.*\.spec\.ts$/, /[\\/]flows[\\/].*\.spec\.ts$/],
       // viewport sau devices[...] để không bị ghi đè về 1280x720 (màn OCR có panel PDF bên phải, form rất hẹp)
       use: { ...devices['Desktop Chrome'], viewport: { width: 1600, height: 900 }, storageState: AUTH_FILE },
       dependencies: ['setup'],
@@ -72,7 +72,12 @@ export default defineConfig({
     // (khung/buoc.ts → moTrangVaiCauHinh), storageState dưới đây chỉ là session mặc định.
     {
       name: 'tai-khoan-moi',
-      testMatch: [/kinh-doanh-thuong-mai.*\.spec\.ts$/],
+      /**
+       * Quy ước: mọi spec của khung FLOW/CASE/STEP nằm ở `tests/<phân hệ>/flows/*.spec.ts`.
+       * Liệt kê từng phân hệ thì thêm luồng mới là quên sửa config rồi "No tests found"
+       * (đo 01/10/2026 khi thêm luồng hình sự).
+       */
+      testMatch: [/kinh-doanh-thuong-mai.*\.spec\.ts$/, /[\\/]flows[\\/].*\.spec\.ts$/],
       use: { ...devices['Desktop Chrome'], viewport: { width: 1600, height: 900 }, storageState: AUTH_FILE_TKM },
       // KHÔNG phụ thuộc 'setup-tai-khoan-moi': khung FLOW tự mở phiên theo vai
       // (khung/luong.ts → moTrangVaiCauHinh, mỗi vai một file auth riêng) nên 4 lần đăng nhập SSO

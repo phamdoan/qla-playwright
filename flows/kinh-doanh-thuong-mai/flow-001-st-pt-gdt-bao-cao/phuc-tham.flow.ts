@@ -15,9 +15,18 @@
  * thẻ submenu chứa cả chữ của mục con nên khớp nhãn hay trượt.
  */
 import { Locator, Page, expect, test } from '@playwright/test';
-import { choHetSpin, chonSelect, chonSelectTheoThuTu, dienOTheoNhan, go, hienTrong, moTaForm, nghi, nguyenNhanLoi, oTheoNhan, toastGanDay } from '../../../common/antd';
-import { bieuMauDangMo, dongBieuMau, laySoVaKyLogic, luuBieuMau, moTab, themBieuMauTuDanhSach } from '../../../common/bieu-mau';
+import { choHetSpin, chonNgay, chonSelect, chonSelectTheoThuTu, dienOTheoNhan, go, hienTrong, moTaForm, nghi, nguyenNhanLoi, oTheoNhan, toastGanDay } from '../../../common/antd';
+import {
+  bieuMauDangMo,
+  dongBieuMau,
+  laySoVaKyLogic,
+  luuBieuMau,
+  moLaiVaKy,
+  moTab,
+  themBieuMauTuDanhSach,
+} from '../../../common/bieu-mau';
 import { ddmmyyyy } from '../../../common/du-lieu';
+import { taoLichXetXu } from './chuan-bi-xet-xu.flow';
 import { soTatDinh } from '../../../khung/so-tat-dinh';
 import { TEN_BI_DON, TEN_NGUYEN_DON } from '../../../data/kinh-doanh-thuong-mai/flow-001-st-pt-gdt-bao-cao/case-001/input';
 import type { INPUT } from '../../../data/kinh-doanh-thuong-mai/flow-001-st-pt-gdt-bao-cao/case-001/input';
@@ -829,39 +838,79 @@ export async function phucThamTamUngAnPhi(page: Page, input: DuLieuVao, ghi: Ghi
     tab: 'Chuẩn bị xét xử',
     tieuDeKhoi: /Danh sách thông báo|Thông báo/i,
     tenNut: /Thêm mới thông báo/i,
-    /**
-     * StepData 3.1 chỉ định 83-DS, nhưng mẫu đó HỎNG trên STG: mở ra chỉ có header và
-     * "Lưu | Đóng", thân biểu mẫu trống vì máy chủ trả **400** (người dùng xác nhận 01/10/2026).
-     * Dùng mẫu tương đương trong cùng danh mục — "Thông báo về việc nộp tiền tạm ứng án phí
-     * (05-TB-DS)". Danh mục đầy đủ: 82-DS · 83-DS · 29-DS · 05-TB-DS · 06-TB-DS.
-     */
-    maTim: '05-TB-DS',
+    maTim: '83-DS',
     ma: /nộp tiền tạm ứng án phí/i,
-    ten: '05-TB-DS (tạm ứng án phí phúc thẩm — thay 83-DS lỗi 400)',
-    // Ba ô bắt buộc riêng của mẫu này (hệ thống nêu đích danh khi chặn lưu, đo 01/10/2026)
+    ten: '83DS (tạm ứng án phí phúc thẩm)',
     oThem: [
       [/Ngày thông báo/i, ddmmyyyy(new Date())],
-      [/phải nộp/i, TEN_BI_DON],
       [/Cơ quan thi hành án thu tiền/i, undefined],
       [/Địa chỉ cơ quan thi hành án/i, input.diaChiCoQuanThiHanhAn],
     ],
     nguoiKy: input.nguoiKyPhucTham,
-  }).then(dong => ({ soThongBao83DS: dong }));
+  })
+    .then(dong => ({ soThongBao83DS: dong }))
+    .catch((e: Error) => {
+      /**
+       * NGOẠI LỆ MÔI TRƯỜNG — ghi đúng sự thật rồi cho luồng đi tiếp.
+       *
+       * Đo 01/10/2026 trên STG, người dùng xác nhận bằng tay:
+       *   · 83-DS (mẫu ĐÚNG của phúc thẩm, StepData 3.1): máy chủ trả **400**, biểu mẫu mở ra chỉ
+       *     có header và "Lưu | Đóng", không ô nào.
+       *   · 29-DS và 05-TB-DS: là mẫu của SƠ THẨM — mở ở phúc thẩm thì báo
+       *     "Không tìm thấy đơn khởi kiện/yêu cầu" nên không nạp được danh sách người phải nộp.
+       * Tức không có mẫu nào lập được thông báo tạm ứng án phí phúc thẩm trên môi trường này.
+       *
+       * Không dựng số giả: bằng chứng ghi thẳng lý do để người đọc sổ cái biết hồ sơ vụ án thiếu
+       * đúng văn bản nào và vì sao.
+       */
+      const lyDo =
+        'KHÔNG lập được — 83-DS lỗi 400 (lỗi hệ thống); 29-DS/05-TB-DS là mẫu sơ thẩm, ở phúc thẩm ' +
+        `báo "Không tìm thấy đơn khởi kiện/yêu cầu". Chi tiết: ${e.message.slice(0, 120)}`;
+      ghi('83DS', lyDo);
+      return { soThongBao83DS: lyDo };
+    });
 }
 
 // ═════════ BƯỚC 20 · Quyết định đưa vụ án ra xét xử phúc thẩm (66-DS) ═════════
 /** Nguồn: StepData · Phúc thẩm Step3.2–3.4 */
+/**
+ * HAI NHỊP (đo 01/10/2026, người dùng xác nhận):
+ *   nhịp 1 — mở 66-DS → "Chọn lịch xét xử" → click ngày → TẠO lịch. Lưu lịch xong hệ thống ĐÓNG
+ *            LUÔN biểu mẫu 66-DS mà không lưu nó, nên bảng quyết định vẫn rỗng.
+ *   nhịp 2 — mở lại 66-DS → "Chọn lịch xét xử" → click đúng ngày đó → lần này chỉ CHỌN lịch sẵn
+ *            có (không mở form tạo) → Lưu → Lấy số → Ký.
+ */
 export async function phucThamDuaRaXetXu(page: Page, input: DuLieuVao, ghi: GhiChu) {
-  const dong = await lapBieuMauPT(page, ghi, {
+  let ngayLich = '';
+  let dong = '';
+  for (let nhip = 1; nhip <= 2 && !dong; nhip++) {
+    ghi('66DS', nhip === 1 ? 'nhịp 1 — tạo lịch xét xử' : 'nhịp 2 — mở lại quyết định, chọn lịch đã có');
+    dong = await lapBieuMauPT(page, ghi, {
     tab: 'Chuẩn bị xét xử',
     tieuDeKhoi: /Danh sách quyết định|Quyết định/i,
     tenNut: /Thêm mới quyết định/i,
     maTim: '66-DS',
-    ma: /đưa vụ án ra xét xử phúc thẩm/i,
+    // Dòng trong bảng và tiêu đề biểu mẫu chỉ ghi "Quyết định đưa vụ án ra xét xử" — KHÔNG có
+    // chữ "phúc thẩm" (đo 01/10/2026). Đòi có chữ đó thì vừa hụt dòng vừa hụt cả biểu mẫu.
+    ma: /đưa vụ án ra xét xử/i,
     ten: '66DS (đưa vụ án ra xét xử phúc thẩm)',
     nguoiKy: input.nguoiKyPhucTham,
-  });
-  return { soQuyetDinh66DS: dong, ngayMoPhienToaPhucTham: ddmmyyyy(new Date()) };
+    /**
+     * 66-DS đòi CHỌN LỊCH XÉT XỬ y như 47DS ở sơ thẩm (nút "Chọn lịch xét xử" trên biểu mẫu),
+     * nên dùng chung hàm đã viết cho bước 10 thay vì chép lại 150 dòng.
+     */
+      truocKhiLuu: async bm => {
+        // Nhịp 2 phải chọn ĐÚNG NGÀY đã tạo ở nhịp 1, không lấy ngày hôm nay
+        ngayLich = await taoLichXetXu(page, bm, ghi, ngayLich || ddmmyyyy(new Date()), input, '66DS · lịch');
+      },
+    }).catch((e: Error) => {
+      // Nhịp 1 hỏng là BÌNH THƯỜNG (biểu mẫu bị đóng sau khi lưu lịch) — chỉ ném ở nhịp cuối
+      if (nhip >= 2) throw e;
+      ghi('66DS', `nhịp 1 kết thúc như dự kiến: ${e.message.slice(0, 100)}`);
+      return '';
+    });
+  }
+  return { soQuyetDinh66DS: dong, ngayMoPhienToaPhucTham: ngayLich || ddmmyyyy(new Date()) };
 }
 
 interface ThamSoBieuMauPT {
@@ -876,6 +925,8 @@ interface ThamSoBieuMauPT {
   nguoiKy?: string;
   /** Ô bắt buộc riêng của từng biểu mẫu */
   oThem?: [RegExp, string | undefined][];
+  /** Việc riêng phải làm trước khi Lưu, vd. 66-DS phải chọn lịch xét xử */
+  truocKhiLuu?: (bm: Locator) => Promise<void>;
 }
 
 /**
@@ -945,7 +996,16 @@ async function lapBieuMauPT(page: Page, ghi: GhiChu, opt: ThamSoBieuMauPT): Prom
     await choHetSpin(page);
   }
 
-  const bm = soCombo ? await themBieuMauTuDanhSach(page, khoi, opt.maTim, opt.tenNut) : bieuMauDangMo(page);
+  /**
+   * NEO BIỂU MẪU THEO TIÊU ĐỀ, không giữ  ("lớp ngoài cùng"): 66-DS còn mở thêm
+   * modal lịch xét xử, lịch đóng xong thì locator động trỏ đi chỗ khác và mọi nút biến mất
+   * ("Nút đang có: (không nút nào)", đo 01/10/2026). Cùng bẫy đã gặp ở bước 10, 12 và 17.
+   */
+  if (soCombo) await themBieuMauTuDanhSach(page, khoi, opt.maTim, opt.tenNut);
+  const bm = page
+    .locator('.ant-modal-content:visible, .ant-drawer-content:visible')
+    .filter({ hasText: opt.ma })
+    .first();
   await expect(bm, `Không mở được biểu mẫu ${opt.ten}`).toBeVisible({ timeout: 60_000 });
   await choHetSpin(page);
   // Thân biểu mẫu render SAU header: đọc ngay thì dump rỗng và mọi ô đều "không thấy"
@@ -976,22 +1036,64 @@ async function lapBieuMauPT(page: Page, ghi: GhiChu, opt: ThamSoBieuMauPT): Prom
     await choHetSpin(page);
   }
 
+  /**
+   * Ô "người phải nộp" của các mẫu thông báo tạm ứng án phí KHÔNG tìm được theo nhãn: nó không
+   * phải select/text mà `dienOTheoNhan` nhận ra, và nhãn còn trùng với "Số tiền tạm ứng phải nộp".
+   * Bước 04 sơ thẩm đã giải bằng cách neo theo ID — dùng lại đúng cách đó (đo 01/10/2026).
+   */
+  const oNguoiNop = bm.locator('[id$="_noiDung_nguoiPhaiNop"], [id*="nguoiPhaiNop"]').first();
+  if (await hienTrong(oNguoiNop, 3_000)) {
+    const ten = await chonSelectTheoThuTu(page, oNguoiNop, 0).catch((e: Error) => {
+      ghi(opt.ten, `không chọn được người phải nộp: ${e.message.slice(0, 100)}`);
+      return '';
+    });
+    if (ten) ghi(opt.ten, `người phải nộp = ${ten}`);
+    await choHetSpin(page);
+  }
+
+  /**
+   * "Ngày quyết định" neo theo ID, không theo nhãn: tìm theo nhãn trả "Không thấy ô" dù dump cho
+   * thấy ô tồn tại và đang TRỐNG — và ô trống này chính là thứ làm bấm "Lưu" không ăn, lặng lẽ
+   * (đo 01/10/2026 ở 66-DS: bảng quyết định 0 dòng ở MỌI tab). Bước 04 sơ thẩm đã dùng đúng cách này.
+   */
+  const oNgayQD = bm.locator('[id$="_ngayQuyetDinh"], [id*="ngayQuyetDinh"]').first();
+  if ((await hienTrong(oNgayQD, 3_000)) && (await oNgayQD.isEditable().catch(() => false))) {
+    if (!(await oNgayQD.inputValue().catch(() => ''))) {
+      await chonNgay(oNgayQD, ddmmyyyy(new Date()));
+      ghi(opt.ten, `ngày quyết định = ${(await oNgayQD.inputValue().catch(() => '')).trim()}`);
+      await choHetSpin(page);
+    }
+  }
+
+  if (opt.truocKhiLuu) await opt.truocKhiLuu(bm);
+
+  /**
+   * BẤM "LƯU" LÀ POPUP ĐÓNG và hiện toast "Lưu quyết định thành công" (người dùng xác nhận
+   * 01/10/2026). Đó là hành vi ĐÚNG, không phải mất form — nên đừng tìm "Lấy số"/"Ký logic" trên
+   * biểu mẫu vừa đóng (bản trước báo "Nút đang có: (không nút nào)" rồi kết luận nhầm là 66-DS hỏng).
+   * Trình tự đúng: Lưu → tìm dòng trong bảng → MỞ LẠI dòng đó để Lấy số + Ký.
+   */
   await luuBieuMau(page, bm, opt.ten, ghi);
-  await laySoVaKyLogic(page, bm, ghi, opt.ten);
-  await dongBieuMau(page, bm);
+  if (await hienTrong(bm, 3_000)) {
+    // Vẫn mở (biểu mẫu kiểu khác) thì ký luôn tại chỗ
+    await laySoVaKyLogic(page, bm, ghi, opt.ten);
+    await dongBieuMau(page, bm);
+  }
   await choHetSpin(page);
   await moTab(page, opt.tab);
 
-  const dong = (
-    await khoiPT(page, opt.tieuDeKhoi, opt.tenNut)
-      .locator('.ant-table-row')
-      .filter({ hasText: opt.ma })
-      .first()
-      .innerText()
-      .catch(() => '')
-  )
-    .replace(/\s+/g, ' ')
-    .trim();
+  /** Tìm dòng trên CẢ TAB: nút của khối đổi tên sau khi đã có bản ghi nên neo theo khối hay trượt */
+  const timDong = () => page.locator('.ant-table-row').filter({ hasText: opt.ma }).first();
+  let dong = (await timDong().innerText().catch(() => '')).replace(/\s+/g, ' ').trim();
+
+  // Mới lưu thì bản ghi còn là dự thảo → mở lại để Lấy số + Ký logic
+  if (dong && !/Đã ban hành|Hoàn thành|Có hiệu lực/i.test(dong)) {
+    await moLaiVaKy(page, timDong(), ghi, opt.ten).catch((e: Error) =>
+      ghi(opt.ten, `không mở lại được để ký: ${e.message.slice(0, 110)}`),
+    );
+    await moTab(page, opt.tab);
+    dong = (await timDong().innerText().catch(() => '')).replace(/\s+/g, ' ').trim();
+  }
   if (!dong) {
     const ds = (await page.locator('.ant-table-row').allInnerTexts())
       .map(s => s.replace(/\s+/g, ' ').trim())
