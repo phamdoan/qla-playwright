@@ -35,7 +35,11 @@ khaiLuong({
   vai: (buoc, input) =>
     buoc.vai === 'chanhAnPhucThamHanhChinh'
       ? input.vaiPhucTham
-      : buoc.vai === 'chanhAn'
+      : // 'chanhAn' ở các bước SƠ THẨM nghĩa là chánh án của tòa sơ thẩm (case-002: chanhAnDanSu).
+        // Ở các bước GĐT/TT thì KHÔNG đổi: bước 42 cần đúng Chánh án TANDTC (STG: Nguyễn Văn Quảng =
+        // `taiKhoan.chanhAn`) vì Chương trình làm việc HĐXX khoá người ký = chủ toạ = Chánh án.
+        // Đo 02/10/2026: ánh xạ cũ đẩy bước 42 sang chanhAnDanSu nên hàng chờ duyệt không có văn bản.
+        buoc.vai === 'chanhAn' && !(buoc.nguon ?? '').includes('GĐT/TT')
         ? input.vaiSoTham
         : buoc.vai,
 });

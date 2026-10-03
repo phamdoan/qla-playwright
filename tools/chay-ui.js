@@ -50,6 +50,9 @@ if (lay('so-case')) env.QLA_SO_CASE = lay('so-case');
 if (args.includes('--bo-qua-da-xong')) env.QLA_BO_QUA_DA_XONG = '1';
 // --hien: mở trình duyệt thật để thao tác/quan sát (dùng với spec mo-tay có page.pause())
 if (args.includes('--hien')) env.QLA_MO_TAY = '1';
+// --quay: quay video .webm từng bước (cỡ khung nhìn 1920×1080) · --anh: chụp .png cuối mỗi bước
+if (args.includes('--quay')) env.QLA_QUAY = '1';
+if (args.includes('--anh')) env.QLA_ANH = '1';
 // Mặc định CHẠY NHANH (gõ tức thì, thời gian nghỉ x0.3). Cần quan sát thì thêm --cham.
 if (!args.includes('--cham')) env.QLA_GO_PHIM_MS = '0';
 
@@ -106,12 +109,18 @@ const loc = lay('file');
 // → lỗi "ENOENT … traces\…recording.stacks" và trace hỏng giữa chừng. Mỗi cửa sổ một thư mục kết quả
 // riêng theo --so-cai (mặc định test-results như cũ).
 const thuMucKq = lay('so-cai') ? ['--output=test-results-' + lay('so-cai')] : [];
+// --song-song=N: chạy N case CÙNG LÚC. Mỗi case là một describe mode 'serial' nên các bước trong một
+// case vẫn tuần tự, chỉ các case khác nhau mới chạy song song. Lưu ý: các case dùng CHUNG tài khoản
+// (SSO) và chung bể lịch xét xử GĐT/TT — mỗi case phải có lịch riêng, nếu không bước 41 ghi đè nhau.
+const songSong = lay('song-song');
+const soWorker = songSong ? ['--workers=' + songSong] : [];
 const lenh = [
   'playwright',
   'test',
   ...cheDo,
   '--project=tai-khoan-moi',
   ...thuMucKq,
+  ...soWorker,
   // Bọc nháy: chuỗi có "|" mà không bọc thì cmd.exe hiểu là pipe rồi báo "'02' is not recognized"
   ...(gBuocSo
     ? ['-g', JSON.stringify(gBuocSo)]
@@ -125,6 +134,9 @@ console.log(`Môi trường: ${moiTruong.toUpperCase()} | ghi dữ liệu: ${cho
 if (env.QLA_TKM_DONG) console.log(`Dòng Excel: ${env.QLA_TKM_DONG}`);
 if (env.QLA_TKM_SO_DONG) console.log(`Số dòng Excel: ${env.QLA_TKM_SO_DONG}`);
 if (loc) console.log(`Chỉ chạy spec khớp: ${loc}`);
+if (env.QLA_QUAY) console.log('Quay video: CÓ (.webm 1920×1080, nằm cạnh trace trong thư mục kết quả)');
+if (env.QLA_ANH) console.log('Chụp ảnh: CÓ (.png cuối mỗi bước)');
+if (songSong) console.log(`Chạy song song: ${songSong} case cùng lúc (mỗi case vẫn tuần tự từng bước)`);
 if (env.QLA_GDT_MA) console.log(`Vụ GĐT/TT: ${env.QLA_GDT_MA}`);
 if (env.QLA_CASE) console.log(`Case: ${env.QLA_CASE}`);
 if (env.QLA_SO_CASE) console.log(`Số case đầu: ${env.QLA_SO_CASE}`);

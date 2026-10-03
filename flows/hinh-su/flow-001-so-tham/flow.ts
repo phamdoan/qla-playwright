@@ -76,29 +76,37 @@ export const FLOW_HS_001: DinhNghiaFlow = {
       xacMinh: 'TAI-LIEU',
       bangChungXacMinh: 'spec: Hội thẩm dùng mẫu 001, Thư ký dùng mẫu 002',
     },
+    /**
+     * ⚠ THỨ TỰ NGƯỢC VỚI SPEC. Spec 4.1→4.2 bảo mở phiên tòa (tạo lịch) rồi mới lập 020 và gắn
+     * lịch vào. Hệ thống làm ngược: nút "Mở phiên tòa" bị vô hiệu với tooltip
+     *   "Lịch xét xử được tạo khi ký Quyết định đưa vụ án ra xét xử sơ thẩm"
+     * (đo 01/10/2026 trên UAT, vụ đã ở trạng thái ĐÃ PHÂN CÔNG TP). Nên lập 020 trước, lịch do
+     * hệ thống sinh khi ký 020.
+     */
     {
-      ma: '05-mo-phien-toa',
-      ten: 'Tab Xét xử → "Mở phiên tòa" → lịch xét xử',
-      manHinh: 'Chi tiết vụ án sơ thẩm · tab Xét xử',
-      route: CHI_TIET('thong-tin-chung'),
-      vai: 'toaKhuVuc',
-      vao: ['idVuAnHinhSu'],
-      ra: ['ngayMoPhienToa'],
-      nguon: `${NGUON} · PHẦN B Step4.1`,
-      xacMinh: 'TAI-LIEU',
-      bangChungXacMinh: 'spec: tạo xong trạng thái vụ → "Đã lên lịch xét xử"',
-    },
-    {
-      ma: '06-dua-ra-xet-xu-020',
-      ten: 'Quyết định đưa vụ án ra xét xử sơ thẩm (020) → gắn lịch → Lấy số → Ký logic',
+      ma: '05-dua-ra-xet-xu-020',
+      ten: 'Quyết định đưa vụ án ra xét xử sơ thẩm (020) → Lấy số → Ký logic (lịch sinh khi ký)',
       manHinh: 'Chi tiết vụ án sơ thẩm · tab Chuẩn bị xét xử',
       route: CHI_TIET('thong-tin-chung'),
       vai: 'toaKhuVuc',
-      vao: ['idVuAnHinhSu', 'ngayMoPhienToa'],
+      vao: ['idVuAnHinhSu'],
       ra: ['soQuyetDinh020'],
       nguon: `${NGUON} · PHẦN B Step4.2`,
-      xacMinh: 'TAI-LIEU',
-      bangChungXacMinh: 'spec: BẢN ÁN chỉ tạo được khi 020 đã ký; ký xong bị can → bị cáo',
+      xacMinh: 'DO-THAT',
+      bangChungXacMinh:
+        'tooltip của nút "Mở phiên tòa": lịch xét xử được tạo khi ký 020 — nên 020 phải đi trước',
+    },
+    {
+      ma: '06-mo-phien-toa',
+      ten: 'Tab Xét xử → kiểm lịch xét xử do ký 020 sinh ra',
+      manHinh: 'Chi tiết vụ án sơ thẩm · tab Xét xử',
+      route: CHI_TIET('thong-tin-chung'),
+      vai: 'toaKhuVuc',
+      vao: ['idVuAnHinhSu', 'soQuyetDinh020'],
+      ra: ['ngayMoPhienToa'],
+      nguon: `${NGUON} · PHẦN B Step4.1`,
+      xacMinh: 'DO-THAT',
+      bangChungXacMinh: 'lịch xét xử phải hiện trên tab Xét xử sau khi 020 đã ký',
     },
     {
       ma: '07-ban-an-so-tham',

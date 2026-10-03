@@ -62,10 +62,21 @@ export async function chuyenHoSoLenPhucTham(
     }
   }
 
-  const tab = page.getByRole('tab', { name: /Chưa chuyển/i }).first();
-  await expect(tab, 'Màn "Hồ sơ chuyển đi phúc thẩm" không có tab "Chưa chuyển"').toBeVisible({
-    timeout: 30_000,
-  });
+  /**
+   * TÊN TAB ĐỔI Ở BẢN FE MỚI (đo 02/10/2026): màn giờ có "Tất cả / Đã ký QĐ, chưa gửi / Đã gửi, chờ
+   * tiếp nhận / Đã được tiếp nhận / Bị từ chối tiếp nhận" — không còn "Chưa chuyển". Vụ chờ gửi nằm ở
+   * "Đã ký QĐ, chưa gửi". Nhận cả hai tên để chạy được trên môi trường chưa cập nhật.
+   */
+  const tab = page.getByRole('tab', { name: /Đã ký QĐ, chưa gửi|Chưa chuyển/i }).first();
+  if (!(await hienTrong(tab, 20_000))) {
+    const dsTab = (await page.getByRole('tab').allInnerTexts().catch(() => []))
+      .map(s => s.replace(/\s+/g, ' ').trim())
+      .filter(Boolean);
+    throw new Error(
+      'Màn "Hồ sơ chuyển đi phúc thẩm" không có tab chờ gửi ("Đã ký QĐ, chưa gửi" / "Chưa chuyển").\n' +
+        `  Tab đang có: ${dsTab.join(' | ') || '(không đọc được)'}`,
+    );
+  }
   if ((await tab.getAttribute('aria-selected')) !== 'true') {
     await tab.click();
     await choHetSpin(page);
@@ -144,8 +155,25 @@ export async function chuyenHoSoLenPhucTham(
   await expect(tick, `Dòng vụ ${maVuAnSoTham} không có ô tick`).toBeVisible({ timeout: 15_000 });
   if (!(await tick.isChecked().catch(() => false))) await tick.click({ force: true });
 
-  const nut = page.getByRole('button', { name: /Chuyển vụ án/i }).first();
-  await expect(nut, 'Màn không có nút "Chuyển vụ án"').toBeVisible({ timeout: 15_000 });
+  /**
+   * TÊN NÚT ĐỔI Ở BẢN FE MỚI (đo 02/10/2026): "Chuyển vụ án (n)" → "Gửi hồ sơ đã chọn" (nút gộp, KHÔNG
+   * mang số dòng), kèm nút "Gửi" trên từng dòng. Nhận cả hai tên; nút mới không có "(n)" nên chỉ kiểm
+   * trạng thái bật/tắt.
+   */
+  const nut = page.getByRole('button', { name: /Gửi hồ sơ đã chọn|Chuyển vụ án/i }).first();
+  if (!(await hienTrong(nut, 15_000))) {
+    const dsNut = [
+      ...new Set(
+        (await page.locator('main').getByRole('button').allInnerTexts().catch(() => []))
+          .map(s => s.replace(/\s+/g, ' ').trim())
+          .filter(Boolean),
+      ),
+    ];
+    throw new Error(
+      'Màn không có nút gửi hồ sơ ("Gửi hồ sơ đã chọn" / "Chuyển vụ án").\n' +
+        `  Nút đang có: ${dsNut.slice(0, 14).join(' | ') || '(không đọc được)'}`,
+    );
+  }
 
   /**
    * NÚT PHẢI BẬT TRƯỚC KHI BẤM. Tên nút mang số dòng đang chọn — "Chuyển vụ án (0)" là chưa tick
@@ -169,20 +197,21 @@ export async function chuyenHoSoLenPhucTham(
    */
   /**
    * Hộp xác nhận ở đây là MODAL THƯỜNG, không phải `.ant-modal-confirm`:
-   *   "Chuyển vụ án — Xác nhận chuyển 1 vụ án tới tòa án nhận?" · nút [Hủy] [Chuyển]
+   *   bản cũ: "Chuyển vụ án — Xác nhận chuyển 1 vụ án tới tòa án nhận?" · nút [Hủy] [Chuyển]
+   *   bản 02/10/2026: "Gửi hồ sơ chuyển đi — Xác nhận gửi 1 hồ sơ tới Tòa án nhận?" · nút [Hủy] [Gửi]
    * nên `xacNhanHopThoai` (tìm OK/Đồng ý/Xác nhận) không bắt được. Không bấm "Chuyển" thì vụ
    * đứng yên, không toast, không lỗi (đo 30/09/2026).
    */
   for (let lan = 0; lan < 3; lan++) {
     const hop = page
       .locator('.ant-modal-content:visible, .ant-drawer-content:visible')
-      .filter({ hasText: /Xác nhận chuyển .* vụ án/i })
+      .filter({ hasText: /Xác nhận (chuyển .* vụ án|gửi .* hồ sơ)/i })
       .first();
     if (!(await hienTrong(hop, lan === 0 ? 10_000 : 2_000))) break;
     const cauHoi = (await hop.innerText().catch(() => '')).replace(/\s+/g, ' ').trim().slice(0, 120);
     // Modal đang đóng dở vẫn "visible" một nhịp → bấm vào là treo đủ 30s. Bấm hụt thì thôi.
     const daBam = await hop
-      .getByRole('button', { name: /^(Chuyển|Đồng ý|Xác nhận|OK)$/i })
+      .getByRole("button", { name: /^(Gửi|Chuyển|Đồng ý|Xác nhận|OK)$/i })
       .first()
       .click({ timeout: 8_000 })
       .then(() => true)

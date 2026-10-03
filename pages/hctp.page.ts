@@ -285,7 +285,31 @@ export class HctpPage {
     await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
     await this.locMaDon(maDon);
     const dong = page.locator('.ant-table-row').filter({ hasText: tenVanBan }).first();
-    await expect(dong, `Không thấy bản nháp "${tenVanBan}" của đơn ${maDon}`).toBeVisible({ timeout: 60_000 });
+    /**
+     * BẢN FE MỚI (đo 02/10/2026): văn bản vừa tạo được CẤP SỐ VÀ KÝ NGAY, nên tab "Nháp" rỗng còn
+     * "Đã ký"/"Đã ban hành" có dòng của nó — không còn bản nháp nào để trình ký. Trước khi báo lỗi,
+     * kiểm các tab kia: thấy đúng tên văn bản của đơn này thì coi như bước trình ký đã xong.
+     */
+    if (!(await hienTrong(dong, 15_000))) {
+      for (const tenTab of [/^Đã ký/, /^Đã ban hành/, /^Chờ ký/, /^Chờ duyệt/]) {
+        const tab = page.getByRole('tab', { name: tenTab }).first();
+        if (!(await hienTrong(tab, 3_000))) continue;
+        await tab.click().catch(() => undefined);
+        await page.waitForLoadState('networkidle', { timeout: 20_000 }).catch(() => undefined);
+        await nghi(page, 1000, 1500);
+        const dongKhac = page.locator('.ant-table-row').filter({ hasText: tenVanBan }).first();
+        if (await hienTrong(dongKhac, 5_000)) {
+          const chu = (await dongKhac.innerText()).replace(/\s+/g, ' ').trim();
+          console.log(
+            `    · "${tenVanBan}" của đơn ${maDon} KHÔNG ở tab Nháp mà ở tab ` +
+              `"${(await tab.innerText()).replace(/\s+/g, ' ').trim()}" → bản này cấp số/ký ngay khi tạo, ` +
+              `không cần trình ký. Dòng: ${chu.slice(0, 160)}`,
+          );
+          return undefined;
+        }
+      }
+    }
+    await expect(dong, `Không thấy bản nháp "${tenVanBan}" của đơn ${maDon}`).toBeVisible({ timeout: 30_000 });
     await dong.locator('button').filter({ has: page.locator('[aria-label="send"]') }).first().click();
 
     const m = page.locator('.ant-modal:visible').filter({ has: page.getByRole('button', { name: /^Gửi$/ }) }).last();

@@ -38,7 +38,7 @@ type GhiChu = (khoa: string, giaTri: string) => void;
  * `.last()` lấy thẻ SÂU NHẤT khớp cả hai (Playwright trả theo thứ tự DOM, tổ tiên đứng trước),
  * nhờ vậy không vớ phải cả trang.
  */
-function khoiTheoTieuDeVaNut(page: Page, tieuDe: RegExp, tenNut: RegExp): Locator {
+export function khoiTheoTieuDeVaNut(page: Page, tieuDe: RegExp, tenNut: RegExp): Locator {
   return page
     .locator('div')
     .filter({ hasText: tieuDe })
@@ -75,7 +75,7 @@ async function dienNoiDung(page: Page, bm: Locator, chu: string, ghi: GhiChu, nh
  * Vì sao tách riêng: `dienOTheoNhan` chỉ tìm `input, textarea`; gặp ô soạn thảo thì locator rỗng và
  * `isEditable()` treo đủ 30 giây rồi ném `locator.evaluate: Timeout` — không nói được ô nào hỏng.
  */
-async function dienOChuDai(page: Page, bm: Locator, nhan: RegExp, chu: string): Promise<boolean> {
+export async function dienOChuDai(page: Page, bm: Locator, nhan: RegExp, chu: string): Promise<boolean> {
   const oForm = bm
     .locator('.ant-form-item')
     .filter({ has: page.locator('label').filter({ hasText: nhan }) })
@@ -188,7 +188,7 @@ async function chonMucTrongDropdown(page: Page, o: Locator, giaTri: string, ten:
   await nghi(page);
 }
 
-interface ThamSoQuyetDinhHdxx {
+export interface ThamSoQuyetDinhHdxx {
   /** Khớp DÒNG trong bảng — cột "Tên quyết định" hiện tên đầy đủ, không có mã */
   ma: RegExp;
   /** CHUỖI gõ vào ô chọn để lọc — ở khối này mã CÓ dấu gạch, vd. '48-DS' */
@@ -199,13 +199,19 @@ interface ThamSoQuyetDinhHdxx {
   oBatBuoc?: [RegExp, string][];
   /** Ô GIỜ: phải chọn trong panel rồi bấm OK, gõ tay không commit */
   oGio?: [RegExp, string][];
+  /**
+   * Việc riêng phải làm TRƯỚC khi Lưu — cho những biểu mẫu có bảng con, không phải ô rời.
+   * Vd. 51-DS phúc thẩm có bảng "phạm vi kháng cáo, kháng nghị", mỗi dòng một dropdown kết quả;
+   * thiếu thì form báo "Vui lòng chọn kết quả xử lý cho tất cả các phạm vi kháng cáo, kháng nghị".
+   */
+  truocKhiLuu?: (bm: Locator) => Promise<void>;
 }
 
 /**
  * Biên bản HĐXX ký GIẤY: nút "Xác nhận đã ký" bị KHOÁ cho tới khi tải lên bản scan
  * ("Kéo thả hoặc bấm để chọn tệp (PDF/ảnh scan bản ký giấy)" — đo 30/09/2026).
  */
-async function taiBanScanNeuCan(page: Page, bm: Locator, ghi: GhiChu, ten: string) {
+export async function taiBanScanNeuCan(page: Page, bm: Locator, ghi: GhiChu, ten: string) {
   const nut = bm.getByRole('button', { name: /Xác nhận đã ký/i }).first();
   if (!(await hienTrong(nut, 3_000))) return; // biểu mẫu ký số, không cần bản scan
   if (await nut.isEnabled().catch(() => false)) return;
@@ -272,7 +278,7 @@ async function kyTiepQuyetDinh(page: Page, ghi: GhiChu, ma: RegExp, ten: string)
 }
 
 /** Lập một quyết định của HĐXX: chọn loại → Thêm mới quyết định → nhập nội dung → Lưu → Ký → Đóng */
-async function lapQuyetDinhHdxx(page: Page, ghi: GhiChu, opt: ThamSoQuyetDinhHdxx): Promise<string> {
+export async function lapQuyetDinhHdxx(page: Page, ghi: GhiChu, opt: ThamSoQuyetDinhHdxx): Promise<string> {
   const daCo = await daCoQuyetDinh(page, opt.ma);
   if (daCo) {
     ghi(opt.ten, `đã có ở lượt trước: ${daCo}`);
@@ -307,6 +313,9 @@ async function lapQuyetDinhHdxx(page: Page, ghi: GhiChu, opt: ThamSoQuyetDinhHdx
       const o = bm.getByRole('textbox', { name: nhan }).first();
       ghi(`${opt.ten} · ${String(nhan)}`, await datGioTrongPanel(page, o, gio, String(nhan)));
     }
+    // Bảng con (nếu có) — làm sau các ô rời để dropdown trong bảng không bị panel giờ che
+    if (opt.truocKhiLuu) await opt.truocKhiLuu(bm);
+
     // Soi cả form để biết còn ô bắt buộc nào chưa điền, thay vì chờ mù toast rồi hết giờ
     for (const d of await moTaForm(bm)) ghi(`${opt.ten} · ô`, d);
   });
@@ -398,7 +407,7 @@ export function khoiBanAnSoTham(page: Page): Locator {
  * Lập xong bản án thì nút đó biến mất, neo theo nút là mất luôn bảng và phép kiểm cuối báo
  * "bảng vẫn không có dòng nào" dù bản án đã ký (đo 30/09/2026).
  */
-function bangBanAn(page: Page): Locator {
+export function bangBanAn(page: Page): Locator {
   return page
     .locator('table')
     .filter({ has: page.getByRole('columnheader', { name: /Số bản án/i }) })
@@ -476,6 +485,32 @@ export async function soThamBanAn(page: Page, input: DuLieuVao, ghi: GhiChu, nga
    * Ô không có nhãn `<label>` nên phải neo theo chữ gợi ý; chọn xong chữ đó biến mất, vì vậy
    * luôn lấy ô CÒN TRỐNG đầu tiên chứ không duyệt theo chỉ số.
    */
+  /**
+   * BẢN FE MỚI (đo 02/10/2026): khối "Kết quả giải quyết theo yêu cầu" không còn mỗi yêu cầu một ô
+   * Select, mà là THẺ CHỌN `role=radio` — "Chấp nhận toàn bộ yêu cầu" (áp dụng cho TẤT CẢ yêu cầu),
+   * "Chấp nhận một phần" (khai theo từng yêu cầu), "Không chấp nhận yêu cầu"
+   * (`theo-yeu-cau/KhoiKetQuaTheoYeuCau.tsx` + `khoiTheChon.tsx`). Vòng lặp Select cũ đếm ra 0 ô nên
+   * bản án không lưu được: "Vui lòng chọn Kết quả giải quyết cho tất cả yêu cầu của đương sự".
+   *
+   * Lọc theo "Chấp nhận toàn bộ" chỉ trúng khối của HĐXX: khối "Ý kiến Viện kiểm sát" dùng nhãn
+   * "Chấp nhận yêu cầu" (không có chữ "toàn bộ").
+   */
+  const theKetQua = bm
+    .locator('[role="radio"]')
+    .filter({ hasText: new RegExp(input.ketQuaTungYeuCau.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') })
+    .first();
+  if (await hienTrong(theKetQua, 5_000)) {
+    await theKetQua.scrollIntoViewIfNeeded().catch(() => {});
+    await theKetQua.click({ force: true });
+    await expect(theKetQua, `Bấm thẻ "${input.ketQuaTungYeuCau}" mà không được tích`).toHaveAttribute(
+      'aria-checked',
+      'true',
+      { timeout: 10_000 },
+    );
+    await choHetSpin(page);
+    ghi('bản án', `kết quả "${input.ketQuaTungYeuCau}" — chọn bằng thẻ, áp dụng cho tất cả yêu cầu`);
+  }
+
   const oKetQua = bm.locator('.ant-select').filter({ hasText: /Chọn kết quả/ });
   // Đếm lại MỖI VÒNG: form vẽ lại sau khi lưu bản soạn thảo, lấy `.first()` theo số đếm cũ thì
   // locator rỗng và `chonSelect` treo 30s ở `locator.evaluate` (đo 30/09/2026).

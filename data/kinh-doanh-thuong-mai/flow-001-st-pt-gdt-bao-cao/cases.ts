@@ -16,6 +16,7 @@ import type { InputKdtm } from '../../../flows/kinh-doanh-thuong-mai/flow-001-st
 import { FLOW_001 } from '../../../flows/kinh-doanh-thuong-mai/flow-001-st-pt-gdt-bao-cao/flow';
 import type { DinhDanhCase } from '../../../khung/case-state';
 import { DD as DD_001, INPUT as INPUT_001 } from './case-001/input';
+import { DD as DD_002, INPUT as INPUT_002 } from './case-002/input';
 
 /** Định danh của một case bất kỳ trong flow này — khoá gieo bất biến, biết trước khi chạy */
 export function ddCase(caseId: string): DinhDanhCase {
@@ -28,7 +29,15 @@ export function ddCase(caseId: string): DinhDanhCase {
   };
 }
 
-export const DS_CASE: CaseChay<InputKdtm>[] = [{ dd: DD_001, input: INPUT_001 }];
+/**
+ * case-002 dựng 03/10/2026: bản sao case-001 với mã case khác (tên đương sự tự sinh khác), chạy lại
+ * cả luồng bằng dữ liệu gieo ĐÃ SỬA — chủ toạ phúc thẩm và Thẩm phán TANDTC đều CHỈ ĐỊNH vào tài khoản
+ * của bộ, nên bản án phúc thẩm ký được và Chương trình làm việc HĐXX về đúng Phó Chánh án.
+ */
+export const DS_CASE: CaseChay<InputKdtm>[] = [
+  { dd: DD_001, input: INPUT_001 },
+  { dd: DD_002, input: INPUT_002 },
+];
 
 /**
  * Sinh case từ một BẢNG dữ liệu (Excel/CSV của Tester) — lối đi cho hàng nghìn case.

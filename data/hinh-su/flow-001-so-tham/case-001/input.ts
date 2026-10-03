@@ -96,6 +96,9 @@ export const INPUT = {
   ngaySinhBiHai: '20/08/1992',
   /** Drawer người tham gia tố tụng cũng có 5 nhóm địa chỉ bắt buộc như drawer bị can */
   diaChiBiHai: 'Số 25, phố Lò Đúc',
+  /** Căn cước bắt buộc với người tham gia tố tụng ("Vui lòng nhập căn cước") */
+  soDinhDanhBiHai: String(soTatDinh(ROOT_CASE_KEY, 'dinhDanhBiHai', 12)).padStart(12, '0'),
+  ngayCapCCCDBiHai: '15/03/2021',
 
   /** b11 · Bước 5: vật chứng */
   tenVatChung: '[BCTK-TEST] Điện thoại di động',

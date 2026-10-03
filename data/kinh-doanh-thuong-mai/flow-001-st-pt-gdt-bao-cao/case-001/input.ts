@@ -278,6 +278,13 @@ export const INPUT = {
   loaiNguoiKhangCao: 'Bị đơn',
   /** StepData 7.2 — người bị kiện kháng cáo */
   tenNguoiKhangCao: TEN_BI_DON,
+  /**
+   * Ô của biểu mẫu 61-DS (Thông báo nộp tiền tạm ứng án phí phúc thẩm) — bản FE 02/10/2026 bắt lập 61-DS
+   * TRƯỚC 62-DS (mã lỗi máy chủ DON_KHANG_CAO_CHUA_LAP_THONG_BAO_TAM_UNG_61DS).
+   * Án phí phúc thẩm vụ KDTM: 2.000.000đ (Nghị quyết 326/2016/UBTVQH14).
+   */
+  soTienTamUngAnPhiPhucTham: '2000000',
+  diaChiNguoiKhangCao: 'Số 2, phố Lý Thường Kiệt, Huyện Đông Anh, Thành phố Hà Nội',
   /** Ô bắt buộc của 55-DS; để rỗng thì lấy mục đầu theo thứ tự chữ cái */
   phuongThucNopDon: undefined as string | undefined,
   bieuMauGiayXacNhanKhangCao: 'Giấy xác nhận đã nhận đơn kháng cáo (55-DS)',
@@ -288,6 +295,12 @@ export const INPUT = {
    */
   nguoiKyBanHanh62DS: 'Nguyễn Mậu Trường',
   /** Ô 'Những vấn đề yêu cầu Tòa án cấp phúc thẩm giải quyết' của 62-DS — bắt buộc */
+  /**
+   * Ô "Viện kiểm sát cùng cấp" của 62-DS. PHẢI GIEO GIÁ TRỊ: ô dùng labelInValue nên để code tự lấy
+   * mục đầu thì ô HIỂN THỊ tên mà giá trị form vẫn rỗng → lưu báo "Vui lòng chọn Viện kiểm sát cùng
+   * cấp" (đo 02/10/2026 ở case-002). Giá trị đo được trên STG của Tòa khu vực 9 - Hà Nội.
+   */
+  vienKiemSatCungCap: 'Viện kiểm sát nhân dân khu vực 1',
   noiDungThongBao62DS:
     'Xem xét lại toàn bộ bản án sơ thẩm theo nội dung kháng cáo của bị đơn.',
   bieuMauThongBaoKhangCao: 'Thông báo về việc kháng cáo (62-DS)',
@@ -324,4 +337,73 @@ export const INPUT = {
   bieuMauBienBanPhienToaPhucTham: 'Biên bản phiên tòa phúc thẩm (73-DS)',
   ketQuaPhucTham: 'Không chấp nhận kháng cáo/kháng nghị',
   bieuMauBanAnPhucTham: 'Bản án phúc thẩm',
+  /**
+   * Ba ô BẮT BUỘC khác của 73-DS, ngoài ô soạn thảo "Báo cáo của Thư ký".
+   * Form báo đúng tên khi thiếu: "Vui lòng nhập Nội dung tranh tụng | Phát biểu của Kiểm sát viên |
+   * Kết thúc phiên tòa" (đo 02/10/2026).
+   */
+  noiDungTranhTung:
+    'Các đương sự tranh luận về phạm vi kháng cáo; bị đơn không cung cấp thêm tài liệu, chứng cứ mới.',
+  phatBieuKiemSatVien:
+    'Đại diện Viện kiểm sát đề nghị Hội đồng xét xử không chấp nhận kháng cáo, giữ nguyên bản án sơ thẩm.',
+  /**
+   * Ô giờ bắt buộc của 73-DS bản FE 02/10/2026: "Phiên tòa kết thúc vào hồi". Lịch xét xử phúc thẩm
+   * mở 07:00 nên chọn 11:30 cùng ngày.
+   */
+  gioKetThucPhienToaPhucTham: '11:30',
+  ketThucPhienToa:
+    'Chủ tọa tuyên bố kết thúc phần tranh tụng, Hội đồng xét xử vào phòng nghị án.',
+
+  /** Ô soạn thảo của 73-DS (spec Phúc thẩm Step4.1 ghi "nhập Random") */
+  noiDungBienBanPhienToaPhucTham:
+    'Hội đồng xét xử phúc thẩm tiến hành phiên tòa theo đúng thủ tục; các đương sự trình bày ý kiến ' +
+    'về kháng cáo; đại diện Viện kiểm sát phát biểu quan điểm.',
+  /** Mục "Nội dung vụ án" / "Nhận định của Tòa án" / "Nội dung quyết định" của 75-DS */
+  noiDungBanAnPhucTham:
+    'Bị đơn kháng cáo toàn bộ bản án sơ thẩm nhưng không xuất trình được tài liệu, chứng cứ mới.',
+  nhanDinhToaAnPhucTham:
+    'Bản án sơ thẩm đã xem xét đầy đủ tài liệu, chứng cứ và áp dụng đúng pháp luật; kháng cáo không có căn cứ.',
+  /** Ô bắt buộc của 75-DS mà spec không nhắc — form liệt kê khi thiếu (đo 02/10/2026) */
+  noiDungQuyetDinhPhucTham:
+    'Không chấp nhận kháng cáo của bị đơn; giữ nguyên bản án dân sự sơ thẩm. Án phí phúc thẩm do ' +
+    'người kháng cáo chịu.',
+  tomTatBanAnPhucTham: 'Giữ nguyên bản án sơ thẩm, không chấp nhận kháng cáo của bị đơn.',
+  /**
+   * 75-DS bắt buộc "Số bản án" và KHÔNG có nút "Lấy số" (khác 52-DS sơ thẩm) — phải nhập tay.
+   * Dạng đầy đủ, không đặt số trần 1/2/3: số trần từng làm vụ KDTM 28/09 thành đơn phụ.
+   */
+  soBanAnPhucThamNhapTay: '12/2026/DS-PT',
+  /**
+   * Khối "Nơi nhận" của 75-DS. Ô BẮT BUỘC (form kêu "Viện kiểm sát nhận không được bỏ trống" —
+   * đo 02/10/2026) mà spec dân sự không nhắc, nên phải gieo tay.
+   */
+  vienKiemSatNhan: 'Viện kiểm sát nhân dân thành phố Hà Nội',
+  /**
+   * Ô "Quan hệ pháp luật thống kê" ở tab Thông tin vụ án của VỤ GĐT — ô bắt buộc duy nhất còn thiếu
+   * khi vụ GĐT sinh từ đơn (đo 02/10/2026). Danh mục THỐNG KÊ, chữ có thể khác ô "Quan hệ pháp luật".
+   */
+  /**
+   * Giá trị gieo là CHUỖI LỌC, không phải nhãn đầy đủ: danh mục thống kê là cây ảo hoá, nhãn lá dạng
+   * "- Mua bán hàng hoá" kèm mã "QHPL_xxxx", nên khớp cả câu "Tranh chấp hợp đồng mua bán hàng hoá" là
+   * trượt. Lọc quá ngắn ("mua bán") thì trúng "- Mua bán cổ phiếu, trái phiếu…" — cả hai đều đo
+   * 02/10/2026. Dùng "hàng ho" để đỡ cả hai cách viết hoá/hóa.
+   */
+  quanHePhapLuatThongKe: 'mua bán hàng ho',
+  /**
+   * 75-DS: thẻ chọn trong khối `role=radiogroup` "Quyết định đối với bản án sơ thẩm". Không chọn thì
+   * bấm "Thêm mới bản án" chỉ hiện toast "Không thể lưu bản án — Chọn quyết định đối với bản án sơ
+   * thẩm (Giữ nguyên / Sửa / Hủy)" và KHÔNG có request nào được gửi (đo 02/10/2026).
+   * Khớp với kết quả đã chốt ở 51-DS: không chấp nhận kháng cáo → giữ nguyên.
+   */
+  quyetDinhVoiBanAnSoTham: 'Giữ nguyên',
+  /**
+   * Khối thứ hai, cùng `aria-label` với khối trên: "Ý kiến của Viện kiểm sát đối với bản án sơ thẩm".
+   * Khớp với phát biểu của kiểm sát viên đã ghi ở 73-DS.
+   */
+  yKienVksVoiBanAnSoTham: 'Giữ nguyên',
+  /**
+   * Dùng cho thao tác SỬA tay (QLA_SUA_CHU_TOA=1): quyết định 85-DS thay đổi người tiến hành tố tụng,
+   * đổi chủ tọa thành tài khoản đang chạy để bản án phúc thẩm ký được.
+   */
+  lyDoDoiChuToaPhucTham: 'Thay đổi Thẩm phán chủ tọa phiên tòa phúc thẩm theo phân công của Chánh án.',
 } as const;

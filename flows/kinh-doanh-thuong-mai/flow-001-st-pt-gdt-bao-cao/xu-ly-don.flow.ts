@@ -291,8 +291,15 @@ export async function thuLyVuAn(page: Page, _input: DuLieuVao, ghi: GhiChu, root
     if ((await oNguoiKy.count()) && !(await khungSelectCua(oNguoiKy).locator('.ant-select-selection-item').count())) {
       await chonSelectTheoThuTu(page, oNguoiKy);
     }
-    const oSo = bm.locator('[id$="DS_so"], [id$="_so"]').first();
-    if (await oSo.isEditable().catch(() => false)) {
+    /**
+     * Ô "Số" PHẢI LÀ Ô ĐANG HIỆN.
+     *
+     * `[id$="_so"]` rất lỏng: biểu mẫu 30-DS bản dân sự có thêm ô ẩn khớp đuôi đó, mà
+     * `isEditable()` KHÔNG đòi phần tử hiển thị nên vẫn trả true → `go()` cuộn tới ô ẩn và treo
+     * 30 s ("element is not visible"). Đo 03/10/2026, bước 06 luồng dân sự.
+     */
+    const oSo = bm.locator('[id$="DS_so"]:visible, [id$="_so"]:visible').first();
+    if ((await oSo.isVisible().catch(() => false)) && (await oSo.isEditable().catch(() => false))) {
       const so = soTatDinh(rootCaseKey, 'soThuLy', 8);
       await go(oSo, so);
       ghi('số thụ lý nhập', so);

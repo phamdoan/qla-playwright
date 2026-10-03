@@ -638,6 +638,9 @@ export function dangKyLuongGdtTT(dsVu: VuLuongGdtTT[], { tenSoCai, vuGdkt = VU_G
         await context.close();
       });
 
+      // ĐÍNH CHÍNH 02/10/2026: tài liệu BƯỚC 20 ghi người duyệt là NGUYỄN HẢI TRÂM (= phoChanhAn), và
+      // đo lại trên STG cùng ngày: Chánh án KHÔNG có bản ghi CTLVHDXX nào của vụ. Ghi chú đo 28/09 dưới đây
+      // sai vì khi ấy CTLVHDXX của các vụ đó chờ ở chủ toạ khác, không phải vì "trình lên Chánh án".
       // Đo trên STG 28/09/2026 (vai Phó Chánh án: 95 đề xuất, KHÔNG có biểu mẫu CTLVHDXX nào; vai Chánh
       // án: 22 bản ghi CTLVHDXX) → Chương trình làm việc HĐXX trình lên CHÁNH ÁN, không phải Phó Chánh án.
       test('B20 · Chánh án: phê duyệt Chương trình làm việc', async ({ browser }, testInfo) => {

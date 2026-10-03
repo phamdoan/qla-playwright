@@ -11,14 +11,15 @@
  * Nên bước này đếm dòng trong bảng trước khi Lưu, và lấy số quyết định làm bằng chứng.
  */
 import { Locator, Page, expect } from '@playwright/test';
-import { choHetSpin, dienOTheoNhan, hienTrong, moTaForm, nghi, nguyenNhanLoi, oTheoNhan } from '../../../common/antd';
+import { batLoiApi, choHetSpin, chonSelectTheoThuTu, dienOTheoNhan, hienTrong, moTaForm, nghi, nguyenNhanLoi, oTheoNhan } from '../../../common/antd';
 import {
   bieuMauDangMo,
   chonMucDropdown,
   dongBieuMau,
   laySoVaKyLogic,
   luuBieuMau,
-  moTab,
+  moKhoi,
+  moTabVaCho,
   nutTheoChu,
 
 } from '../../../common/bieu-mau';
@@ -64,6 +65,9 @@ async function motLuotPhanCong(
   soNguoi: number,
   tenNguoi?: string,
 ): Promise<string> {
+  // Khối chứa nút "Phân công" đóng sẵn → antd không render nội dung bên trong
+  await moKhoi(page, /Danh sách quyết định phân công/, ghi);
+
   const nutPhanCong = page
     .getByRole('button', { name: /^Phân công$/ })
     .or(page.locator('button').filter({ hasText: /^Phân công$/ }))
@@ -97,10 +101,22 @@ async function motLuotPhanCong(
     await choHetSpin(page);
   }
 
-  // Chọn người rồi ĐƯA VÀO BẢNG; mỗi vòng kiểm bảng có thêm đúng một dòng
+  /**
+   * Chọn người rồi ĐƯA VÀO BẢNG; mỗi vòng kiểm bảng có thêm đúng một dòng.
+   *
+   * Phải TRỪ những người đã chọn: danh mục người tiến hành tố tụng KHÔNG tự loại người đã phân
+   * công, mà ô Select thì giữ nguyên giá trị cũ — nên lượt thứ hai chọn lại đúng người đó và hệ
+   * thống từ chối thêm dòng trùng. Đo 01/10/2026 ở phân công Hội thẩm (cần 2 người): lượt 2 lại ra
+   * "Đào Huy Dương" rồi báo "bấm mũi tên nhưng bảng không thêm dòng".
+   */
+  const daChon: string[] = [];
   for (let i = 0; i < soNguoi; i++) {
     const truoc = await soDongBang(bm);
-    const nguoi = await dienOTheoNhan(page, bm, /Tên người được phân công|Người được phân công/i, tenNguoi);
+    const oNguoi = oTheoNhan(page, bm, /Tên người được phân công|Người được phân công/i);
+    const nguoi = tenNguoi
+      ? await dienOTheoNhan(page, bm, /Tên người được phân công|Người được phân công/i, tenNguoi)
+      : await chonSelectTheoThuTu(page, oNguoi, 0, daChon);
+    daChon.push(nguoi);
     const nut = nutDuaVaoBang(bm);
     if (!(await hienTrong(nut, 10_000))) {
       throw new Error(
@@ -119,8 +135,25 @@ async function motLuotPhanCong(
     ghi(ten, `đã đưa vào bảng: ${nguoi}`);
   }
 
+  const loiApi = batLoiApi(page);
   if (!(await luuBieuMau(page, bm, ten, ghi))) {
     throw new Error(`${ten}: không thấy nút "Lưu". Nút đang có: ${await dsNut(bm)}`);
+  }
+
+  /**
+   * LƯU XONG PHẢI CÓ "Lấy số". Không có nghĩa là lưu THẤT BẠI — và nó thất bại im lặng: không
+   * toast, không cờ lỗi ô nào, nút vẫn chỉ "Lưu | Đóng" (đo 01/10/2026 trên STG, trong khi cùng
+   * mã này chạy được trên UAT). Dừng ngay tại đây kèm lỗi API, thay vì đi tiếp rồi báo chung chung
+   * "không đọc được số quyết định".
+   */
+  const nutLaySo = nutTheoChu(bm, /Lấy số$/);
+  if (!(await hienTrong(nutLaySo, 15_000))) {
+    const oLoi = (await moTaForm(bm)).filter(d => d.includes('⚠')).slice(0, 10);
+    throw new Error(
+      `${ten}: bấm "Lưu" nhưng biểu mẫu không chuyển sang trạng thái đã lưu (không có nút "Lấy số").\n  ` +
+        `Nút đang có: ${await dsNut(bm)}\n  Ô còn lỗi: ${oLoi.join(' · ') || '(không ô nào gắn cờ lỗi)'}\n  ` +
+        `${await nguyenNhanLoi(page, bm, 20_000)}\n  ${loiApi()}`,
+    );
   }
   await laySoVaKyLogic(page, bm, ghi, ten);
 
@@ -143,7 +176,7 @@ async function motLuotPhanCong(
 
 /** Bước 03 — phân công Thẩm phán chủ tọa (mẫu 001) */
 export async function phanCongThamPhan(page: Page, input: DuLieuVao, ghi: GhiChu) {
-  await moTab(page, 'Phân công');
+  await moTabVaCho(page, 'Phân công', ghi, /Danh sách quyết định phân công|người tiến hành tố tụng|hội đồng xét xử/i);
   const soQuyetDinhPhanCongTP = await motLuotPhanCong(
     page,
     ghi,
@@ -159,7 +192,7 @@ export async function phanCongThamPhan(page: Page, input: DuLieuVao, ghi: GhiChu
 
 /** Bước 04 — phân công Hội thẩm (2 người, mẫu 001) và Thư ký (mẫu 002) */
 export async function phanCongHoiThamThuKy(page: Page, input: DuLieuVao, ghi: GhiChu) {
-  await moTab(page, 'Phân công');
+  await moTabVaCho(page, 'Phân công', ghi, /Danh sách quyết định phân công|người tiến hành tố tụng|hội đồng xét xử/i);
   const soQuyetDinhPhanCongHT = await motLuotPhanCong(
     page,
     ghi,

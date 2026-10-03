@@ -114,3 +114,41 @@ export async function vanBanCuaDon(
   if (!Array.isArray(ds)) return [];
   return ds.filter(v => (don.idDon && v.idDon === don.idDon) || (don.maDon && String(v.maDon || '') === String(don.maDon)));
 }
+
+export interface DonViVuAn {
+  maDonVi?: string;
+  tenDonVi?: string;
+}
+
+/**
+ * Đơn vị (Tòa) của một vụ án — GET /vu-an/{id}, CHỈ ĐỌC.
+ *
+ * Vì sao cần: tên Tòa đọc từ đầu bản án là CHỮ HOA ("TÒA ÁN NHÂN DÂN THÀNH PHỐ HÀ NỘI" — template
+ * bản án tự viết hoa), còn API tra cứu lại khớp tên/mã dạng chuẩn: `GET /don-vi?tenDonVi=<CHỮ HOA>`
+ * trả rỗng (đo 02/10/2026). Lấy từ vụ án là lấy đúng dạng hệ thống lưu.
+ */
+export async function donViCuaVuAn(req: APIRequestContext, token: string, idVuAn: string): Promise<DonViVuAn> {
+  const r = await req.get(`${API}/vu-an/${idVuAn}`, { headers: headers(token) });
+  if (!r.ok()) return {};
+  const d = (await r.json().catch(() => null))?.data || {};
+  return {
+    maDonVi: d.maDonVi || d.maDonViThuLy || d.maToaAn,
+    tenDonVi: d.tenToaAn || d.tenDonViThuly || d.tenDonViThuLy || d.tenDonVi,
+  };
+}
+
+/**
+ * Bản án dân sự của một vụ án — GET /ban-an/dan-su/so-tham/vu-an/{idVuAn}, CHỈ ĐỌC.
+ *
+ * Dùng để biết CHÍNH XÁC bộ ba mà API tra cứu đòi khớp (số, ngày, mã đơn vị) + giai đoạn, thay vì
+ * đoán theo chữ hiện trên lưới.
+ */
+export async function banAnCuaVuAn(req: APIRequestContext, token: string, idVuAn: string): Promise<Record<string, unknown>> {
+  for (const duong of [`${API}/ban-an/dan-su/so-tham/vu-an/${idVuAn}`, `${API}/ban-an/dan-su/vu-an/${idVuAn}`]) {
+    const r = await req.get(duong, { headers: headers(token) });
+    if (!r.ok()) continue;
+    const d = (await r.json().catch(() => null))?.data;
+    if (d) return d as Record<string, unknown>;
+  }
+  return {};
+}

@@ -383,7 +383,12 @@ export const FLOW_001: DinhNghiaFlow = {
       ma: '24-gdt-tao-don-de-nghi',
       ten: 'Nhập đơn đề nghị GĐT theo bản án phúc thẩm → tạo hồ sơ đơn',
       manHinh: 'Danh sách đơn (GĐT) → Thêm mới đơn · tab "Thông tin bản án đề nghị"',
-      route: 'quan-ly-don/them-moi',
+      /**
+       * Mở DANH SÁCH đơn, không mở thẳng 'quan-ly-don/them-moi': màn Thêm mới đơn ẩn thanh menu bên
+       * trái, mà bước này phải vào menu để kiểm bản án đã có đơn chưa (moMenu chờ sider rồi hết 60 s —
+       * đo 02/10/2026).
+       */
+      route: 'quan-ly-don/danh-sach-don',
       vai: 'canBo',
       /**
        * KHÔNG hard-code số/ngày/tòa bản án. Ba khoá này điền vào `thongTinBanAn.soBanAnQd`,
@@ -424,31 +429,25 @@ export const FLOW_001: DinhNghiaFlow = {
       bangChungXacMinh: `${RUNTIME_GDT} · B4 (HctpPage.lapTamTrinhPhanCong → khoaToTrinh)`,
     },
     {
-      ma: '27-gdt-thong-bao-phan-cong',
-      ten: 'Loại văn bản = Tờ thông báo phân công thẩm phán → Tạo văn bản → Trình ký',
-      manHinh: 'Chi tiết đơn GĐT · Danh sách văn bản',
-      route: '',
-      vai: 'canBo',
-      vao: ['gdtMaDon'],
-      ra: ['gdtKhoaThongBao'],
-      nguon: 'GĐT/TT · BƯỚC 5',
-      xacMinh: 'RUNTIME',
-      bangChungXacMinh: `${RUNTIME_GDT} · B5`,
-    },
-    {
-      ma: '28-gdt-cvp-duyet-to-trinh',
-      ten: 'Chánh văn phòng cho ý kiến, trình Phó Chánh án, ký logic Thông báo',
+      /**
+       * ⚠ THỨ TỰ THẬT, KHÔNG THEO TÀI LIỆU: tài liệu đặt "Thông báo phân công" (B5) ngay sau tờ
+       * trình, nhưng hệ thống chỉ cho lập thông báo SAU KHI Phó Chánh án phê duyệt tờ trình — bộ lọc
+       * loại văn bản chỉ liệt kê đơn chưa có văn bản đó. Vì vậy bốn bước xếp: tờ trình → CVP trình
+       * PCA → PCA phê duyệt → thông báo → CVP ký thông báo.
+       */
+      ma: '27-gdt-cvp-trinh-pca',
+      ten: 'Chánh văn phòng cho ý kiến Tờ trình phân công → trình Phó Chánh án',
       manHinh: 'Xem xét quyết định / Phê duyệt văn bản',
       route: '',
       vai: 'chanhVanPhong',
-      vao: ['gdtKhoaToTrinh', 'gdtKhoaThongBao'],
-      ra: ['gdtToTrinhDaTrinhPca', 'gdtThongBaoDaKy'],
+      vao: ['gdtKhoaToTrinh'],
+      ra: ['gdtToTrinhDaTrinhPca'],
       nguon: 'GĐT/TT · BƯỚC 6–7',
       xacMinh: 'RUNTIME',
-      bangChungXacMinh: `${RUNTIME_GDT} · B7a, B7b`,
+      bangChungXacMinh: `${RUNTIME_GDT} · B7a (PheDuyetPage.ykienVaKyLogic)`,
     },
     {
-      ma: '29-gdt-pca-phe-duyet-to-trinh',
+      ma: '28-gdt-pca-phe-duyet-to-trinh',
       ten: 'Phó Chánh án phê duyệt Tờ trình phân công thẩm phán',
       manHinh: 'Xem xét quyết định / Phê duyệt văn bản',
       route: '',
@@ -457,10 +456,34 @@ export const FLOW_001: DinhNghiaFlow = {
       ra: ['gdtToTrinhDaPheDuyet'],
       nguon: 'GĐT/TT · BƯỚC 8–9',
       xacMinh: 'RUNTIME',
-      bangChungXacMinh: `${RUNTIME_GDT} · B9`,
+      bangChungXacMinh: `${RUNTIME_GDT} · B9 (PheDuyetPage.ykienVaPheDuyet) — vụ án chỉ sinh ra sau bước này`,
     },
     {
-      ma: '30-gdt-kiem-thu-ly-don',
+      ma: '29-gdt-thong-bao-phan-cong',
+      ten: 'Loại văn bản = Thông báo phân công TP → Tạo văn bản → Trình ký',
+      manHinh: 'Chi tiết đơn GĐT · Danh sách văn bản',
+      route: '',
+      vai: 'canBo',
+      vao: ['gdtMaDon', 'gdtToTrinhDaPheDuyet'],
+      ra: ['gdtKhoaThongBao'],
+      nguon: 'GĐT/TT · BƯỚC 5',
+      xacMinh: 'RUNTIME',
+      bangChungXacMinh: `${RUNTIME_GDT} · B5 (HctpPage.lapVanBanTuDanhSachDon)`,
+    },
+    {
+      ma: '30-gdt-cvp-ky-thong-bao',
+      ten: 'Chánh văn phòng ký logic Thông báo phân công thẩm phán',
+      manHinh: 'Xem xét quyết định / Phê duyệt văn bản',
+      route: '',
+      vai: 'chanhVanPhong',
+      vao: ['gdtKhoaThongBao'],
+      ra: ['gdtThongBaoDaKy'],
+      nguon: 'GĐT/TT · BƯỚC 7',
+      xacMinh: 'RUNTIME',
+      bangChungXacMinh: `${RUNTIME_GDT} · B7b (PheDuyetPage.ykienVaKyLogicVanBan)`,
+    },
+    {
+      ma: '31-gdt-kiem-thu-ly-don',
       ten: 'VERIFY: đơn đã hiển thị ở "Nhận đơn và TL vụ án" › tab Đã có vụ án',
       manHinh: 'Nhận đơn và thụ lý vụ án (Vụ GĐKT)',
       route: '',
@@ -472,31 +495,48 @@ export const FLOW_001: DinhNghiaFlow = {
       bangChungXacMinh: `${RUNTIME_GDT} · B10 (đơn dân sự về Vụ D01.107 → dùng tài khoản *DanSu)`,
     },
     {
-      ma: '31-gdt-giao-tieu-ho-so-ttv',
-      ten: 'Giao tiểu hồ sơ cho Thẩm tra viên',
-      manHinh: 'Nhận đơn và thụ lý vụ án (Vụ GĐKT)',
+      /**
+       * Tài liệu THIẾU bước này (B10b) — hệ thống vẫn cần: không giao tiểu hồ sơ thì Thẩm tra viên
+       * không thấy vụ để lập dự thảo kháng nghị.
+       */
+      ma: '32-gdt-giao-tieu-ho-so',
+      ten: 'Giao tiểu hồ sơ từ Văn phòng HCTP sang Vụ GĐ,KT',
+      manHinh: 'Quản lý án GĐT/TT · Giao tiểu hồ sơ',
       route: '',
       vai: 'thuKyVuDanSu',
       vao: ['gdtVuAnDaThuLy'],
+      ra: ['gdtTieuHoSoDaGiao'],
+      nguon: 'GĐT/TT · BƯỚC 10b (tài liệu thiếu)',
+      xacMinh: 'RUNTIME',
+      bangChungXacMinh: `${RUNTIME_GDT} · B10b (GdtPage.giaoTieuHoSo)`,
+    },
+    {
+      /** VAI KHÁC bước 32: màn "Phân công Thẩm tra viên" là của Vụ trưởng, không phải Thư ký Vụ */
+      ma: '33-gdt-phan-cong-ttv-don',
+      ten: 'Phân công Thẩm tra viên cho đơn (chỉ định TTV + lãnh đạo phụ trách)',
+      manHinh: 'Quản lý án GĐT/TT · Phân công Thẩm tra viên',
+      route: '',
+      vai: 'vuTruongDanSu',
+      vao: ['gdtTieuHoSoDaGiao'],
       ra: ['gdtThamTraVienDuocGiao'],
       nguon: 'GĐT/TT · BƯỚC 11',
       xacMinh: 'RUNTIME',
-      bangChungXacMinh: `${RUNTIME_GDT} · B10b, B11`,
+      bangChungXacMinh: `${RUNTIME_GDT} · B11 (GdtPage.phanCongTTV)`,
     },
     {
-      ma: '32-gdt-du-thao-khang-nghi',
+      ma: '34-gdt-du-thao-khang-nghi',
       ten: 'Tạo dự thảo Quyết định kháng nghị → Trình ký',
       manHinh: 'Hồ sơ vụ án GĐT · Dự thảo quyết định kháng nghị',
       route: '',
       vai: 'thamTraVienDanSu',
-      vao: ['gdtThamTraVienDuocGiao'],
+      vao: ['gdtThamTraVienDuocGiao', 'gdtSoThuLyDon'],
       ra: ['gdtKhoaDuThao'],
       nguon: 'GĐT/TT · BƯỚC 12',
       xacMinh: 'RUNTIME',
       bangChungXacMinh: `${RUNTIME_GDT} · B12a, B12b`,
     },
     {
-      ma: '33-gdt-phe-duyet-khang-nghi',
+      ma: '35-gdt-phe-duyet-khang-nghi',
       ten: 'Phê duyệt dự thảo kháng nghị → Quyết định kháng nghị có số',
       manHinh: 'Xem xét quyết định / Phê duyệt văn bản',
       route: '',
@@ -508,7 +548,7 @@ export const FLOW_001: DinhNghiaFlow = {
       bangChungXacMinh: `${RUNTIME_GDT} · B13, B13b`,
     },
     {
-      ma: '34-gdt-chuyen-nhan-ho-so-khang-nghi',
+      ma: '36-gdt-chuyen-nhan-ho-so-khang-nghi',
       ten: 'Chuyển và nhận hồ sơ kháng nghị',
       manHinh: 'Hồ sơ kháng nghị đi / đến',
       route: '',
@@ -522,11 +562,11 @@ export const FLOW_001: DinhNghiaFlow = {
         'chỉ thấy DON_KETQUA do chính mình tạo → dùng vai hoSoKhangNghi',
     },
     {
-      ma: '35-gdt-thu-ly-vu-xet-xu',
+      ma: '37-gdt-thu-ly-vu-xet-xu',
       ten: 'Thụ lý vụ án xét xử GĐT',
       manHinh: 'Quản lý vụ xét xử · Thụ lý',
       route: '',
-      vai: 'thamTraVienDanSu',
+      vai: 'vuTruongDanSu',
       vao: ['gdtMaHoSoKhangNghi'],
       ra: ['gdtSoThuLyVuXetXu'],
       nguon: 'GĐT/TT · BƯỚC 15',
@@ -534,11 +574,11 @@ export const FLOW_001: DinhNghiaFlow = {
       bangChungXacMinh: `${RUNTIME_GDT} · B15`,
     },
     {
-      ma: '36-gdt-phan-cong-tham-phan-toi-cao',
+      ma: '38-gdt-phan-cong-tham-phan-toi-cao',
       ten: 'Phân công Thẩm phán vụ án kháng nghị → Trình ký',
       manHinh: 'Quản lý vụ xét xử · Phân công',
       route: '',
-      vai: 'thamTraVienDanSu',
+      vai: 'vuTruongDanSu',
       vao: ['gdtSoThuLyVuXetXu'],
       ra: ['gdtKhoaToTrinhTPTC'],
       nguon: 'GĐT/TT · BƯỚC 16',
@@ -546,7 +586,7 @@ export const FLOW_001: DinhNghiaFlow = {
       bangChungXacMinh: `${RUNTIME_GDT} · B16`,
     },
     {
-      ma: '37-gdt-ky-so-to-trinh-toi-cao',
+      ma: '39-gdt-ky-so-to-trinh-toi-cao',
       ten: 'Ký số Tờ trình phân công Thẩm phán tối cao',
       manHinh: 'Xem xét quyết định / Phê duyệt văn bản',
       route: '',
@@ -558,11 +598,11 @@ export const FLOW_001: DinhNghiaFlow = {
       bangChungXacMinh: `${RUNTIME_GDT} · B17`,
     },
     {
-      ma: '38-gdt-phan-cong-ttv-hskn',
+      ma: '40-gdt-phan-cong-ttv-hskn',
       ten: 'Phân công Thẩm tra viên cho hồ sơ kháng nghị',
       manHinh: 'Quản lý vụ xét xử · Phân công Thẩm tra viên',
       route: '',
-      vai: 'thamTraVienDanSu',
+      vai: 'vuTruongDanSu',
       vao: ['gdtSoThuLyVuXetXu'],
       ra: ['gdtThamTraVienHskn'],
       nguon: 'GĐT/TT · BƯỚC 18',
@@ -570,11 +610,11 @@ export const FLOW_001: DinhNghiaFlow = {
       bangChungXacMinh: `${RUNTIME_GDT} · B18`,
     },
     {
-      ma: '39-gdt-danh-sach-vu-xet-xu',
+      ma: '41-gdt-danh-sach-vu-xet-xu',
       ten: 'Tạo danh sách vụ xét xử và trình duyệt lịch',
       manHinh: 'Quản lý vụ xét xử · Danh sách vụ xét xử',
       route: '',
-      vai: 'thamTraVienDanSu',
+      vai: 'vuTruongDanSu',
       vao: ['gdtSoThuLyVuXetXu'],
       ra: ['gdtMaVuXetXu', 'gdtKhoaChuongTrinh'],
       nguon: 'GĐT/TT · BƯỚC 19',
@@ -582,11 +622,18 @@ export const FLOW_001: DinhNghiaFlow = {
       bangChungXacMinh: `${RUNTIME_GDT} · B19`,
     },
     {
-      ma: '40-gdt-phe-duyet-chuong-trinh',
+      ma: '42-gdt-phe-duyet-chuong-trinh',
+      /**
+       * NGƯỜI DUYỆT = CHỦ TOẠ HĐXX, và bước 41 chọn "Hội đồng toàn thể" nên chủ toạ bị ép thành người
+       * có chức vụ CHÁNH ÁN trong danh mục Thẩm phán TANDTC — trên STG là Nguyễn Văn Quảng (tài khoản
+       * `chanhAn`). Tài liệu BƯỚC 20 ghi NGUYỄN HẢI TRÂM (phoChanhAn) là theo dữ liệu môi trường của
+       * người viết tài liệu, không phải quy tắc: hộp "Trình ký" khoá ô người ký (disabled), không chọn
+       * được người khác (VanBanCapSoActions/index.tsx). Đo 02/10/2026.
+       */
       ten: 'Phê duyệt chương trình làm việc',
       manHinh: 'Công tác lãnh đạo · Chương trình làm việc',
       route: '',
-      vai: 'phoChanhAn',
+      vai: 'chanhAn',
       vao: ['gdtKhoaChuongTrinh'],
       ra: ['gdtChuongTrinhDaDuyet'],
       nguon: 'GĐT/TT · BƯỚC 20',
@@ -594,11 +641,11 @@ export const FLOW_001: DinhNghiaFlow = {
       bangChungXacMinh: `${RUNTIME_GDT} · B20`,
     },
     {
-      ma: '41-gdt-quyet-dinh-hdxx',
+      ma: '43-gdt-quyet-dinh-hdxx',
       ten: 'Tạo thông báo và Quyết định phân công Hội đồng xét xử',
       manHinh: 'Quản lý vụ xét xử · Biểu mẫu Hội đồng',
       route: '',
-      vai: 'thamTraVienDanSu',
+      vai: 'vuTruongDanSu',
       vao: ['gdtMaVuXetXu'],
       ra: ['gdtKhoaBieuMauHoiDong'],
       nguon: 'GĐT/TT · BƯỚC 21',
@@ -606,7 +653,7 @@ export const FLOW_001: DinhNghiaFlow = {
       bangChungXacMinh: `${RUNTIME_GDT} · B21`,
     },
     {
-      ma: '42-gdt-ky-logic-hdxx',
+      ma: '44-gdt-ky-logic-hdxx',
       ten: 'Ký logic Quyết định thành lập HĐXX và Thông báo VKS',
       manHinh: 'Xem xét quyết định / Phê duyệt văn bản',
       route: '',
@@ -618,11 +665,11 @@ export const FLOW_001: DinhNghiaFlow = {
       bangChungXacMinh: `${RUNTIME_GDT} · B22`,
     },
     {
-      ma: '43-gdt-man-quan-ly-vu-xet-xu',
+      ma: '45-gdt-man-quan-ly-vu-xet-xu',
       ten: 'VERIFY: vụ hiển thị đúng trạng thái trên màn Quản lý vụ xét xử',
       manHinh: 'Quản lý vụ xét xử (danh sách)',
       route: 'vu-an/gdt-tt/quan-ly-vu-xet-xu/ho-so-vu-an',
-      vai: 'thamTraVienDanSu',
+      vai: 'vuTruongDanSu',
       vao: ['gdtMaVuXetXu', 'gdtHoiDongDaKy'],
       ra: ['gdtTrangThaiVuXetXu'],
       nguon: 'GĐT/TT · BƯỚC 23',
@@ -630,26 +677,14 @@ export const FLOW_001: DinhNghiaFlow = {
       bangChungXacMinh: `FE: routes.ts:508 /vu-an/gdt-tt/quan-ly-vu-xet-xu/ho-so-vu-an; ${RUNTIME_GDT} · B23`,
     },
 
-    // ═════════ GIAI ĐOẠN E — BÁO CÁO THỐNG KÊ ═════════
-    {
-      ma: '44-bao-cao-thong-ke',
-      ten: 'VERIFY: vụ án của case đếm đúng ô của biểu mẫu thống kê KDTM',
-      manHinh: 'Lập báo cáo thống kê (BCTK)',
-      route: '',
-      vai: 'chanhAn',
-      vao: ['maVuAnSoTham', 'soBanAnSoTham', 'soBanAnPhucTham', 'gdtMaVuXetXu'],
-      ra: ['soLieuBaoCaoThongKe'],
-      nguon: 'Tester/Testcase_BCTK_4_KDTM.xlsx + SRS/Mapping Data/04. KDTM',
-      xacMinh: 'UNKNOWN',
-      /**
-       * ⚠ Màn BCTK KHÔNG có trong `qla-webapp`: quét toàn `src` không ra route/trang nào cho
-       * "báo cáo thống kê" (chỉ có `src/pages/ThongBao`). Tài liệu BCTK là bộ mockup HTML riêng
-       * (Prototype_LapBaoCao_ThongKe_*.html, dashboard 3 cấp) → BCTK là ứng dụng KHÁC.
-       * Chưa biết URL thật thì KHÔNG đoán: bước này giữ UNKNOWN tới khi có đường dẫn/môi trường.
-       */
-      bangChungXacMinh:
-        'ĐÃ QUÉT 30/09/2026: grep "bao-cao-thong-ke|baoCaoThongKe|lap-bao-cao" trong qla-webapp/src ' +
-        '→ không có màn nào. BCTK nằm ngoài qla-webapp.',
-    },
+    /**
+     * KHÔNG CÓ BƯỚC BÁO CÁO THỐNG KÊ (chốt 03/10/2026, theo người dùng: "không cần vào bctk").
+     *
+     * Màn BCTK CÓ trong hệ thống — /qla/bctk/ds, /qla/bctk/hs, /qla/bctk/gdttt, menu do MÁY CHỦ cấp
+     * nên quét `qla-webapp/src` không thấy (ghi chú cũ kết luận "BCTK là ứng dụng khác" là SAI).
+     * Nhưng nó là DASHBOARD tổng hợp toàn cơ quan: không ô lọc, không nút lập báo cáo, số liệu theo
+     * tháng cho từng loại án — KHÔNG kiểm được "vụ của case đếm đúng ô". Vì vậy luồng dừng ở bước 45.
+     * Chi tiết đã đo: docs/flow-kdtm-gdt-tt.md.
+     */
   ],
 };

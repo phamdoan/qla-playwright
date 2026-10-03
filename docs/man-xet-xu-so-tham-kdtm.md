@@ -117,3 +117,32 @@ mới vào danh sách chuyển đi; (b) vụ KDTM chuyển hồ sơ ở một m�
 | Báo cáo | báo cáo tiến độ giải quyết |
 
 Bước 13 (kháng cáo) và 14 (62-DS) có đủ chỗ ở tab "Quản lý án".
+
+## Bản án phúc thẩm 75-DS — bốn cái bẫy đo được 02/10/2026
+
+Đo trên STG, vụ phúc thẩm `VA26-004986` (`91e32606-9997-42f8-9844-54d54b40bdd4`). Mã nguồn dẫn
+chiếu nằm ở `qla-webapp/src/pages/VuAn/SoTham/DanSuNew/ChiTietVuAn/tabs/xet-xu/BanAnPhucThamForm.tsx`
+và `qla-webapp/src/components/SoanThaoBanAn/`.
+
+1. **Ba ô nội dung KHÔNG phải ô nhập.** "Nội dung vụ án / Nhận định của Tòa án / Nội dung quyết định"
+   chỉ là khung xem trước (`XemTruocNoiDung`), bấm vào thì mở màn "Soạn thảo bản án" — MỘT trang
+   Word duy nhất chứa ba thẻ `[data-ba-section="NOI_DUNG_VU_AN|NHAN_DINH|QUYET_DINH"]`.
+   `Lưu bản soạn thảo` chỉ đọc nội dung **bên trong ba thẻ đó** (`BanAnEditor.tsx:98`). Vì thế
+   `Ctrl+A` + `Delete` rồi gõ sẽ xoá luôn ba thẻ: toast vẫn báo "nội dung mới được đưa vào màn bản
+   án" mà biểu mẫu vẫn kêu "… không được bỏ trống". Phải chọn đúng nội dung trong từng thẻ rồi gõ.
+2. **Ô bắt buộc không phải form-item.** Khối `role=radiogroup` "Quyết định của Hội đồng xét xử phúc
+   thẩm đối với bản án sơ thẩm" (Giữ nguyên / Sửa / Hủy). Bỏ qua thì `validateFields` KHÔNG kêu ô
+   nào trống, chỉ có toast "Không thể lưu bản án" và **không request nào được gửi**.
+3. **Hai khối dùng chung `aria-label`.** `aria-label="Quyết định đối với bản án sơ thẩm"` được viết
+   cứng (`KhoiQuyetDinhTheoYeuCauMoi.tsx:647`), nên khối "Ý kiến của Viện kiểm sát" cũng mang đúng
+   nhãn đó. Lấy `.first()` là trúng khối Viện kiểm sát: thẻ tích `aria-checked=true` mà ô ẩn
+   `QUYET_DINH_KET_QUA` vẫn rỗng. Phân biệt bằng **tiêu đề khối bao ngoài**; bằng chứng đáng tin là
+   giá trị của ô ẩn đó.
+4. **Người ký khoá cứng theo chủ tọa.** Ô "Người ký (Thẩm phán chủ tọa)" là `ProFormText disabled`,
+   giá trị do `layDanhSachHoiDongXetXu` nạp từ HĐXX (`:595-609`, `:987-989`). Nút ký chỉ hiện
+   "Ký logic" cho **chính người ký** (`VanBanCapSoActions` → `laNguoiKyHienTai`); người khác chỉ
+   "Trình ký" và bản án đứng ở `Dự thảo — chưa ký số`. ⇒ **bước 18 phải phân công chủ tọa là tài
+   khoản đang chạy**, nếu không bước 22 không thể hoàn tất.
+
+Ngoài ra: hệ thống tự cấp số ngay khi "Thêm mới bản án" (nút đổi thành "Hủy cấp số"), và số cấp cho
+bản án **phúc thẩm** lại có hậu tố `-ST` (`12/2026/KDTM-ST`) — cần đội phát triển xác nhận.

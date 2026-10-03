@@ -10,7 +10,7 @@
  * nút tìm bằng `nutTheoChu` (tên trợ năng ở hệ này hay khác chữ hiển thị).
  */
 import { Locator, Page, expect } from '@playwright/test';
-import { choHetSpin, dienOTheoNhan, dienTrongO, go, hienTrong, moTaForm, nghi, nguyenNhanLoi } from '../../../common/antd';
+import { choHetSpin, dienOTheoNhan, dienTrongO, go, hienTrong, moTaForm, nghi, nguyenNhanLoi, toastDaHien } from '../../../common/antd';
 import { bieuMauDangMo, nutTheoChu } from '../../../common/bieu-mau';
 import type { INPUT } from '../../../data/hinh-su/flow-001-so-tham/case-001/input';
 
@@ -34,6 +34,79 @@ async function soiMan(page: Page, khung: Locator, ghi: GhiChu, nhan: string, soi
     ),
   ];
   ghi(`${nhan} · nút`, nut.slice(0, 20).join(' | ') || '(không có)');
+}
+
+/**
+ * Mở lưới "Vụ án sơ thẩm" và mở vụ án vừa tạo theo TÊN BỊ CAN.
+ *
+ * ĐỌC LƯỚI TRƯỚC, chỉ gõ tìm khi không thấy dòng: ở luồng KDTM, gõ mã vụ án vào ô tìm làm lưới
+ * trống trơn và tôi đã kết luận sai ba lần liên tiếp ("vụ chưa tới tòa", "sai tòa", "lỗi nạp lưới").
+ */
+async function timVuAnTrenLuoi(page: Page, ghi: GhiChu, tenBiCan: string) {
+  /**
+   * Spec ghi route là `/vu-an/so-tham`, nhưng gõ thẳng route đó trên STG trả về `/exception/404`
+   * (đo 01/10/2026) — các màn danh sách khác của hệ này dùng hậu tố `/danh-sach`. Thử lần lượt,
+   * route nào ra lưới thì dùng.
+   */
+  for (const route of ['vu-an/so-tham/danh-sach', 'vu-an/so-tham', 'vu-an/so-tham/vu-an-so-tham']) {
+    await page.goto(route, { waitUntil: 'domcontentloaded' });
+    await choHetSpin(page);
+    /**
+     * Route hợp lệ thì DỪNG NGAY, rồi mới chờ lưới. Bản trước đòi có `.ant-table` ngay trong
+     * 1,5–2,5 s: route `/danh-sach` đúng nhưng lưới chưa render nên vòng lặp chạy tiếp và kết thúc
+     * ở route 404, rồi đi tìm dòng trên trang 404 (đo 01/10/2026).
+     */
+    if (!/exception\/404/.test(page.url())) {
+      ghi('lưới vụ án sơ thẩm', `route dùng được: ${route}`);
+      await page.locator('.ant-table').first().waitFor({ state: 'visible', timeout: 30_000 }).catch(() => {});
+      await choHetSpin(page);
+      break;
+    }
+    ghi('lưới vụ án sơ thẩm', `route ${route} → 404`);
+  }
+
+  const dong = page.locator('.ant-table-row').filter({ hasText: tenBiCan }).first();
+  if (!(await hienTrong(dong, 15_000))) {
+    const oTim = page.getByPlaceholder(/Tìm|Nhập|tra cứu/i).first();
+    if (await hienTrong(oTim, 5_000)) {
+      await go(oTim, tenBiCan);
+      await oTim.press('Enter');
+      await choHetSpin(page);
+      await nghi(page, 2000, 3000);
+    }
+  }
+  if (!(await hienTrong(dong, 20_000))) {
+    const soDong = await page.locator('.ant-table-row').count();
+    throw new Error(
+      `Không thấy vụ án của bị can "${tenBiCan}" trên lưới Vụ án sơ thẩm (lưới đang có ${soDong} dòng). ` +
+        `URL: ${page.url()}`,
+    );
+  }
+  await dong.click();
+  await choHetSpin(page);
+  await expect
+    .poll(() => page.url(), { timeout: 120_000, intervals: [2000] })
+    .toMatch(/chi-tiet\?id=/);
+  ghi('B6 hoàn thành', `mở vụ án từ lưới: ${page.url()}`);
+}
+
+/**
+ * Danh sách nút LỆNH của màn — bỏ thanh bước `.ant-steps`.
+ *
+ * Thanh bước của wizard cũng là `<button>` nên dump chung làm log đầy "Cáo trạng | Bị can | …" và
+ * che mất điều cần biết: vùng nội dung có nút lệnh nào. Đúng chỗ này đã khiến tôi bấm vào ô bước
+ * "Hoàn thành" và tưởng là đã chốt wizard (đo 01/10/2026).
+ */
+async function dsNutCuaMan(khung: Locator): Promise<string> {
+  const ds = (
+    await khung
+      .locator('xpath=//button[not(ancestor::*[contains(@class,"ant-steps")])]')
+      .allInnerTexts()
+      .catch(() => [])
+  )
+    .map(s => s.replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+  return [...new Set(ds)].slice(0, 25).join(' | ') || '(không có nút lệnh nào)';
 }
 
 /** Điền một loạt ô theo nhãn, ghi lại kết quả, không chặn khi một ô trượt */
@@ -100,6 +173,110 @@ async function dienNhomDiaChi(
 }
 
 /**
+ * Bước 3 · bảng "Địa điểm xảy ra" (spec b7.4) — chỗ tôi BỎ SÓT và rất có thể là lý do wizard không
+ * chốt được: màn 6 hiện "Sẵn sàng hoàn tất!" nhưng nút lệnh chỉ có "Quay lại | Tiếp theo", bấm
+ * "Tiếp theo" thì mất hết nút, không toast, lưới 0 dòng (đo 01/10/2026, ba lượt).
+ *
+ * Spec: "+ Thêm địa điểm xảy ra" → Giờ xảy ra, Ngày xảy ra (không tương lai), Địa điểm chi tiết,
+ * Quốc gia/Tỉnh/Phường → tick "Địa điểm chính" → icon "Lưu địa điểm".
+ */
+async function themDiaDiemXayRa(page: Page, man: Locator, ghi: GhiChu, input: DuLieuVao) {
+  const nutThem = nutTheoChu(man, /Thêm địa điểm xảy ra/i);
+  if (!(await hienTrong(nutThem, 10_000))) {
+    ghi('CẢNH BÁO · B3 địa điểm', 'không thấy nút "+ Thêm địa điểm xảy ra"');
+    return;
+  }
+  // Đã có dòng từ lượt trước thì không thêm trùng
+  const bang = man.locator('.ant-table-row').filter({ hasText: input.diaDiemXayRa });
+  if (await bang.count()) {
+    ghi('B3 địa điểm', `đã có dòng "${input.diaDiemXayRa}"`);
+    return;
+  }
+
+  await nutThem.click();
+  await choHetSpin(page);
+  await nghi(page, 1000, 1500);
+
+  /**
+   * Dòng nhập nằm NGAY TRONG BẢNG, các ô là ô trong cell — KHÔNG phải `.ant-form-item` có label,
+   * nên `dienOTheoNhan` (tìm theo nhãn của form-item) trượt hết. Nhưng chúng CÓ tên trợ năng, nên
+   * lấy thẳng bằng `getByRole`.
+   *
+   * Cấu trúc đo được 01/10/2026 (cây trợ năng):
+   *   row: cell[ textbox "Giờ xảy ra" + textbox "Ngày xảy ra" ]
+   *        cell[ textbox "Địa điểm chi tiết" + combobox "Chọn Quốc gia / Tỉnh/Thành phố / Phường/Xã" ]
+   *        cell[ checkbox (ĐÃ tick sẵn — "Địa điểm chính") ]
+   *        cell[ button img"save" · button img"close" ]
+   *
+   * Địa chỉ ở đây là MỘT combobox gộp ba cấp, không phải hai ô Tỉnh/Phường riêng như drawer bị can.
+   */
+  const dong = man.locator('tr.ant-table-row').last();
+  for (const [ten, giaTri] of [
+    ['Giờ xảy ra', input.gioXayRa],
+    ['Ngày xảy ra', input.ngayXayRa],
+    ['Địa điểm chi tiết', input.diaDiemXayRa],
+  ] as [string, string | undefined][]) {
+    const o = dong.getByRole('textbox', { name: ten }).first();
+    if (!(await hienTrong(o, 10_000))) {
+      ghi('B3 địa điểm', `không thấy ô "${ten}" trong dòng`);
+      continue;
+    }
+    await go(o, giaTri || '');
+    // Ô giờ/ngày là picker: gõ xong phải Enter, không thì giá trị chưa commit và panel che nút lưu
+    if (/Giờ|Ngày/.test(ten)) {
+      await o.press('Enter');
+      await expect(
+        page.locator('.ant-picker-dropdown:not(.ant-picker-dropdown-hidden)'),
+        `Gõ "${giaTri}" vào "${ten}" nhưng panel không đóng`,
+      ).toHaveCount(0, { timeout: 10_000 });
+    }
+    ghi('B3 địa điểm', `${ten} = ${(await o.inputValue().catch(() => '')) || giaTri}`);
+    await choHetSpin(page);
+  }
+
+  // Combobox gộp Quốc gia / Tỉnh / Phường — cây 3 cấp, chọn tới cấp có tỉnh đã gieo
+  const oDiaChi = dong.locator('[role="combobox"]').first();
+  if (await hienTrong(oDiaChi, 5_000)) {
+    const daChon = await dienTrongO(
+      page,
+      dong.locator('td').filter({ has: oDiaChi }).first(),
+      'Quốc gia / Tỉnh/Thành phố / Phường/Xã',
+      input.tinhThanhBiCan,
+    ).catch(async (e: Error) => {
+      await page.keyboard.press('Escape').catch(() => {});
+      ghi('B3 địa điểm', `không chọn được địa chỉ: ${e.message.slice(0, 120)}`);
+      return '';
+    });
+    if (daChon) ghi('B3 địa điểm', `địa chỉ = ${daChon}`);
+    await choHetSpin(page);
+  }
+
+  // "Địa điểm chính" đã tick sẵn cho dòng đầu — chỉ tick khi chưa
+  const tickChinh = dong.locator('input[type="checkbox"]').first();
+  if ((await hienTrong(tickChinh, 3_000)) && !(await tickChinh.isChecked().catch(() => false))) {
+    await tickChinh.click({ force: true });
+    ghi('B3 địa điểm', 'đã tick "Địa điểm chính"');
+  }
+
+  // Lưu = nút ICON `save` trong cột Thao tác (không có chữ nào)
+  const nutLuu = dong.locator('button:has(img[aria-label="save"]), button:has(.anticon-save)').first();
+  if (!(await hienTrong(nutLuu, 10_000))) {
+    ghi('CẢNH BÁO · B3 địa điểm', `không thấy nút lưu (icon save) trong dòng địa điểm`);
+    return;
+  }
+  await nutLuu.click();
+  await choHetSpin(page);
+  await expect
+    .poll(() => bang.count(), {
+      message: `Lưu địa điểm nhưng bảng không có dòng "${input.diaDiemXayRa}"`,
+      timeout: 20_000,
+      intervals: [1500],
+    })
+    .toBeGreaterThan(0);
+  ghi('B3 địa điểm', `đã lưu địa điểm "${input.diaDiemXayRa}"`);
+}
+
+/**
  * Cả 5 nhóm địa chỉ của một drawer con người (bị can, người tham gia tố tụng).
  *
  * Điền hết cả 5 vì FE báo "Vui lòng chọn thông tin địa chỉ" mà KHÔNG nói nhóm nào thiếu
@@ -142,6 +319,8 @@ async function themQuaDrawer(
   /** Drawer có 5 nhóm địa chỉ (bị can, người tham gia tố tụng) thì truyền input để điền nốt */
   diaChi?: { chiTiet: string; tinh: string; phuong?: string },
   soiO = false,
+  /** Chuỗi phải xuất hiện trong bảng sau khi lưu — bằng chứng do hệ thống vẽ ra */
+  chuTrongBang?: string,
 ) {
   const nutTao = nutTheoChu(man, /Tạo mới|Thêm mới/);
   if (!(await hienTrong(nutTao, 10_000))) {
@@ -166,14 +345,27 @@ async function themQuaDrawer(
     await choHetSpin(page);
     await nghi(page, 1500, 2500);
   }
-  if (await hienTrong(drawer, 3_000)) {
-    ghi(`CẢNH BÁO · ${nhan}`, `drawer không đóng — ${await nguyenNhanLoi(page, drawer, 30_000)}`);
+  // Bằng chứng: dòng trong bảng. "Drawer đã đóng" KHÔNG phải bằng chứng — locator lớp ngoài cùng
+  // trỏ sang lớp khác ngay khi drawer đóng, và lưu hỏng thì drawer cũng có thể bị đóng.
+  const dong = chuTrongBang ? man.locator('.ant-table-row').filter({ hasText: chuTrongBang }) : null;
+  const daCoDong = dong
+    ? await expect
+        .poll(() => dong.count(), { timeout: 20_000, intervals: [1500] })
+        .toBeGreaterThan(0)
+        .then(() => true)
+        .catch(() => false)
+    : !(await hienTrong(drawer, 3_000));
+  if (!daCoDong) {
+    ghi(
+      `CẢNH BÁO · ${nhan}`,
+      `lưu xong nhưng bảng không có dòng "${chuTrongBang ?? '(không khai)'}" — ${await nguyenNhanLoi(page, drawer, 20_000)}`,
+    );
     const nutDong = nutTheoChu(drawer, /^Đóng$|^Hủy$/);
     if (await hienTrong(nutDong, 5_000)) await nutDong.click();
     await choHetSpin(page);
     return;
   }
-  ghi(nhan, 'đã lưu, drawer đã đóng');
+  ghi(nhan, `đã lưu — bảng có dòng "${chuTrongBang ?? ''}"`);
 }
 
 /** Nút "Tiếp theo" của wizard */
@@ -193,13 +385,32 @@ export async function taoVuAnHinhSu(page: Page, input: DuLieuVao, ghi: GhiChu) {
 
   // ───── b3 · Bước 1: Thông tin cáo trạng ─────
   const man = page.locator('body');
+
+  /**
+   * STG thỉnh thoảng trả TRANG TRẮNG: HTTP 200, khung ngoài vẽ xong nhưng vùng nội dung không nạp
+   * (lượt 01/10/2026: cả màn không một ô, không một nút, rồi lỗi báo là "không thấy nút Tiếp
+   * theo"). Bộ bắt 5xx của khung không nhận ra vì mã trả về vẫn 200 — tải lại một lần là qua.
+   */
+  for (let lan = 0; lan < 3; lan++) {
+    if (await man.locator('.ant-form-item').count()) break;
+    ghi('B1 cáo trạng', `màn chưa nạp nội dung (lần ${lan + 1}) → tải lại`);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await choHetSpin(page);
+    await nghi(page, 2000, 3000);
+  }
+  await expect(
+    man.locator('.ant-form-item').first(),
+    'Màn "Thêm mới vụ án" không nạp được nội dung sau 3 lần tải lại',
+  ).toBeVisible({ timeout: 30_000 });
+
   await soiMan(page, man, ghi, 'B1 cáo trạng');
   await dienCacO(page, man, ghi, 'B1 cáo trạng', [
     [/Trường hợp thụ lý/i, input.truongHopThuLy],
     [/Số cáo trạng/i, input.soCaoTrang],
     [/Ngày bản cáo trạng|Ngày cáo trạng/i, input.ngayCaoTrang],
     [/Số bút lục/i, input.soButLuc],
-    [/Viện kiểm sát/i, undefined],
+    // KHÔNG chạm ô "Viện kiểm sát": spec b3.5 ghi "mặc định phần tử đầu danh mục, giữ nguyên".
+    // Mở dropdown rồi chọn "mục đầu theo thứ tự chữ cái" là ĐỔI mất giá trị FE đã nạp sẵn.
   ]);
   await tiepTheo(page, ghi, 'B1 cáo trạng');
 
@@ -213,14 +424,14 @@ export async function taoVuAnHinhSu(page: Page, input: DuLieuVao, ghi: GhiChu) {
   await choHetSpin(page);
 
   /**
-   * Neo drawer theo TIÊU ĐỀ của chính nó, không dùng `bieuMauDangMo` ("lớp đang mở ngoài cùng").
-   * Lớp ngoài cùng là locator ĐỘNG: khi drawer bị can đóng, nó trỏ ngay sang lớp còn lại và ta kết
-   * luận "drawer không đóng" trong khi toast đã báo "Lưu thành công" (đo 01/10/2026).
+   * Vẫn dùng `bieuMauDangMo` ("lớp đang mở ngoài cùng") để THAO TÁC. Thử neo theo tiêu đề
+   * `/Thông tin bị can/` thì các ô vẫn điền được nhưng nút "+ Chọn tội danh" biến mất
+   * (locator trỏ vào một lớp khác cùng chứa chữ đó) — đo 01/10/2026.
+   *
+   * Cái phải sửa nằm ở chỗ KIỂM SAU KHI LƯU: xem bảng có dòng bị can chưa, chứ không hỏi
+   * "drawer đã đóng chưa" — lớp ngoài cùng là locator động nên câu hỏi đó luôn sai.
    */
-  const drawer = page
-    .locator('.ant-drawer-content:visible, .ant-modal-content:visible')
-    .filter({ hasText: /Thông tin bị can/i })
-    .first();
+  const drawer = bieuMauDangMo(page);
   await expect(drawer, 'Không mở được drawer "Thêm mới bị can"').toBeVisible({ timeout: 30_000 });
   await soiMan(page, drawer, ghi, 'B2 drawer bị can');
 
@@ -303,13 +514,20 @@ export async function taoVuAnHinhSu(page: Page, input: DuLieuVao, ghi: GhiChu) {
    * ngoài cùng" trỏ sang lớp khác sau khi drawer đóng (đo 01/10/2026).
    */
   const dongBiCan = man.locator('.ant-table-row').filter({ hasText: input.tenBiCan });
-  await expect
-    .poll(() => dongBiCan.count(), {
-      message: `Bấm "Lưu" nhưng bảng bị can không có dòng "${input.tenBiCan}"`,
-      timeout: 30_000,
-      intervals: [1500],
-    })
-    .toBeGreaterThan(0);
+  const daCoDongBiCan = await expect
+    .poll(() => dongBiCan.count(), { timeout: 30_000, intervals: [1500] })
+    .toBeGreaterThan(0)
+    .then(() => true)
+    .catch(() => false);
+  if (!daCoDongBiCan) {
+    // Nói rõ FE đang chặn vì gì: danh mục/ô bắt buộc khác nhau giữa STG và UAT (đo 01/10/2026)
+    const loi = await nguyenNhanLoi(page, drawer, 30_000);
+    const oLoi = (await moTaForm(drawer)).filter(d => d.includes('⚠')).slice(0, 12);
+    throw new Error(
+      `Bấm "Lưu" nhưng bảng bị can không có dòng "${input.tenBiCan}".\n  Màn báo: ${loi}\n  ` +
+        `Ô còn lỗi: ${oLoi.join(' · ') || '(không ô nào gắn cờ lỗi)'}`,
+    );
+  }
   ghi('B2 bị can', `đã lưu bị can ${input.tenBiCan} (có dòng trong bảng)`);
 
   await tiepTheo(page, ghi, 'B2 bị can');
@@ -317,6 +535,7 @@ export async function taoVuAnHinhSu(page: Page, input: DuLieuVao, ghi: GhiChu) {
   // ───── b7 · Bước 3: Thông tin vụ án ─────
   await soiMan(page, man, ghi, 'B3 thông tin vụ án');
   await dienCacO(page, man, ghi, 'B3 thông tin vụ án', [[/Nội dung vụ án/i, input.noiDungVuAn]]);
+  await themDiaDiemXayRa(page, man, ghi, input);
   await tiepTheo(page, ghi, 'B3 thông tin vụ án');
 
   // ───── b9 · Bước 4: người tham gia tố tụng (bị hại) ─────
@@ -337,9 +556,17 @@ export async function taoVuAnHinhSu(page: Page, input: DuLieuVao, ghi: GhiChu) {
       [/^Ngày sinh/, input.ngaySinhBiHai],
       [/^Giới tính/, 'Nữ'],
       [/^Dân tộc/, input.danToc],
-      [/^Quốc tịch/, input.quocTich],
+      /**
+       * Căn cước BẮT BUỘC: bỏ trống thì "Lưu" báo "Vui lòng nhập căn cước" (đo 01/10/2026).
+       * KHÔNG điền "Quốc tịch" ở drawer này: chọn "Việt Nam" xong đọc lại ô vẫn trống — ô tự nạp
+       * theo chỗ khác, ép vào chỉ tốn thời gian và sinh cảnh báo giả.
+       */
+      [/^Số căn cước/, input.soDinhDanhBiHai],
+      [/^Ngày cấp CCCD/, input.ngayCapCCCDBiHai],
     ],
     { chiTiet: input.diaChiBiHai, tinh: input.tinhThanhBiCan, phuong: input.phuongXaBiCan },
+    false,
+    input.tenBiHai,
   );
   await tiepTheo(page, ghi, 'B4 người tham gia');
 
@@ -357,27 +584,104 @@ export async function taoVuAnHinhSu(page: Page, input: DuLieuVao, ghi: GhiChu) {
     ],
     undefined,
     true,
+    input.tenVatChung,
   );
   await tiepTheo(page, ghi, 'B5 vật chứng');
 
   // ───── b13 · Bước 6: Hoàn thành ─────
   await soiMan(page, man, ghi, 'B6 hoàn thành', true);
-  const nutHoanThanh = nutTheoChu(man, /Hoàn thành|Lưu vụ án|^Lưu$/);
-  await expect(nutHoanThanh, 'Bước 6 không có nút "Hoàn thành"').toBeVisible({ timeout: 20_000 });
-  await nutHoanThanh.click();
+  ghi('B6 hoàn thành · URL', page.url());
+  ghi(
+    'B6 hoàn thành · màn',
+    (await man.innerText().catch(() => '')).replace(/\s+/g, ' ').slice(0, 400),
+  );
+  /**
+   * CHỐT WIZARD. Spec b13: nút lệnh là "Hoàn thành" → "Đang xử lý…" → "Tạo vụ án thành công".
+   * Spec b12 ghi sẵn một lỗi FE: ở bước "Hoàn thành" ("Sẵn sàng hoàn tất!") phải bấm "Tiếp theo"
+   * THÊM MỘT LẦN NỮA thì nút "Hoàn thành" mới hiện.
+   *
+   * Nên vòng lặp chỉ làm một việc: thấy "Hoàn thành" thì bấm, không thấy thì bấm "Tiếp theo" rồi
+   * TÌM LẠI. Bản trước bấm "Tiếp theo" xong thoát luôn nên không bao giờ tới được nút chốt.
+   *
+   * ⚠ Thanh tiến trình cũng là <button> và cũng mang chữ "Hoàn thành" (ban đầu "6 Hoàn thành",
+   * sau một lượt thì mất số). Bấm nhầm vào đó thì log ghi "đã bấm Hoàn thành" mà không tạo gì:
+   * không toast, lưới 0 dòng (đo 01/10/2026, hai lượt). Vì vậy nút lệnh phải lấy trong khối chứa
+   * chữ "Sẵn sàng hoàn tất", không lấy trên cả màn.
+   */
+  /**
+   * Tìm trên CẢ MÀN, loại trừ thanh bước `.ant-steps`.
+   *
+   * Không neo vào khối chứa chữ "Sẵn sàng hoàn tất": chữ đó BIẾN MẤT ngay sau cú "Tiếp theo" — mà
+   * đúng lúc ấy nút "Hoàn thành" mới hiện ra. Lượt 01/10/2026 vì vậy báo "không hiện nút lệnh"
+   * trong khi log của chính nó in `Nút lệnh: Quay lại | Hoàn thành`.
+   */
+  const nutChot = () =>
+    man
+      .locator(
+        'xpath=//button[normalize-space()="Hoàn thành" or normalize-space()="Lưu vụ án" or normalize-space()="Tạo vụ án"]' +
+          '[not(ancestor::*[contains(@class,"ant-steps")])]',
+      )
+      .first();
+
+  let daBamHoanThanh = false;
+  for (let lan = 0; lan < 4 && !daBamHoanThanh; lan++) {
+    if (await hienTrong(nutChot(), lan === 0 ? 20_000 : 30_000)) {
+      await nutChot().click();
+      ghi('B6 hoàn thành', `đã bấm "Hoàn thành" (sau ${lan} lượt "Tiếp theo")`);
+      daBamHoanThanh = true;
+      break;
+    }
+    const nutTiep = nutTheoChu(man, /Tiếp theo/);
+    if (!(await hienTrong(nutTiep, 5_000))) {
+      ghi('B6 hoàn thành', `không còn nút nào để bấm. Nút lệnh: ${await dsNutCuaMan(man)}`);
+      break;
+    }
+    await nutTiep.click();
+    ghi('B6 hoàn thành', `bấm "Tiếp theo" lượt ${lan + 1} để làm hiện nút "Hoàn thành" (spec b12)`);
+    await choHetSpin(page);
+    await nghi(page, 2500, 3500);
+  }
+  if (!daBamHoanThanh) {
+    throw new Error(
+      `Màn 6 không hiện nút lệnh "Hoàn thành" sau 4 lượt thử. ` +
+        `Nút lệnh đang có: ${await dsNutCuaMan(man)}`,
+    );
+  }
+  await choHetSpin(page);
+
+  /**
+   * Spec b13: "Hoàn thành" → "Đang xử lý..." → "Tạo vụ án thành công" → tự chuyển. Khâu "Đang xử
+   * lý" là tạo cả vụ án nên CHẬM; chờ toast trước rồi mới chờ URL, và nới hẳn thời gian.
+   */
+  await toastDaHien(page, /Tạo vụ án thành công|thành công/i, 150_000, /thất bại|lỗi/i).catch(() => {
+    ghi('B6 hoàn thành', 'không thấy toast "Tạo vụ án thành công" — vẫn chờ chuyển màn');
+  });
   await choHetSpin(page);
 
   /**
    * BẰNG CHỨNG của bước này là URL chi tiết vụ án do hệ thống cấp: `…/chi-tiet?id=<uuid>`.
    * Không lấy được id thì KHÔNG coi là xong — bước 02 trở đi đều cần id này.
    */
-  await expect
-    .poll(() => page.url(), {
-      message: 'Bấm "Hoàn thành" nhưng không chuyển sang màn chi tiết vụ án',
-      timeout: 120_000,
-      intervals: [2000],
-    })
-    .toMatch(/chi-tiet\?id=/);
+  const toiChiTiet = await expect
+    .poll(() => page.url(), { timeout: 150_000, intervals: [2000] })
+    .toMatch(/chi-tiet\?id=/)
+    .then(() => true)
+    .catch(() => false);
+  /**
+   * Không tự chuyển thì đi tìm vụ án TRÊN LƯỚI — đường vòng, nhưng cũng là bằng chứng mạnh hơn
+   * chuyện "trang có đổi URL không": vụ án phải thật sự nằm trong danh sách của đơn vị.
+   */
+  if (!toiChiTiet) {
+    ghi('B6 hoàn thành', 'bấm "Hoàn thành" xong nhưng không tự chuyển màn → tìm vụ án trên lưới');
+    await timVuAnTrenLuoi(page, ghi, input.tenBiCan);
+  }
+  if (!/chi-tiet\?id=/.test(page.url())) {
+    const chu = (await page.locator('body').innerText().catch(() => '')).replace(/\s+/g, ' ').slice(0, 400);
+    throw new Error(
+      `Bấm xong bước 6 nhưng không mở được chi tiết vụ án.\n  URL: ${page.url()}\n  ` +
+        `Nút: ${await dsNutCuaMan(man)}\n  Màn đang hiện: ${chu}\n  ${await nguyenNhanLoi(page)}`,
+    );
+  }
   const idVuAnHinhSu = new URL(page.url()).searchParams.get('id') || '';
   if (!idVuAnHinhSu) throw new Error(`URL chi tiết không có tham số id: ${page.url()}`);
 

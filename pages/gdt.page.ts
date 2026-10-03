@@ -3,6 +3,7 @@ import { choHetSpin, chonNgay, chonRadio, chonSelect, go, hienTrong, luoiDaTai, 
 import { NguoiGia } from '../common/du-lieu';
 import { dienFormNguoi } from '../common/form-nguoi';
 import { moMenu } from '../common/menu';
+import { moTab, xacNhanHopThoai } from '../common/bieu-mau';
 
 /**
  * Phân hệ Quản lý án GĐT/TT (qla-webapp pages/VuAn/GdtTt):
@@ -147,6 +148,69 @@ async function moRongCoTrang(page: Page) {
   } else {
     await page.keyboard.press('Escape');
   }
+}
+
+/**
+ * Chọn tab "Tờ trình" ở màn chi tiết vụ án GĐT.
+ *
+ * ⚠ Mở URL kèm `&tab=to-trinh` KHÔNG còn chọn tab (bản FE 02/10/2026 vẫn mở "Thông tin vụ án"), nên
+ * nút "Tạo văn bản" không có trên màn và cú bấm hết 30 s. Bấm thẳng vào tab theo tên.
+ */
+/**
+ * Đặt ô "Chủ tọa" trong popup "Danh sách vụ xét xử đã chọn".
+ *
+ * ⚠ Chủ toạ QUYẾT ĐỊNH AI DUYỆT Chương trình làm việc HĐXX: văn bản trình ký xong nằm ở hàng chờ của
+ * người ký, mà người ký là chủ toạ. Popup trình ký của màn này KHÔNG có ô "Cấp trình"/"Người được
+ * trình" (chỉ có Người ký đã khoá), nên không chỉnh được ở bước sau — phải đặt từ đây.
+ */
+async function datChuToaHdxx(page: Page, pop: Locator, ten: string) {
+  const o = pop
+    .locator('.ant-form-item')
+    .filter({ has: page.locator('label').filter({ hasText: /^\s*Chủ tọa/ }) })
+    .first();
+  const khung = (await o.count()) ? o : pop.locator('.ant-select').filter({ hasText: /Chủ tọa/ }).first();
+  if (!(await hienTrong(khung, 5_000))) {
+    console.log('    · Popup danh sách vụ xét xử: không thấy ô "Chủ tọa" → giữ nguyên người hệ thống phân công');
+    return;
+  }
+  const dangCo = (await khung.locator('.ant-select-selection-item').first().innerText().catch(() => ''))
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (dangCo.toLowerCase().includes(ten.toLowerCase())) {
+    console.log(`    · Chủ tọa đã là "${dangCo}" → không đổi`);
+    return;
+  }
+  const oNhap = khung.locator('input').first();
+  await chonSelect(page, oNhap, ten, { goDeLoc: true }).catch(async () => {
+    const ds = (await page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option').allInnerTexts().catch(() => []))
+      .map(x => x.replace(/\s+/g, ' ').trim())
+      .slice(0, 20);
+    throw new Error(`Không chọn được Chủ tọa "${ten}". Danh sách đang có: ${ds.join(' | ') || '(không đọc được)'}`);
+  });
+  const sau = (await khung.locator('.ant-select-selection-item').first().innerText().catch(() => '')).trim();
+  console.log(`    · Chủ tọa: "${dangCo || '(trống)'}" → "${sau}"`);
+}
+
+async function moTabToTrinh(page: Page) {
+  /**
+   * NEO TRONG `main`: Menu V3 cũng dùng `role=tab` (thẻ Ghim nhanh / Gần đây) nên `getByRole('tab')`
+   * trên cả trang rồi `.first()` có thể trúng tab của menu, click xong vẫn ở "Thông tin vụ án".
+   */
+  // CHỜ MÀN CHI TIẾT VẼ XONG trước: gọi ngay sau `goto` thì chưa có thẻ tab nào, hàm thoát sớm
+  await page.getByText(/Chi tiết vụ án/).first().waitFor({ state: 'visible', timeout: 60_000 }).catch(() => {});
+  await choHetSpin(page);
+
+  const nutTaoVanBan = page.getByRole('button', { name: /Tạo văn bản/ }).first();
+  if (await hienTrong(nutTaoVanBan, 3_000)) return; // đang ở đúng tab rồi
+
+  /**
+   * Dùng `moTab` dùng chung (common/bieu-mau) — nó đã gánh các cái bẫy của thẻ tab antd: tên chính
+   * xác trước rồi mới khớp chuỗi con, và bấm vào `.ant-tabs-tab` khi `[role=tab]` bị lớp khác che
+   * (`click({force:true})` trên thẻ bị che vẫn gửi sự kiện cho lớp che, nên tab không đổi).
+   */
+  await moTab(page, 'Tờ trình').catch(() => {});
+  await nghi(page, 1000, 1500);
+  console.log(`    · Bấm tab "Tờ trình": ${(await hienTrong(nutTaoVanBan, 10_000)) ? 'đã thấy nút "Tạo văn bản"' : 'VẪN CHƯA thấy nút "Tạo văn bản"'}`);
 }
 
 export class GdtPage {
@@ -465,6 +529,7 @@ export class GdtPage {
   async lapToTrinhThamTra(idVuAn: string, maDon: string, noi: { tomTat: string; dienBien: string; yKien: string }) {
     const { page } = this;
     await page.goto(`vu-an/gdt-tt/quan-ly-an/chi-tiet?id=${idVuAn}&tab=to-trinh`);
+    await moTabToTrinh(page);
     await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => {});
     await page.getByRole('button', { name: /Tạo văn bản/ }).first().click();
     await page.getByRole('menuitem', { name: /Tạo tờ trình thẩm tra vụ việc/ }).click();
@@ -509,6 +574,7 @@ export class GdtPage {
   ) {
     const { page } = this;
     await page.goto(`vu-an/gdt-tt/quan-ly-an/chi-tiet?id=${idVuAn}&tab=to-trinh`);
+    await moTabToTrinh(page);
     await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => {});
     const dong = () => page.locator('.ant-table-row:visible').filter({ hasText: mauDong }).first();
     await expect(dong(), `Không thấy văn bản khớp ${mauDong} ở tab Tờ trình`).toBeVisible({ timeout: 60_000 });
@@ -627,6 +693,7 @@ export class GdtPage {
   ) {
     const { page } = this;
     await page.goto(`vu-an/gdt-tt/quan-ly-an/chi-tiet?id=${idVuAn}&tab=to-trinh`);
+    await moTabToTrinh(page);
     await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => {});
     await choHetSpin(page);
     await nghi(page, 1500, 2500);
@@ -738,6 +805,7 @@ export class GdtPage {
     // KIỂM CHỨNG BẰNG MÀN, KHÔNG TIN TOAST: nạp lại tab Tờ trình và đòi thấy đúng dòng dự thảo.
     // Thiếu bước này thì bước sau ghi sổ cái "xong" dù vụ chưa có văn bản kháng nghị nào.
     await page.goto(`vu-an/gdt-tt/quan-ly-an/chi-tiet?id=${idVuAn}&tab=to-trinh`);
+    await moTabToTrinh(page);
     await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => {});
     await choHetSpin(page);
     await nghi(page, 1500, 2500);
@@ -1295,7 +1363,17 @@ export class GdtPage {
   async phanCongThamPhanTANDTC(
     soBanAn: string,
     ngayBanAn: string,
-    d: { nguoiKy: string; hinhThucPhanCong?: string; toaAn?: string },
+    d: {
+      nguoiKy: string;
+      hinhThucPhanCong?: string;
+      toaAn?: string;
+      /**
+       * Tên Thẩm phán TANDTC muốn CHỈ ĐỊNH. Bỏ trống → phân công ngẫu nhiên như tài liệu B16. Truyền
+       * tên → người đó thành CHỦ TOẠ, và Chương trình làm việc HĐXX (khoá người ký theo chủ toạ) sẽ
+       * chờ duyệt ở hàng của người đó, nên phải là người mình có tài khoản.
+       */
+      thamPhanChiDinh?: string;
+    },
   ): Promise<string | null> {
     const { page } = this;
     const bl = boLocDong(page, soBanAn, ngayBanAn, d.toaAn);
@@ -1333,16 +1411,76 @@ export class GdtPage {
     //    (Trước đây code dùng "phân công chỉ định" và tự gán một thẩm phán lấy từ vụ mẫu trên STG;
     //     luồng GĐT/TT không hề có việc đó.)
     //    Vụ đã phân công ở lượt trước thì không còn ở tab này → bỏ qua, sang bước 2.
-    const dsCho = await moTabVaLoc(/^DS chưa phân công ngẫu nhiên/);
     let vuaPhanCong = false;
     let loiToast: string | undefined;
-    if (!(await hienTrong(dsCho.first(), 5_000))) {
+    /** Tên Thẩm phán TANDTC phải thấy trên dòng sau khi phân công (chỉ khi chỉ định đích danh) */
+    let tenTpCanCo: RegExp | null = null;
+
+    // 1b. CHỈ ĐỊNH (khi có tên) — tab "DS chưa phân công chỉ định".
+    //  ⚠ Ô "-- Chọn thẩm phán --" và ô "Lý do phân công (chung)" nằm trên THANH CÔNG CỤ của bảng,
+    //    KHÔNG ở trong dòng (như màn Phân công TTV) và KHÔNG ở trong hộp thoại nào. Nút
+    //    "Phân công chỉ định (n …)" chỉ hiện sau khi tick dòng; thiếu thẩm phán hoặc thiếu lý do thì nó
+    //    chỉ bật message.warning rồi THOÁT, không mở hộp nào (PhanCongThamPhanVu/index.tsx:
+    //    kiemTraTruocKhiPhanCong → Modal.confirm 'Xác nhận phân công'). Đo 02/10/2026 ở case-002.
+    //  Danh sách thẩm phán = cán bộ chức danh TPTATC của các đơn vị GĐT/TT, trừ người đã tắt nhận
+    //  phân công (useDanhSachThamPhan + getDsChucDanhTheoFilter) → người cần chỉ định phải có trong đó.
+    if (d.thamPhanChiDinh) {
+      const tenTp = new RegExp(boDauLinhHoat(d.thamPhanChiDinh), 'i');
+      const dsChiDinh = await moTabVaLoc(/^DS chưa phân công chỉ định/);
+      if (await hienTrong(dsChiDinh.first(), 8_000)) {
+        const dong = dsChiDinh.first();
+        await dong.locator('.ant-checkbox-input').first().check();
+        await nghi(page, 600, 1000);
+        const oTp = page.locator('.ant-select').filter({ hasText: /Chọn thẩm phán/ }).first().locator('input').first();
+        await expect(
+          oTp,
+          'Tab "DS chưa phân công chỉ định": không thấy ô "-- Chọn thẩm phán --" trên thanh công cụ',
+        ).toBeVisible({ timeout: 15_000 });
+        const daChon = await chonSelect(page, oTp, d.thamPhanChiDinh, { goDeLoc: true }).catch((e: Error) => {
+          // GIỮ NGUYÊN thông báo của chonSelect: nó liệt kê các mục đang có, bỏ đi là mất dữ kiện
+          throw new Error(
+            `Không chọn được Thẩm phán TANDTC "${d.thamPhanChiDinh}" ở tab "DS chưa phân công chỉ định" ` +
+              `(vụ ${soBanAn}).\n  ${e.message}`,
+          );
+        });
+        if (!daChon) throw new Error(`Chọn Thẩm phán TANDTC "${d.thamPhanChiDinh}" xong mà ô vẫn trống (vụ ${soBanAn})`);
+        const oLyDo = page.getByPlaceholder(/Lý do phân công/i).first();
+        await expect(oLyDo, 'Không thấy ô "Lý do phân công (chung)" trên thanh công cụ').toBeVisible({ timeout: 10_000 });
+        await go(oLyDo, 'Phân công Thẩm phán TANDTC giải quyết hồ sơ kháng nghị.');
+        const nutChiDinh = page.getByRole('button', { name: /^Phân công chỉ định/ }).first();
+        await expect(nutChiDinh, 'Tick dòng rồi mà không hiện nút "Phân công chỉ định"').toBeVisible({ timeout: 15_000 });
+        await nutChiDinh.click();
+        const xnCd = page.locator('.ant-modal-confirm:visible').filter({ hasText: /Xác nhận phân công/i }).last();
+        await expect(
+          xnCd,
+          'Bấm "Phân công chỉ định" mà không mở hộp "Xác nhận phân công" → ô thẩm phán hoặc ô lý do chưa ' +
+            'nhận giá trị (màn chỉ bật message.warning rồi thoát)',
+        ).toBeVisible({ timeout: 15_000 });
+        await xnCd.getByRole('button', { name: /^(Xác nhận|Đồng ý|OK)$/ }).last().click();
+        await choHetSpin(page);
+        await toastDaHien(page, /thành công/i, 30_000, /thất bại|Vui lòng/i).catch((e: Error) => {
+          loiToast = e.message;
+        });
+        await choHetSpin(page);
+        vuaPhanCong = true;
+        console.log(`    · B16: đã chỉ định Thẩm phán TANDTC "${daChon}" cho vụ ${soBanAn}`);
+      } else {
+        console.log(
+          `    · B16: vụ ${soBanAn} không có ở "DS chưa phân công chỉ định" → có thể đã phân công ở lượt trước`,
+        );
+      }
+      // Bằng chứng + đường sửa nằm ở tab "Quản lý kết quả phân công" bên dưới.
+      tenTpCanCo = tenTp;
+    }
+
+    const dsCho = d.thamPhanChiDinh ? null : await moTabVaLoc(/^DS chưa phân công ngẫu nhiên/);
+    if (dsCho && !(await hienTrong(dsCho.first(), 5_000))) {
       // Vụ đã phân công ở lượt trước thì KHÔNG còn ở tab này → không bấm gì và cũng KHÔNG chờ toast
       // (chờ toast ở nhánh này chính là "page.waitForFunction: Timeout 60000ms"), sang tab kết quả kiểm.
       console.log(
         '    · B16: vụ ' + soBanAn + ' không có ở "DS chưa phân công ngẫu nhiên" → kiểm ở "Quản lý kết quả phân công"',
       );
-    } else {
+    } else if (dsCho) {
       // "Phân công ngẫu nhiên" xử lý TOÀN BỘ bản ghi đang hiện. Lọc xong mà còn dòng của vụ khác thì
       // dừng, không bấm — tránh đụng vào vụ không thuộc phạm vi đang chạy.
       const tongDong = await page.locator('.ant-table-row:visible').count();
@@ -1384,6 +1522,49 @@ export class GdtPage {
       );
     }
     if (vuaPhanCong) console.log(`    · B16: phân công ngẫu nhiên xong, đã thấy vụ ${soBanAn} ở tab "Quản lý kết quả phân công"`);
+
+    // 2b. CHỈ ĐỊNH ĐÍCH DANH: cột "Thẩm phán" phải là đúng người. Vụ đã phân công ngẫu nhiên ở lượt
+    //     trước thì cột đó có nút "Sửa" (hiện khi record.khoaSua = false) mở Select "Chọn thẩm phán" +
+    //     "Chọn thời điểm" + "Lý do thay đổi" → "Lưu". Đây là đường duy nhất đổi chủ toạ HĐXX sau khi
+    //     hệ thống đã tự chọn (PhanCongThamPhanVu/index.tsx, cột 'Thẩm phán' → batDauSua/luuSua).
+    if (tenTpCanCo) {
+      if (!tenTpCanCo.test((await dongKq.innerText()).replace(/s+/g, ' '))) {
+        const nutSua = dongKq.getByRole('button', { name: /^Sửa$/ }).first();
+        if (!(await hienTrong(nutSua, 5_000))) {
+          throw new Error(
+            `Vụ ${soBanAn} đã phân công cho người khác và dòng KHÔNG có nút "Sửa" (bị khoá sửa) → không ` +
+              `đổi được Thẩm phán TANDTC sang "${d.thamPhanChiDinh}". Dòng: ` +
+              (await dongKq.innerText()).replace(/s+/g, ' ').trim().slice(0, 240),
+          );
+        }
+        await nutSua.click();
+        await nghi(page, 900, 1400);
+        const oSua = dongKq.getByRole('combobox').first();
+        await expect(oSua, 'Bấm "Sửa" mà dòng không hiện ô chọn thẩm phán').toBeVisible({ timeout: 10_000 });
+        const daSua = await chonSelect(page, oSua, d.thamPhanChiDinh!, { goDeLoc: true });
+        if (!daSua) throw new Error(`Sửa Thẩm phán TANDTC: chọn "${d.thamPhanChiDinh}" xong mà ô vẫn trống`);
+        const oThoiDiem = dongKq.getByPlaceholder(/Chọn thời điểm/i).first();
+        if (await hienTrong(oThoiDiem, 4_000)) await chonNgay(page, oThoiDiem, new Date().toLocaleDateString('en-GB'));
+        const oLyDoSua = dongKq.getByPlaceholder(/Lý do thay đổi/i).first();
+        if (await hienTrong(oLyDoSua, 4_000)) {
+          await go(oLyDoSua, 'Đổi Thẩm phán TANDTC cho đúng chủ toạ Hội đồng xét xử.');
+        }
+        await dongKq.getByRole('button', { name: /^Lưu$/ }).first().click();
+        await choHetSpin(page);
+        await toastDaHien(page, /thành công/i, 30_000, /thất bại|Vui lòng/i).catch((e: Error) => {
+          loiToast = e.message;
+        });
+        await choHetSpin(page);
+        await nghi(page, 1500, 2500);
+      }
+      // Bằng chứng: chính dòng trên lưới ghi tên thẩm phán (cột "Thẩm phán", không còn "Chưa phân công")
+      await expect(
+        dongKq,
+        `Phân công xong mà cột "Thẩm phán" của vụ ${soBanAn} vẫn không phải "${d.thamPhanChiDinh}"` +
+          `${loiToast ? ` (thông báo: ${loiToast})` : ''}`,
+      ).toContainText(tenTpCanCo, { timeout: 30_000 });
+      console.log(`    · B16: cột "Thẩm phán" của vụ ${soBanAn} = ${d.thamPhanChiDinh} (chủ toạ HĐXX)`);
+    }
 
     // discover → reuse: cột "Tờ trình phân công" đã có số + trạng thái (Chờ duyệt / Đã ban hành) nghĩa là
     // tờ trình MS_02_TC đã lập và trình ký xong ở lượt trước. Lúc đó ô tick của dòng bị KHOÁ, bấm check
@@ -1888,6 +2069,11 @@ export class GdtPage {
     ngayBanAn?: string,
     toaAn?: string,
     duongSu?: string,
+    /**
+     * Tên Thẩm phán làm CHỦ TOẠ. Bỏ trống thì lấy người hệ thống đã phân công — và Chương trình làm
+     * việc HĐXX sẽ chờ duyệt ở hàng của người đó (xem `datChuToaHdxx`).
+     */
+    chuToa?: string,
   ): Promise<boolean> {
     const { page } = this;
     // Chỉ tìm ở tab "Chưa có DS xét xử": vụ đã có danh sách (lượt trước) thì không tạo lại (tránh trùng)
@@ -1928,6 +2114,7 @@ export class GdtPage {
       if (await hienTrong(oHoiDong, 3_000)) await chonSelect(page, oHoiDong.locator('input').first(), loaiHoiDong, { goDeLoc: false });
     }
     await nghi(page, 800, 1200);
+    if (chuToa) await datChuToaHdxx(page, pop, chuToa);
 
     await pop.getByRole('button', { name: /Chọn lịch xét xử$/ }).first().click();
     const lich = page.locator('.ant-modal:visible').filter({ has: page.locator('.ant-modal-title', { hasText: /^Chọn lịch xét xử$/ }) }).last();
@@ -2009,8 +2196,24 @@ export class GdtPage {
     }
   }
 
+  /**
+   * Trạng thái dòng "Danh sách tham mưu" đọc được ở lần gọi `laySoVaTrinhKyThamMuu` gần nhất
+   * (Chưa trình / Chờ duyệt / Đã duyệt). Bước 42 cần nó: chạy lại mà chương trình ĐÃ ĐƯỢC DUYỆT thì
+   * không còn gì để duyệt, và hàng chờ của Chánh án không mang dấu hiệu vụ nên không dò được.
+   */
+  trangThaiThamMuu?: string;
+
   /** Bước 15 (cuối): Danh sách tham mưu → xem chi tiết vụ đã tham mưu → "Lấy số" → "Trình ký" → "Gửi". */
-  async laySoVaTrinhKyThamMuu(soBanAn: string, ngayBanAn?: string, toaAn?: string): Promise<string | undefined> {
+  async laySoVaTrinhKyThamMuu(
+    soBanAn: string,
+    ngayBanAn?: string,
+    toaAn?: string,
+    /**
+     * `trinhLai`: văn bản đã trình thì THU HỒI rồi trình lại — dùng khi chủ toạ (người ký, cũng là
+     * người duyệt) không phải tài khoản của bộ. `chuToa`: tên chủ toạ đặt lại trước khi trình lại.
+     */
+    d: { trinhLai?: boolean; chuToa?: string } = {},
+  ): Promise<string | undefined> {
     const { page } = this;
     // Chạy lại sau lần lỗi trước, hoặc danh sách đã có từ trước → popup đọc-only còn mở, phải đóng trước
     await this.dongPopupConMo();
@@ -2030,14 +2233,46 @@ export class GdtPage {
     // thì popup chi tiết KHÔNG còn nút "Trình ký" (chỉ còn Đóng / Xem biểu mẫu / Hủy cấp số), mở ra rồi
     // mới kết luận là báo lỗi nhầm (VG11 28/09/2026). Thấy "Đã duyệt"/"Đã trình"/"Chờ ký duyệt" → xong.
     const chuDong = (await dong.innerText()).replace(/\s+/g, ' ').trim();
-    const trangThai = /(Đã duyệt|Đã trình ký|Đã trình|Chờ ký duyệt)/i.exec(chuDong)?.[1];
-    if (trangThai) {
+    if (/Từ chối/i.test(chuDong)) {
+      throw new Error(
+        `Danh sách tham mưu của vụ ${soBanAn} đang ở trạng thái "Từ chối" — người duyệt đã trả lại, ` +
+          `phải xử lý tay trước khi chạy tiếp. Dòng: ${chuDong.slice(0, 400)}`,
+      );
+    }
+    const trangThai = /(Đã duyệt|Chờ duyệt|Đã trình ký|Đã trình|Chờ ký duyệt)/i.exec(chuDong)?.[1];
+    this.trangThaiThamMuu = trangThai || /Chưa trình/i.exec(chuDong)?.[0];
+    if (trangThai && !d.trinhLai) {
       console.log(`    · B19: danh sách tham mưu của vụ ${soBanAn} đã ở trạng thái "${trangThai}" → bỏ qua Lấy số/Trình ký`);
       return undefined;
     }
+    if (trangThai) console.log(`    · B19: trạng thái "${trangThai}" + trinhLai → mở chi tiết để THU HỒI rồi trình lại`);
     await dong.locator('button, a').filter({ has: page.locator('[aria-label="eye"]') }).first().click();
     await choHetSpin(page);
     await nghi(page, 2000, 3000);
+
+    if (d.trinhLai) {
+      const nutThuHoi = page.getByRole('button', { name: /^Thu hồi$/ }).first();
+      if (await hienTrong(nutThuHoi, 5_000)) {
+        await nutThuHoi.click({ force: true });
+        await xacNhanHopThoai(page).catch(() => undefined);
+        await choHetSpin(page);
+        await nghi(page, 1500, 2500);
+        console.log('    · Danh sách tham mưu: ĐÃ THU HỒI trình ký để trình lại');
+      }
+      if (d.chuToa) {
+        const pop = page.locator('.ant-modal:visible, .ant-drawer-open').filter({ hasText: /Danh sách vụ xét xử đã chọn/i }).last();
+        if (await hienTrong(pop, 5_000)) {
+          await datChuToaHdxx(page, pop, d.chuToa);
+          const nutLuu = pop.getByRole('button', { name: /^(save )?Lưu$/ }).last();
+          if (await hienTrong(nutLuu, 5_000)) {
+            await nutLuu.click();
+            await choHetSpin(page);
+            await nghi(page, 1500, 2500);
+            console.log('    · Danh sách vụ xét xử: đã lưu chủ toạ mới');
+          }
+        }
+      }
+    }
 
     const nutLaySo = page.getByRole('button', { name: /Lấy số$/ }).first();
     if (await hienTrong(nutLaySo, 10_000)) {
@@ -2051,17 +2286,33 @@ export class GdtPage {
     if (!(await hienTrong(nutTrinhKy, 15_000))) {
       const daTrinh = page.getByRole('button', { name: /Đã trình ký|Thu hồi|Hủy trình ký/ }).first();
       if (await hienTrong(daTrinh, 2_000)) {
-        // Lượt chạy trước đã trình ký xong (sổ cái chưa kịp ghi) → không phải lỗi, nhưng KHÔNG bắt được
-        // idVanBan nữa vì không có request trình ký; B20 sẽ phải tìm đề xuất theo tên.
+        /**
+         * Lượt chạy trước đã trình ký xong (sổ cái chưa kịp ghi) → không phải lỗi, nhưng KHÔNG bắt
+         * được idVanBan nữa vì không có request trình ký; bước phê duyệt sẽ phải tìm đề xuất theo tên.
+         *
+         * IN RA TRẠNG THÁI + NÚT: bước phê duyệt sau đó có thể không thấy đề xuất ở tài khoản nào cả
+         * (đo 02/10/2026: cả Chánh án lẫn Phó Chánh án đều không có "Chương trình làm việc"), lúc đó
+         * chỉ hai dòng này nói được văn bản đang ở đâu.
+         */
+        const dsNutPop = (await page.locator('.ant-modal:visible button:visible').allInnerTexts().catch(() => []))
+          .map(t => t.replace(/\s+/g, ' ').trim())
+          .filter(Boolean);
         console.log('    · Danh sách tham mưu: văn bản đã trình ký từ trước → bỏ qua bước trình ký');
+        console.log(`    · Danh sách tham mưu · dòng: ${chuDong.replace(/\s+/g, ' ').trim().slice(0, 500)}`);
+        console.log(`    · Danh sách tham mưu · nút: ${dsNutPop.slice(0, 14).join(' | ') || '(không đọc được)'}`);
+        // Người ký quyết định văn bản này chờ duyệt ở hàng của AI → in cả popup để thấy "Người ký"
+        const chuPop = (await page.locator('.ant-modal:visible').first().innerText().catch(() => ''))
+          .replace(/\s+/g, ' ')
+          .trim();
+        console.log(`    · Danh sách tham mưu · popup: ${chuPop.slice(0, 700) || '(không đọc được)'}`);
         return undefined;
       }
-      const dsNut = (await page.locator('.ant-modal:visible button:visible').allInnerTexts())
+      const dsNut = (await page.locator('.ant-modal:visible button:visible, .ant-drawer-open button:visible').allInnerTexts())
         .map(t => t.replace(/\s+/g, ' ').trim())
         .filter(Boolean);
       throw new Error(
         `Không có nút "Trình ký" ở chi tiết Danh sách tham mưu của vụ ${soBanAn} (các nút đang có: ` +
-          `${dsNut.join(' | ') || 'không đọc được'}); trạng thái dòng: "${chuDong.slice(0, 120)}". Hai nguyên nhân ` +
+          `${dsNut.join(' | ') || 'không đọc được'}); trạng thái dòng: "${chuDong.slice(0, 400)}". Hai nguyên nhân ` +
           `đã gặp: (1) danh sách vụ xét xử bị vụ ` +
           `khác ghi đè vì dùng chung một lịch xét xử — Chương trình làm việc HĐXX (CTLVHDXX) đã lấy số ` +
           `nhưng không trình ký được, cần lịch xét xử GĐT/TT riêng rồi tạo lại danh sách; (2) văn bản đã ` +
@@ -2078,6 +2329,7 @@ export class GdtPage {
       q => q.method() === 'POST' && //phe-duyet-de-xuat/trinh-(ky|duyet)/.test(q.url()),
       { timeout: 60_000 },
     );
+    this.trangThaiThamMuu = 'Chờ duyệt';
     await pop.getByRole('button', { name: /Gửi$/ }).last().click();
     const idVanBan = ((await choTrinh.catch(() => null))?.postDataJSON() as { idVanBan?: string } | undefined)?.idVanBan;
     await toastDaHien(page, /thành công/i, 90_000, /thất bại|Vui lòng|lỗi/i);

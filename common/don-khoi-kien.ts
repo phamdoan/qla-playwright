@@ -31,7 +31,25 @@ export const khungSelectCua = (o: import('@playwright/test').Locator) =>
 export async function chonQhplThongKe(
   page: import('@playwright/test').Page,
   o: import('@playwright/test').Locator,
+  /** TÊN LÁ ĐẦY ĐỦ — dùng để KHỚP chính xác, vd. "Tranh chấp hợp đồng vay tài sản" */
   ten: string,
+  /**
+   * CHUỖI LỌC gõ vào ô — mặc định bằng chính `ten`.
+   *
+   * Cây danh mục ẢO HOÁ và chỉ lọc trên các nút ĐÃ NẠP: gõ trọn tên một lá nằm sâu hai cấp
+   * (QHPL_TC_DS → .003 → .003.005) thì cây trả về RỖNG, còn gõ vài chữ ("vay tài sản") lại ra.
+   * Lá của KDTM nằm ngay cấp 1 nên gõ trọn tên vẫn ra — bẫy này tới luồng dân sự mới lộ (03/10/2026).
+   */
+  loc = ten,
+  /**
+   * TÊN NHÁNH CHA của lá (nếu lá nằm sâu hơn cấp 1).
+   *
+   * Cây chỉ lọc trên NÚT ĐÃ NẠP, mà lúc mở ra mới có cấp 1 → lá cấp 2 thì gõ gì cũng rỗng. Lá của
+   * KDTM nằm ngay cấp 1 nên trước giờ không lộ; lá dân sự "Tranh chấp hợp đồng vay tài sản" nằm dưới
+   * "Tranh chấp về giao dịch dân sự, hợp đồng dân sự" (đo 03/10/2026). Có tên cha thì MỞ NHÁNH rồi
+   * bấm lá, không lọc.
+   */
+  cha?: string,
 ): Promise<string> {
   const khung = khungSelectCua(o);
   const daChon = async () =>
@@ -42,8 +60,24 @@ export async function chonQhplThongKe(
     if ((await daChon()) === ten) return ten;
 
     await khung.click();
-    await o.fill(ten);
-    await nghi(page, 600, 1000);
+    if (cha) {
+      // Mở nhánh cha: bấm mũi tên (switcher) của đúng nút có tên cha, rồi chờ lá hiện ra
+      const nutCha = page
+        .locator('.ant-select-dropdown:visible .ant-select-tree-treenode')
+        .filter({ has: page.locator('.ant-select-tree-title', { hasText: cha }) })
+        .first();
+      if (await hienTrong(nutCha, 8_000)) {
+        const switcher = nutCha.locator('.ant-select-tree-switcher').first();
+        const daMo = /ant-select-tree-switcher_open/.test((await switcher.getAttribute('class')) || '');
+        if (!daMo) {
+          await switcher.click().catch(() => undefined);
+          await nghi(page, 800, 1200);
+        }
+      }
+    } else {
+      await o.fill(loc);
+      await nghi(page, 600, 1000);
+    }
 
     const muc = page
       .locator('.ant-select-dropdown:visible .ant-select-tree-title')
@@ -66,7 +100,9 @@ export async function chonQhplThongKe(
     if (lan === 2) {
       throw new Error(
         `Danh mục "Quan hệ pháp luật (Thống kê)" không có mục tên đúng "${ten}". ` +
-          `Đang hiện: ${dsHien.length ? dsHien.slice(0, 10).join(' | ') : '(rỗng)'}. ` +
+          `(lọc bằng "${loc}") Đang hiện: ${dsHien.length ? dsHien.slice(0, 10).join(' | ') : '(rỗng)'}. ` +
+          `Rỗng thường là do CHUỖI LỌC quá dài — cây ảo hoá chỉ lọc trên nút đã nạp, hãy gieo ` +
+          `"quanHePhapLuatThongKe" ngắn hơn (vd. "vay tài sản"). ` +
           `Tra tên đúng trong qla/db-structure/ddl-qhpl.sql theo mã gốc của loại đơn ` +
           `(KDTM + Đơn khởi kiện → QHPL_TC_KDTM).`,
       );

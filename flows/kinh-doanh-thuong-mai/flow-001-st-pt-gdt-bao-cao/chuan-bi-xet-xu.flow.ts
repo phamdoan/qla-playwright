@@ -8,6 +8,7 @@
  */
 import { Locator, Page, expect, test } from '@playwright/test';
 import {
+  batLoiApi,
   choHetSpin,
   chonNgay,
   chonSelectTheoThuTu,
@@ -19,6 +20,7 @@ import {
   nguyenNhanLoi,
   moTaForm,
   oTheoNhan,
+  toastGanDay,
 } from '../../../common/antd';
 import {
   bieuMauDangMo,
@@ -94,7 +96,8 @@ export async function datGioTrongPanel(page: Page, o: Locator, muon: string, nha
     if (await hienTrong(nutOk, 2_000)) await nutOk.click().catch(() => {});
 
     cuoi = (await o.inputValue().catch(() => '')).trim();
-    if (cuoi === muon) return cuoi;
+    // Ô DATETIME nhận "02/10/2026 13:30" cho giờ "13:30" — đạt khi CHỨA, không đòi khớp y nguyên
+    if (cuoi === muon || cuoi.includes(muon)) return cuoi;
   }
   throw new Error(`Không đặt được "${nhan}" = ${muon} — ô đang là "${cuoi || '(không đọc được)'}"`);
 }
@@ -142,7 +145,19 @@ async function lapBieuMau(page: Page, ghi: GhiChu, opt: ThamSoLapBieuMau): Promi
 
   if (opt.dienThem) await test.step(`Điền ô bắt buộc của ${opt.ten}`, () => opt.dienThem!(bm));
 
+  /**
+   * BẮT LỖI API + TOAST QUANH CÚ LƯU.
+   *
+   * Không có nó thì khi máy chủ từ chối, kịch bản chỉ nói được "bảng 0 dòng" — đúng mà vô dụng:
+   * phải mở trình duyệt tay mới biết vì sao (đo 03/10/2026, bước 09 luồng dân sự). Nay in thẳng
+   * mã lỗi/thông báo của chính cú lưu.
+   */
+  const loiApiLuu = batLoiApi(page);
   await luuBieuMau(page, bm, opt.ten, ghi);
+  const toastLuu = await toastGanDay(page, 15_000).catch(() => [] as string[]);
+  if (toastLuu.length) ghi(opt.ten + ' · toast', toastLuu.join(' | ').slice(0, 300));
+  const loiLuu = loiApiLuu();
+  if (loiLuu && !/không có/i.test(loiLuu)) ghi(opt.ten + ' · lỗi API', loiLuu.slice(0, 300));
   await laySoVaKyLogic(page, bm, ghi, opt.ten);
 
   if (await bm.isVisible().catch(() => false)) {
@@ -154,6 +169,10 @@ async function lapBieuMau(page: Page, ghi: GhiChu, opt: ThamSoLapBieuMau): Promi
   await moTab(page, opt.tenTab ?? 'Chuẩn bị xét xử');
 
   const dong = await daCoBieuMau(page, opt.ma);
+  if (!dong) {
+    const loiCuoi = loiApiLuu();
+    if (loiCuoi && !/không có/i.test(loiCuoi)) ghi(opt.ten + ' · lỗi API (tổng)', loiCuoi.slice(0, 400));
+  }
   if (!dong) {
     const ds = (await page.locator('.ant-table-row').allInnerTexts())
       .map(s => s.replace(/\s+/g, ' ').trim())
@@ -312,7 +331,7 @@ export async function taoLichXetXu(
   }
 
   // Soi cả form TRƯỚC khi lưu: ô nào "hiện mà chưa vào state" chỉ lộ ra khi nhìn đủ các ô.
-  for (const d of await moTaForm(formLich)) ghi('${nhan} · ô', d);
+  for (const d of await moTaForm(formLich)) ghi(`${nhan} · ô`, d);
 
   const nutTaoLich = formLich.getByRole('button', { name: /^Tạo mới$/ }).first();
   await expect(nutTaoLich, 'Form lịch xét xử không có nút "Tạo mới"').toBeVisible({ timeout: 15_000 });
@@ -356,7 +375,7 @@ export async function taoLichXetXu(
     .then(() => true)
     .catch(() => false);
   if (!daDong && (await modalLich.count())) {
-    for (const d of await moTaForm(modalLich.first())) ghi('${nhan} · sau khi lưu', d);
+    for (const d of await moTaForm(modalLich.first())) ghi(`${nhan} · sau khi lưu`, d);
     throw new Error(
       `Bấm "Tạo mới" nhưng form lịch xét xử không đóng — ${await nguyenNhanLoi(page, modalLich.first())}`,
     );

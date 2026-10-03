@@ -63,7 +63,15 @@ export async function taoDonKhoiKien(page: Page, input: DuLieuVao, ghi: GhiChu) 
     await chonSelect(page, page.locator('#phanLoai'), input.phanLoaiDon);
 
     // Chọn đúng tên trong danh mục (QHPL_TC_KDTM.001 = "Mua bán hàng hoá"), không dò từ khoá
-    const qhpl = await chonQhplThongKe(page, page.locator('#qhplThongKe'), input.tenQhplThongKe);
+    const qhpl = await chonQhplThongKe(
+      page,
+      page.locator('#qhplThongKe'),
+      input.tenQhplThongKe,
+      // Cây ảo hoá: gieo chuỗi lọc NGẮN ở `quanHePhapLuatThongKe`, tên đầy đủ vẫn là thứ dùng để khớp
+      input.quanHePhapLuatThongKe || input.tenQhplThongKe,
+      // Lá nằm sâu hơn cấp 1 thì phải gieo tên nhánh cha (xem chonQhplThongKe)
+      (input as { qhplChaThongKe?: string }).qhplChaThongKe,
+    );
     ghi('quan hệ pháp luật', `${qhpl} (${input.maQhplThongKe})`);
     await go(page.locator('#noiDungQuanHePhapLuat'), input.quanHePhapLuatChiTiet);
   });

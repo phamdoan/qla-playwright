@@ -9,7 +9,13 @@ export const DASHBOARD_URL = () => `${ORIGIN}/qla/dashboard`;
 /** Chỉ tính dashboard đúng môi trường (QLA_ENV), không nhận nhầm qla-stg khi đang chạy dev */
 const LA_DASHBOARD = { test: (u: string) => u.startsWith(`${ORIGIN}/qla/dashboard`) };
 const LA_SSO_LOCAL = /\/sso\/login/;
-const LA_SSO_WSO2 = /sso\.toaan\.gov\.vn/;
+/**
+ * Trang đăng nhập WSO2. Ngoài host SSO của STG/DEV/UAT còn nhận theo ĐƯỜNG DẪN của WSO2
+ * (/authenticationendpoint/, /oauth2/authorize) vì pre-prod (e-qlta-uat) có thể dùng host SSO khác:
+ * qla/k8s/pre-prod/application-pre-prod.yml:51-60 lấy client-id/redirect-uri từ biến môi trường,
+ * không hardcode sso.toaan.gov.vn như các môi trường còn lại.
+ */
+const LA_SSO_WSO2 = /sso\.toaan\.gov\.vn|\/authenticationendpoint\/|\/oauth2\/authorize/;
 /** Lỗi 3.1: callback trả JSON {"error":"invalid_request",...} */
 const LA_CALLBACK_LOI = /\/qla\/api\/v1\/session\/oauth2\/callback/;
 
@@ -28,7 +34,7 @@ export interface LoginOptions {
  */
 export async function loginSSO(page: Page, user: string, opts: LoginOptions = {}) {
   const pass = opts.pass || matKhauMacDinh(user);
-  const soLanThu = opts.soLanThu ?? 3;
+  const soLanThu = opts.soLanThu ?? 5;
 
   await page.goto(DASHBOARD_URL());
 
@@ -39,9 +45,34 @@ export async function loginSSO(page: Page, user: string, opts: LoginOptions = {}
     const url = page.url();
 
     if (LA_SSO_LOCAL.test(url)) {
-      await page.getByRole('button', { name: /Đăng nhập với Tòa án tối cao SSO/ }).click();
+      /**
+       * CÚ BẤM NÀY HAY TREO — và trước đây nó giết cả lượt chạy.
+       *
+       * `click()` tự chờ "scheduled navigations to finish"; SSO chập thì nó đứng tới hết giờ rồi NÉM
+       * RA NGOÀI vòng `for`, nên `soLanThu` không có tác dụng: lượt chạy rụng ở một bước giữa chừng
+       * chỉ vì mở phiên cho vai mới (đo 03/10/2026: hỏng ở bước 27 rồi bước 31, cùng một chỗ).
+       * Giờ: hạn giờ ngắn, NUỐT lỗi, rồi tự chờ URL rời trang SSO; không rời được thì quay lại
+       * dashboard để vòng sau thử lại từ đầu.
+       */
+      await page
+        .getByRole('button', { name: /Đăng nhập với Tòa án tối cao SSO/ })
+        .click({ timeout: 20_000 })
+        .catch(() => undefined);
       // Phiên WSO2 còn hiệu lực thì WSO2 trả thẳng về callback, không hiện form
-      await page.waitForURL(u => !LA_SSO_LOCAL.test(u.href), { timeout: 30_000 });
+      const daRoiSso = await page
+        .waitForURL(u => !LA_SSO_LOCAL.test(u.href), { timeout: 30_000 })
+        .then(() => true)
+        .catch(() => false);
+      if (!daRoiSso) {
+        /**
+         * Bấm mà không rời được /sso/login: thường do phiên WSO2 cũ còn trong cookie và trang SSO cục
+         * bộ quay vòng. Dọn cookie rồi vào lại từ đầu — không dọn thì thử bao nhiêu vòng cũng y hệt
+         * (đo 03/10/2026: tài khoản 034179003391 hỏng cả 3 vòng, URL cuối vẫn /sso/login).
+         */
+        await page.context().clearCookies().catch(() => undefined);
+        await page.goto(DASHBOARD_URL()).catch(() => undefined);
+        continue;
+      }
     }
 
     if (LA_SSO_WSO2.test(page.url())) {

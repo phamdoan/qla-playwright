@@ -566,7 +566,16 @@ export async function chonSelectTheoThuTu(
   }
   const daSap = [...conLai].sort((a, b) => a.localeCompare(b, 'vi'));
   const nhan = daSap[Math.min(viTri, daSap.length - 1)];
-  await dd.locator('.ant-select-item-option').filter({ hasText: nhan }).first().click();
+  /**
+   * TÌM LẠI MỤC BẰNG DÒNG ĐẦU, KHÔNG BẰNG TRỌN NHÃN.
+   *
+   * Mục của một số danh mục người (vd. "Người nhận đơn") có HAI DÒNG: họ tên rồi chức danh —
+   * "Lê Thị Hải Yến\nThẩm phán Tòa án nhân dân bậc 2 - Chánh tòa". `hasText` với chuỗi chứa ký tự
+   * xuống dòng không khớp mục nào, nên câu click đứng tới hết 30 s dù mục vẫn nằm đó.
+   * Đo 03/10/2026, bước 01 luồng dân sự ở tòa khác (tòa KDTM nhãn chỉ một dòng nên chưa lộ).
+   */
+  const dongDau = nhan.split('\n')[0].trim();
+  await dd.locator('.ant-select-item-option').filter({ hasText: dongDau }).first().click();
   await nghi(page);
   return nhan;
 }
@@ -888,7 +897,29 @@ export async function dienCapO(
     await ô.press('ControlOrMeta+a');
     await ô.pressSequentially(giaTri[i], { delay: 20 });
     await ô.press('Enter');
-    ra.push((await ô.inputValue().catch(() => giaTri[i])).trim() || giaTri[i]);
+
+    /**
+     * ĐỌC LẠI VÀ SỬA NẾU LỆCH. Gõ từng ký tự vào ô có mặt nạ ngày thì antd tự chèn dấu "/" giữa
+     * lúc gõ: "16/10/2026" vào thành **16/01/2026** — mất tháng, và thành NGÀY QUÁ KHỨ nên biểu mẫu
+     * bị BE từ chối mà không có thông báo nào trên màn (đo 02/10/2026 ở lịch xét xử của 66-DS).
+     * Cách sửa: xoá sạch rồi `fill` một lần — mặt nạ không kịp chèn gì.
+     */
+    let doc = (await ô.inputValue().catch(() => '')).trim();
+    /**
+     * Thử hai cách khác nếu lệch: `fill` một lần, rồi gõ CHUỖI SỐ THUẦN (không dấu "/").
+     * Mặt nạ ngày của antd tự chèn "/" trong lúc gõ từng ký tự nên "16/10/2026" vào thành
+     * **16/01/2026** — mất tháng, hoá ngày quá khứ. Gõ "16102026" thì chính mặt nạ đặt dấu đúng chỗ.
+     */
+    for (const cach of ['fill', 'so-thuan'] as const) {
+      if (doc === giaTri[i]) break;
+      await ô.press('ControlOrMeta+a');
+      await ô.press('Delete');
+      if (cach === 'fill') await ô.fill(giaTri[i]).catch(() => {});
+      else await ô.pressSequentially(giaTri[i].replace(/\D/g, ''), { delay: 30 });
+      await ô.press('Enter');
+      doc = (await ô.inputValue().catch(() => '')).trim();
+    }
+    ra.push(doc || giaTri[i]);
   }
 
   /**
@@ -916,4 +947,34 @@ export async function dienCapO(
     thuc.push((await o.nth(i).inputValue().catch(() => '')).trim());
   }
   return thuc.some(Boolean) ? thuc : ra;
+}
+
+/**
+ * Thu lỗi HTTP của trang kể từ lúc gọi, để đưa vào thông báo lỗi của bước.
+ *
+ * Vì sao cần: có màn bấm nút xong KHÔNG toast, KHÔNG gắn cờ lỗi ô nào, popup chỉ đứng im — nhìn
+ * từ UI không có cách nào biết vì sao. Đo 01/10/2026 ở popup "Cấp số thụ lý vụ án" (hình sự):
+ * số thụ lý đã cấp, mọi ô đã điền, bấm "Xác nhận thụ lý" rồi không có gì xảy ra.
+ *
+ *   const loiApi = batLoiApi(page);
+ *   … thao tác …
+ *   throw new Error(`… ${loiApi()}`);
+ */
+export function batLoiApi(page: Page, soLuong = 5): () => string {
+  const ds: string[] = [];
+  page.on('response', async r => {
+    if (r.status() < 400 || ds.length >= soLuong) return;
+    const than = (await r.text().catch(() => '')).replace(/\s+/g, ' ');
+    /**
+     * Phần quan trọng nhất của lỗi Hibernate nằm ở CUỐI thân: câu SQL dài vài trăm ký tự rồi mới
+     * tới `ORA-00904: "X"."Y": invalid identifier`. Cắt từ đầu thì mất đúng chỗ cần đọc — đo
+     * 01/10/2026 ở API thụ lý hình sự: cắt 300 ký tự chỉ ra danh sách cột, không thấy mã ORA.
+     */
+    const ora = /ORA-\d+[^"]*(?:"[^"]*"\.?)*[^.]*\.?/.exec(than);
+    const tom = ora ? `… ${ora[0].slice(0, 200)}` : than.slice(0, 400);
+    ds.push(
+      `${r.status()} ${r.request().method()} ${r.url().replace(/^https?:\/\/[^/]+/, '')} :: ${tom}`,
+    );
+  });
+  return () => (ds.length ? `Lỗi API: ${ds.join(' | ')}` : 'không có lỗi API nào (mọi request đều < 400)');
 }

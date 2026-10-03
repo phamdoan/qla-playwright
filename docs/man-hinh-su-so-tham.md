@@ -71,3 +71,45 @@ theo"* — sai hẳn chỗ so với nguyên nhân.
 
 `soiMan` chỉ chụp danh sách Ô khi `QLA_SOI=1` hoặc màn còn lạ: `moTaForm` trên drawer 150 ô là thứ
 đã làm lượt chạy hết hạn.
+
+## 4. BỊ KẸT: không lập được Quyết định đưa vụ án ra xét xử (020)
+
+Đo 01/10/2026 trên **cả STG và UAT**, vụ đã `ĐÃ PHÂN CÔNG TP` (thụ lý + 3 quyết định phân công đã
+ký logic). Hai câu hướng dẫn của hệ thống chỉ **ngược nhau**:
+
+| Chỗ | Nội dung |
+|---|---|
+| Tooltip nút "Mở phiên tòa" (bị vô hiệu) | "Lịch xét xử được tạo khi ký Quyết định đưa vụ án ra xét xử sơ thẩm" |
+| Chữ trong khối "Thủ tục mở phiên toà" | "Chưa có lịch xét xử. Bấm *Đăng ký lịch xét xử mới* để đăng ký ngày, giờ, địa điểm" |
+
+Bốn đường đã thử, đều tắc:
+1. Nút "Mở phiên tòa" trong chi tiết vụ án — **disabled** (cả hai môi trường, cùng tooltip).
+2. Mẫu 020 trong **3 danh sách** "Thêm biểu mẫu" (Chuẩn bị xét xử · Quyết định tố tụng; Chuẩn bị
+   xét xử · Văn bản tố tụng khác; Xét xử · Văn bản tố tụng khác) — **23 mẫu, không có 020**.
+   Hai khối "Thủ tục mở phiên toà" và "Kết quả xét xử" không có nút "Thêm biểu mẫu" nào.
+3. Màn "Lịch xét xử" riêng (`/lich-xet-xu`) — chỉ có "Quay lại | Về trang chủ".
+4. Backend KHÔNG chặn: `BieuMau020ServiceImpl.validateThemMoi` chỉ đòi vụ đã thụ lý và đã phân công
+   Thẩm phán chủ toạ/Phó chánh án; mẫu có thật trong enum
+   `BM020_QUYET_DINH_DUA_VU_AN_RA_XET_XU_SO_THAM("020", QUYET_DINH, HINH_SU, …, [SO_THAM])`.
+
+→ Kết luận: **FE không phơi mẫu 020 ra panel nào**, tạo thế kẹt vòng tròn. Bước 05–07 của luồng
+không chạy được tới khi dev sửa. Vụ để đối chiếu: STG `22583e11-a3b3-4513-aab0-d41165e269da`,
+UAT `cfa8eff6-2480-4261-9654-7fc17312454e` (`VA26-002448`).
+
+## 5. Ba cái bẫy chung, đã gỡ bằng helper dùng chung
+
+- **`moKhoi`** (`common/bieu-mau.ts`): khối antd thu gọn thì KHÔNG render nội dung — mọi nút/ô bên
+  trong "không tìm thấy". Icon `plus-square` = đang đóng. Đây là nguyên nhân của ba lần "không thấy
+  nút" liên tiếp (nút Phân công, nút Mở phiên tòa, danh sách biểu mẫu).
+- **`moTabVaCho`**: tab `[selected]` mà panel chưa nạp. Nội dung tab nằm NGOÀI `[role="tabpanel"]`
+  (thẻ đó rỗng) và khối "Thông tin chung của vụ án" hiện ở mọi tab — nên phải chờ CHỮ ĐẶC TRƯNG của
+  tab, không chờ "trang có nút".
+- **`batLoiApi`** (`common/antd.ts`): màn bấm nút xong không toast, không cờ lỗi, popup đứng im.
+  Bộ bắt này biến nó thành câu cụ thể: `PCVA01 Vụ án chưa được thụ lý, không thể phân công`,
+  `ORA-00904 "PNV1_0"."MA_KET_QUA_XETXU_GDT"`. Phần ORA nằm ở CUỐI thân lỗi nên phải trích riêng.
+
+## 6. Xanh giả đã mắc: số thụ lý "—"
+
+Header in `Số thụ lý: —` (gạch U+2014) khi CHƯA thụ lý. Regex `([^\s·]+)` khớp đúng dấu gạch đó,
+chuỗi `"—"` không rỗng nên bước 02 kết luận "đã thụ lý từ trước", **báo xanh và ghi bằng chứng là
+"—"**. Chỉ bước 03 mới lộ ra (`PCVA01`). Nay chỉ nhận số: `/Số thụ lý:\s*(\d[\w\/.-]*)/`.

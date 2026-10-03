@@ -15,7 +15,8 @@ import {
   dongBieuMau,
   laySoVaKyLogic,
   luuBieuMau,
-  moTab,
+  moKhoi,
+  moTabVaCho,
   nutTheoChu,
   themBieuMauTuDanhSach,
 } from '../../../common/bieu-mau';
@@ -42,123 +43,203 @@ const ngaySau = (n: number) => {
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 };
 
-// ═════════ BƯỚC 05 · Mở phiên tòa (lịch xét xử) ═════════
-export async function moPhienToa(page: Page, input: DuLieuVao, ghi: GhiChu) {
-  await moTab(page, 'Xét xử');
-  await choHetSpin(page);
-
+// ═════════ BƯỚC 05 · Quyết định đưa vụ án ra xét xử sơ thẩm (020) ═════════
+/**
+ * ⚠ Bước này đi TRƯỚC "mở phiên tòa", ngược với spec 4.1→4.2.
+ *
+ * Tooltip của nút "Mở phiên tòa" (đang bị vô hiệu) nói rõ:
+ *   "Lịch xét xử được tạo khi ký Quyết định đưa vụ án ra xét xử sơ thẩm"
+ * Đo 01/10/2026 trên UAT, vụ đã ở trạng thái ĐÃ PHÂN CÔNG TP. Nên thời gian/địa điểm phiên tòa
+ * nhập THẲNG trong 020, lịch do hệ thống sinh khi ký.
+ */
+export async function duaRaXetXu020(page: Page, input: DuLieuVao, ghi: GhiChu) {
   /**
-   * Nhãn nút đổi theo trạng thái: chưa có lịch là "Mở phiên tòa", đã có lịch là "Đăng ký lịch xét
-   * xử mới" (spec 4.1). Bắt cả hai, nếu không có cái nào thì in nút đang có chứ không im lặng.
+   * THỬ TẠO LỊCH TRƯỚC. Hai câu hướng dẫn của hệ thống chỉ ngược nhau:
+   *   · tooltip nút "Mở phiên tòa": "Lịch xét xử được tạo khi ký Quyết định đưa vụ án ra xét xử"
+   *   · chữ trong khối: "Chưa có lịch xét xử. Bấm Đăng ký lịch xét xử mới để đăng ký ngày, giờ…"
+   * Nút bị vô hiệu trên UAT, nhưng có thể mở được ở môi trường/trạng thái khác — nên thử, có lịch
+   * rồi thì mẫu 020 có khả năng xuất hiện trong danh sách.
    */
-  const nutMo = nutTheoChu(page.locator('body'), /^Mở phiên tòa$|Đăng ký lịch xét xử mới/i);
-  if (!(await hienTrong(nutMo, 20_000))) {
-    throw new Error(
-      `Tab Xét xử không có nút "Mở phiên tòa". Nút đang có: ${await dsNut(page.locator('body'))}`,
-    );
-  }
-  await nutMo.click();
-  await choHetSpin(page);
+  await moTabVaCho(page, 'Xét xử', ghi, /Thủ tục mở phiên to|Kết quả xét xử/i);
+  await moKhoi(page, /Thủ tục mở phiên to/, ghi);
+  const nutMoLich = nutTheoChu(page.locator('body'), /^Mở phiên tòa$|Đăng ký lịch xét xử mới/i);
+  if (await hienTrong(nutMoLich, 10_000)) {
+    if (await nutMoLich.isDisabled().catch(() => false)) {
+      await nutMoLich.hover().catch(() => {});
+      await nghi(page, 800, 1200);
+      const tip = (await page.locator('.ant-tooltip-inner:visible').first().innerText().catch(() => '')).trim();
+      ghi('05 020 · lịch', `nút "Mở phiên tòa" bị vô hiệu — tooltip: ${tip || '(không có)'}`);
 
-  const formLich = page
-    .locator('.ant-modal-content:visible, .ant-drawer-content:visible')
-    .filter({ hasText: /Thêm lịch xét xử/i })
-    .first();
-  await expect(formLich, 'Bấm "Mở phiên tòa" nhưng không mở được form lịch xét xử').toBeVisible({
-    timeout: 30_000,
-  });
-  if (process.env.QLA_SOI === '1') for (const d of await moTaForm(formLich)) ghi('05 lịch · ô', d);
-
-  /**
-   * Ngày xét xử: spec yêu cầu "ngày làm việc trong 30 ngày tới, KHÔNG Chủ nhật". Lấy mốc tất định
-   * (hôm nay + 14) rồi đẩy sang thứ Hai nếu rơi vào Chủ nhật — chạy lại vẫn ra cùng một ngày.
-   */
-  let ngay = ngaySau(14);
-  const [d, m, y] = ngay.split('/').map(Number);
-  if (new Date(y, m - 1, d).getDay() === 0) ngay = ngaySau(15);
-
-  const ngayMoPhienToa = await dienFormLichXetXu(page, formLich, ghi, '05 lịch', {
-    ngay,
-    gioBatDau: input.gioBatDauXetXu,
-    gioKetThuc: input.gioKetThucXetXu,
-    tinhChatPhienToa: input.tinhChatPhienToa,
-    hinhThucXetXu: input.hinhThucXetXu,
-    diaDiem: input.diaDiemXetXu,
-  });
-
-  /**
-   * BẰNG CHỨNG: lịch vừa tạo phải hiện trên tab Xét xử. Chỉ dựa vào "form đã đóng" là chưa đủ —
-   * đúng kiểu xanh giả đã gặp ở 66-DS (lưu xong, toast thành công, không dòng nào xuất hiện).
-   */
-  await choHetSpin(page);
-  await nghi(page, 2000, 3000);
-  const chu = (await page.locator('body').innerText()).replace(/\s+/g, ' ');
-  if (!chu.includes(ngayMoPhienToa)) {
-    await page.reload({ waitUntil: 'domcontentloaded' });
-    await moTab(page, 'Xét xử');
-    await choHetSpin(page);
-    const lai = (await page.locator('body').innerText()).replace(/\s+/g, ' ');
-    if (!lai.includes(ngayMoPhienToa)) {
-      throw new Error(
-        `Lưu lịch xong nhưng tab Xét xử không hiện ngày ${ngayMoPhienToa} — ${await nguyenNhanLoi(page)}`,
-      );
+      /**
+       * Nút trong chi tiết vụ án bị vô hiệu, nhưng chữ hướng dẫn nói "Bấm Đăng ký lịch xét xử mới"
+       * — nút đó có thể nằm ở MÀN LỊCH XÉT XỬ riêng (menu trái có mục "Lịch xét xử"). Thử sang đó.
+       */
+      const urlVuAn = page.url();
+      for (const route of ['lich-xet-xu', 'lich-xet-xu/danh-sach', 'vu-an/lich-xet-xu']) {
+        await page.goto(route, { waitUntil: 'domcontentloaded' }).catch(() => {});
+        await choHetSpin(page);
+        if (/exception\/404/.test(page.url())) {
+          ghi('05 020 · lịch', `route ${route} → 404`);
+          continue;
+        }
+        const nut = nutTheoChu(page.locator('body'), /Đăng ký lịch xét xử mới|Thêm lịch xét xử|Mở phiên tòa/i);
+        ghi(
+          '05 020 · lịch',
+          `màn ${route}: ${(await hienTrong(nut, 8_000)) ? 'CÓ' : 'không có'} nút đăng ký lịch. ` +
+            `Nút đang có: ${await dsNut(page.locator('body'))}`,
+        );
+        break;
+      }
+      await page.goto(urlVuAn, { waitUntil: 'domcontentloaded' });
+      await choHetSpin(page);
+    } else {
+      await nutMoLich.click();
+      await choHetSpin(page);
+      const formLich = page
+        .locator('.ant-modal-content:visible, .ant-drawer-content:visible')
+        .filter({ hasText: /Thêm lịch xét xử|lịch xét xử/i })
+        .first();
+      if (await hienTrong(formLich, 20_000)) {
+        let ngayLich = ngaySau(14);
+        const [dd, mm, yy] = ngayLich.split('/').map(Number);
+        if (new Date(yy, mm - 1, dd).getDay() === 0) ngayLich = ngaySau(15);
+        const daTao = await dienFormLichXetXu(page, formLich, ghi, '05 020 · lịch', {
+          ngay: ngayLich,
+          gioBatDau: input.gioBatDauXetXu,
+          gioKetThuc: input.gioKetThucXetXu,
+          tinhChatPhienToa: input.tinhChatPhienToa,
+          hinhThucXetXu: input.hinhThucXetXu,
+          diaDiem: input.diaDiemXetXu,
+        }).catch((e: Error) => {
+          ghi('05 020 · lịch', `không tạo được lịch: ${e.message.slice(0, 200)}`);
+          return '';
+        });
+        if (daTao) ghi('05 020 · lịch', `đã tạo lịch ngày ${daTao}`);
+      } else {
+        ghi('05 020 · lịch', 'bấm "Mở phiên tòa" nhưng không mở được form lịch');
+      }
     }
   }
-  ghi('05 mở phiên tòa', `ngày mở phiên tòa ${ngayMoPhienToa}`);
-  return { ngayMoPhienToa };
-}
 
-// ═════════ BƯỚC 06 · Quyết định đưa vụ án ra xét xử sơ thẩm (020) ═════════
-export async function duaRaXetXu020(page: Page, input: DuLieuVao, ghi: GhiChu, ngayMoPhienToa: string) {
-  await moTab(page, 'Chuẩn bị xét xử');
-  await choHetSpin(page);
+  await moTabVaCho(page, 'Chuẩn bị xét xử', ghi, /Quyết định tố tụng|Văn bản tố tụng khác/i);
+  await moKhoi(page, /Quyết định tố tụng/, ghi);
 
   const khoi = khoiTheoTieuDe(page, /Quyết định tố tụng/i);
   await expect(khoi, 'Tab Chuẩn bị xét xử không có khối "Quyết định tố tụng"').toBeVisible({
     timeout: 30_000,
   });
-  const bm = await themBieuMauTuDanhSach(page, khoi, input.maBieuMau020);
+  /**
+   * Hình ở đây KHÁC dân sự/KDTM: khối KHÔNG có ô "Chọn loại biểu mẫu" trước, mà bấm nút
+   * "Thêm biểu mẫu" rồi chọn loại trong danh sách mở ra (spec Step3.4 liệt kê 5 mã: 020, 030,
+   * 033, 036, 039). Đo 01/10/2026: `themBieuMauTuDanhSach` báo "Khối không có ô Chọn loại biểu mẫu"
+   * trong khi khối đang mở và có nút "user-switch Thêm biểu mẫu".
+   */
+  /**
+   * 020 KHÔNG nằm ở khối "Quyết định tố tụng" dù spec Step3.4 ghi vậy. Dropdown của khối đó chỉ có
+   * 4 mục (trả hồ sơ, trả hồ sơ ĐTBS, tạm đình chỉ, đình chỉ) — đo 01/10/2026. Nên thử lần lượt
+   * các khối có nút "Thêm biểu mẫu" và GHI LẠI danh sách của từng chỗ, thay vì đoán tiếp.
+   */
+  const muon = new RegExp(input.maBieuMau020, 'i');
+  const mucDropdown = page.locator('.ant-dropdown:not(.ant-dropdown-hidden) .ant-dropdown-menu-item');
+  let daMo = false;
+  /**
+   * Quét CẢ HAI TAB. Danh sách mẫu của tab "Chuẩn bị xét xử" không có 020 (đo 01/10/2026), nên
+   * phải xem tiếp tab "Xét xử" — nơi có khối "Thủ tục mở phiên toà" và "Kết quả xét xử".
+   */
+  const canQuet: [string, RegExp, RegExp][] = [
+    ['Chuẩn bị xét xử', /Quyết định tố tụng|Văn bản tố tụng khác/i, /Quyết định tố tụng/],
+    ['Chuẩn bị xét xử', /Quyết định tố tụng|Văn bản tố tụng khác/i, /Văn bản tố tụng khác/],
+    ['Xét xử', /Thủ tục mở phiên to|Kết quả xét xử/i, /Thủ tục mở phiên to/],
+    ['Xét xử', /Thủ tục mở phiên to|Kết quả xét xử/i, /Kết quả xét xử/],
+    ['Xét xử', /Thủ tục mở phiên to|Kết quả xét xử/i, /Văn bản tố tụng khác/],
+  ];
+  let tabDangMo = 'Chuẩn bị xét xử';
+  for (const [tenTab, dauHieu, tieuDe] of canQuet) {
+    if (tenTab !== tabDangMo) {
+      await moTabVaCho(page, tenTab, ghi, dauHieu);
+      tabDangMo = tenTab;
+    }
+    await moKhoi(page, tieuDe, ghi);
+    const k = khoiTheoTieuDe(page, tieuDe);
+    const nutThem = nutTheoChu(k, /Thêm biểu mẫu|Thêm mới quyết định/i);
+    if (!(await hienTrong(nutThem, 8_000))) {
+      /**
+       * Không có nút "Thêm biểu mẫu" thì IN TOÀN BỘ nút của khối: 020 có thể tạo bằng nút riêng.
+       * Backend (`BieuMau020ServiceImpl.validateThemMoi`) chỉ đòi vụ đã thụ lý + đã phân công Thẩm
+       * phán chủ toạ/Phó chánh án — cả hai đã có — nên mẫu phải tồn tại ở đâu đó trên màn.
+       */
+      ghi(
+        '05 020 · tìm mẫu',
+        `[${tenTab}] khối ${String(tieuDe)}: không có nút "Thêm biểu mẫu". Nút của khối: ${await dsNut(k)}`,
+      );
+      ghi(
+        '05 020 · tìm mẫu',
+        `[${tenTab}] khối ${String(tieuDe)} · chữ: ${(await k.innerText().catch(() => '')).replace(/\s+/g, ' ').slice(0, 300)}`,
+      );
+      continue;
+    }
+    await nutThem.click();
+    await choHetSpin(page);
+    if (!(await hienTrong(mucDropdown.first(), 8_000))) {
+      ghi('05 020 · tìm mẫu', `[${tenTab}] khối ${String(tieuDe)}: bấm "Thêm biểu mẫu" nhưng không mở danh sách`);
+      continue;
+    }
+    const ds = (await mucDropdown.allInnerTexts()).map(s => s.replace(/\s+/g, ' ').trim()).filter(Boolean);
+    ghi('05 020 · tìm mẫu', `[${tenTab}] khối ${String(tieuDe)}: ${ds.join(' | ')}`);
+    const khop = ds.find(x => muon.test(x));
+    if (!khop) {
+      await page.keyboard.press('Escape');
+      await nghi(page, 500, 800);
+      continue;
+    }
+    await mucDropdown.filter({ hasText: khop }).first().click();
+    await choHetSpin(page);
+    ghi('05 020', `chọn mẫu "${khop}" ở khối ${String(tieuDe)}`);
+    daMo = true;
+    break;
+  }
+  if (!daMo) {
+    throw new Error(
+      `Không tìm được biểu mẫu khớp "${input.maBieuMau020}" ở khối nào trên tab Chuẩn bị xét xử — ` +
+        `xem các danh sách đã in ở trên ("05 020 · tìm mẫu")`,
+    );
+  }
+  await nghi(page, 1200, 2000);
+
+  const bm = bieuMauDangMo(page);
   await expect(bm, 'Không mở được biểu mẫu 020').toBeVisible({ timeout: 30_000 });
-  if (process.env.QLA_SOI === '1') for (const d of await moTaForm(bm)) ghi('06 020 · ô', d);
-  ghi('06 020 · nút', await dsNut(bm));
+  for (const d of await moTaForm(bm)) ghi('05 020 · ô', d);
+  ghi('05 020 · nút', await dsNut(bm));
 
   // Người ký phải là tài khoản đang chạy, không thì nút ký thành "Trình ký" và quyết định treo
   const nguoiKy = await dienOTheoNhan(page, bm, /Người ký/i, input.nguoiKy, true).catch((e: Error) => {
-    ghi('06 020', `không đặt được Người ký: ${e.message.slice(0, 120)}`);
+    ghi('05 020', `không đặt được Người ký: ${e.message.slice(0, 120)}`);
     return '';
   });
-  if (nguoiKy) ghi('06 020', `Người ký = ${nguoiKy}`);
+  if (nguoiKy) ghi('05 020', `Người ký = ${nguoiKy}`);
 
   /**
-   * Card "Lịch xét xử" → "Chọn lịch xét xử" → chọn đúng lịch của bước 05. Lịch hiện dưới dạng
-   * LỊCH THÁNG (đo ở luồng KDTM), ô ngày là div chứa số chứ không phải `td.ant-picker-cell`.
+   * Thời gian / địa điểm mở phiên tòa nhập ngay trong biểu mẫu. Ngày lấy tất định (hôm nay + 14),
+   * đẩy sang thứ Hai nếu rơi Chủ nhật — spec yêu cầu ngày làm việc trong 30 ngày tới.
    */
-  const nutChonLich = nutTheoChu(bm, /Chọn lịch xét xử/i);
-  if (await hienTrong(nutChonLich, 10_000)) {
-    await nutChonLich.scrollIntoViewIfNeeded().catch(() => {});
-    await nutChonLich.click();
-    await choHetSpin(page);
-    const hop = bieuMauDangMo(page);
-    await expect(hop, 'Bấm "Chọn lịch xét xử" nhưng không mở được màn chọn lịch').toBeVisible({
-      timeout: 30_000,
+  let ngay = ngaySau(14);
+  const [d, m, y] = ngay.split('/').map(Number);
+  if (new Date(y, m - 1, d).getDay() === 0) ngay = ngaySau(15);
+
+  for (const [nhan, giaTri] of [
+    [/Ngày mở phiên t/i, ngay],
+    [/Giờ mở phiên t/i, input.gioBatDauXetXu],
+    [/Tính chất phiên t/i, input.tinhChatPhienToa],
+    [/Hình thức xét xử/i, input.hinhThucXetXu],
+    [/Địa điểm/i, input.diaDiemXetXu],
+  ] as [RegExp, string | undefined][]) {
+    const gt = await dienOTheoNhan(page, bm, nhan, giaTri).catch(async (e: Error) => {
+      await page.keyboard.press('Escape').catch(() => {});
+      ghi('05 020', `không điền được ${String(nhan)}: ${e.message.slice(0, 110)}`);
+      return '';
     });
-    const soNgay = Number(ngayMoPhienToa.split('/')[0]);
-    const oNgay = hop.getByText(new RegExp(`^\\s*0?${soNgay}\\s*$`)).last();
-    if (!(await hienTrong(oNgay, 8_000))) {
-      const chu = (await hop.innerText()).replace(/\s+/g, ' ').slice(0, 300);
-      throw new Error(`Không thấy ô ngày ${ngayMoPhienToa} trên lịch. Màn đang hiện: ${chu}`);
-    }
-    await oNgay.click();
+    if (gt) ghi('05 020', `${String(nhan)} = ${gt}`);
     await choHetSpin(page);
-    await nghi(page, 1200, 2000);
-    ghi('06 020', `đã chọn lịch ngày ${ngayMoPhienToa}`);
-    // Màn chọn lịch có thể còn mở sau khi chọn — đóng để không che nút "Lưu" của 020
-    const con = bieuMauDangMo(page);
-    if (await hienTrong(con.filter({ hasText: /Chọn lịch xét xử cho vụ án|Thêm lịch xét xử/i }), 3_000)) {
-      await dongBieuMau(page, con);
-    }
-  } else {
-    ghi('06 020', `không thấy nút "Chọn lịch xét xử". Nút đang có: ${await dsNut(bm)}`);
   }
 
   if (!(await luuBieuMau(page, bm, '020 (đưa vụ án ra xét xử)', ghi))) {
@@ -172,7 +253,32 @@ export async function duaRaXetXu020(page: Page, input: DuLieuVao, ghi: GhiChu, n
       `020: đã lưu nhưng không đọc được số quyết định — ${await nguyenNhanLoi(page, bm, 30_000)}`,
     );
   }
-  ghi('06 020', `số quyết định ${soQuyetDinh020}`);
+  ghi('05 020', `số quyết định ${soQuyetDinh020} · ngày mở phiên tòa đã nhập ${ngay}`);
   await dongBieuMau(page, bm);
-  return { soQuyetDinh020 };
+  return { soQuyetDinh020, ngayMoPhienToaDuKien: ngay };
+}
+
+// ═════════ BƯỚC 06 · Lịch xét xử do ký 020 sinh ra ═════════
+/**
+ * Không tạo lịch — chỉ KIỂM lịch hệ thống đã sinh. Bằng chứng là dòng lịch trên tab Xét xử, không
+ * phải "đã bấm nút nào".
+ */
+export async function moPhienToa(page: Page, input: DuLieuVao, ghi: GhiChu) {
+  await moTabVaCho(page, 'Xét xử', ghi, /Thủ tục mở phiên to|Kết quả xét xử/i);
+  await moKhoi(page, /Thủ tục mở phiên to/, ghi);
+  await nghi(page, 1500, 2500);
+
+  const khoi = khoiTheoTieuDe(page, /Thủ tục mở phiên to/i);
+  const chu = (await khoi.innerText().catch(() => '')).replace(/\s+/g, ' ').trim();
+  ghi('06 lịch xét xử · khối', chu.slice(0, 300) || '(rỗng)');
+
+  const ngayMoPhienToa = /(\d{2}\/\d{2}\/\d{4})/.exec(chu)?.[1] || '';
+  if (!ngayMoPhienToa) {
+    throw new Error(
+      `Ký 020 xong nhưng khối "Thủ tục mở phiên toà" không có lịch nào.\n  ` +
+        `Khối đang hiện: ${chu.slice(0, 300) || '(rỗng)'}\n  ${await nguyenNhanLoi(page)}`,
+    );
+  }
+  ghi('06 lịch xét xử', `lịch do hệ thống sinh: ngày ${ngayMoPhienToa}`);
+  return { ngayMoPhienToa };
 }

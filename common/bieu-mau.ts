@@ -18,7 +18,17 @@ export async function xacNhanHopThoai(page: Page) {
     .filter({ has: page.getByRole('button', { name: /^(Đồng ý|Xác nhận|Xóa|OK)$/ }) })
     .last();
   if (await hienTrong(hop, 5_000)) {
-    await hop.getByRole('button', { name: /^(Đồng ý|Xác nhận|Xóa|OK)$/ }).last().click();
+    /**
+     * Timeout NGẮN và nuốt lỗi. Hộp xác nhận hay tự đóng giữa lúc click (khi có nhiều hộp nối tiếp,
+     * hoặc hộp vừa được xử lý xong) → Playwright báo "element was detached from the DOM, retrying"
+     * rồi chờ hết 30 s. Hộp đóng rồi thì việc đã xong, không có gì phải chờ.
+     * Đo 02/10/2026 ở lịch xét xử của 66-DS: bước hỏng chỉ vì cú chờ này, lịch vốn đã lưu.
+     */
+    await hop
+      .getByRole('button', { name: /^(Đồng ý|Xác nhận|Xóa|OK)$/ })
+      .last()
+      .click({ timeout: 8_000 })
+      .catch(() => {});
   }
 }
 
@@ -111,6 +121,9 @@ async function dsNut(bm: Locator): Promise<string> {
 }
 
 export async function laySoVaKyLogic(page: Page, bm: Locator, ghi: GhiChu, ten: string) {
+  // Ký hỏng mà màn không báo gì là chuyện thường ở hệ này — chỉ API nói được vì sao
+  const { batLoiApi } = await import('./antd');
+  const loiApi = batLoiApi(page);
   const nutLaySo = nutTheoChu(bm, /Lấy số$/);
   if (await hienTrong(nutLaySo, 10_000)) {
     await nutLaySo.click();
@@ -183,7 +196,10 @@ export async function laySoVaKyLogic(page: Page, bm: Locator, ghi: GhiChu, ten: 
       30_000,
     );
   } catch {
-    throw new Error(`Ký ${ten} không thành công. Màn hình đang báo: ${await nguyenNhanLoi(page, bm, 180_000)}`);
+    throw new Error(
+      `Ký ${ten} không thành công.\n  Màn hình đang báo: ${await nguyenNhanLoi(page, bm, 60_000)}\n  ` +
+        `Nút đang có: ${await dsNut(bm)}\n  ${loiApi()}`,
+    );
   }
   await choHetSpin(page);
   await nghi(page, 1500, 2500);
@@ -207,7 +223,12 @@ export async function moLaiVaKy(page: Page, dong: Locator, ghi: GhiChu, ten: str
     );
     throw new Error(`Dòng ${ten} không có icon "eye" để mở lại. Icon đang có: ${nhan || '(không có)'}`);
   }
-  await mat.click();
+  /**
+   * `force` sau khi cuộn: ô `<td class="ant-table-cell">` của bảng nằm đè lên icon nên click thường
+   * bị "intercepts pointer events" rồi hết 30 s (đo 02/10/2026 ở bảng bản án phúc thẩm).
+   */
+  await mat.scrollIntoViewIfNeeded().catch(() => {});
+  await mat.click({ force: true });
   await choHetSpin(page);
 
   const bm = bieuMauDangMo(page);
@@ -389,8 +410,106 @@ export async function moTab(page: Page, ten: string | RegExp) {
     }
   }
 
+  /**
+   * LIỆT KÊ TAB ĐANG CÓ trong thông báo lỗi. Không có nó thì hai nguyên nhân rất khác nhau trông y
+   * hệt: (1) màn trả về TRANG TRẮNG — danh sách tab rỗng; (2) tab ĐỔI TÊN — danh sách có tab nhưng
+   * tên khác. Lần trước phải mở trình duyệt tay mới phân biệt được (đo 03/10/2026, bước 14).
+   */
+  const dsTab = (await page.locator('.ant-tabs-tab, [role="tab"]').allInnerTexts().catch(() => []))
+    .map(t => t.replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+  const chuMan = (await page.locator('main, body').first().innerText().catch(() => ''))
+    .replace(/\s+/g, ' ')
+    .trim();
+  // Trang 404 của SPA trông y hệt "trang trắng" với mọi selector → gọi đúng tên nó
+  if (/Không tìm thấy trang/i.test(chuMan)) {
+    throw new Error(
+      `Màn hình đang là TRANG 404 "Rất tiếc! Không tìm thấy trang!" nên không có tab "${ten}". ` +
+        `Không phải lỗi selector: route không dựng được màn (hay gặp khi chunk JS của màn tải lỗi). ` +
+        `URL: ${page.url()}`,
+    );
+  }
   throw new Error(
     `Màn hình không có tab "${ten}" sau 3 lần thử (đã tải lại 2 lần). ` +
-      `Nếu vùng nội dung trống thì là lỗi tải trang của máy chủ, không phải kịch bản.`,
+      (dsTab.length
+        ? `Tab đang có trên màn (${dsTab.length}): ${dsTab.join(' | ')} → nhiều khả năng tab ĐỔI TÊN.`
+        : `KHÔNG có tab nào trên màn → vùng nội dung không nạp (lỗi tải trang của máy chủ), không phải ` +
+          `lỗi kịch bản; chữ trên màn: "${chuMan.slice(0, 200) || '(trống)'}".`) +
+      ` URL: ${page.url()}`,
   );
+}
+
+/**
+ * Mở tab rồi CHỜ NỘI DUNG panel nạp; panel rỗng thì tải lại trang và mở lại.
+ *
+ * Vì sao cần: hệ này hay trả tab đã chọn mà `tabpanel` rỗng — không nút, không ô. Lúc đó mọi
+ * locator đều "không tìm thấy" và lỗi in ra nghe như sai selector. Đo 01/10/2026: tab "Phân công"
+ * của vụ án hình sự `[selected]` nhưng panel trống, báo "Tab Phân công không có nút Phân công".
+ */
+export async function moTabVaCho(
+  page: Page,
+  tenTab: string | RegExp,
+  ghi?: GhiChu,
+  /**
+   * Chữ đặc trưng của tab, để biết panel ĐÃ nạp. Cần vì nội dung tab nằm NGOÀI `[role="tabpanel"]`
+   * (thẻ đó rỗng), và khối "Thông tin chung của vụ án" hiện ở mọi tab — nên "trang có nút" không
+   * phân biệt được tab đã nạp hay chưa (đo 01/10/2026: báo panel rỗng 3 lần trong khi màn đầy dữ liệu).
+   */
+  dauHieu?: RegExp,
+) {
+  const { choHetSpin, nghi } = await import('./antd');
+  for (let lan = 0; lan < 3; lan++) {
+    await moTab(page, tenTab);
+    await choHetSpin(page);
+    const moc = dauHieu
+      ? page.getByText(dauHieu).first()
+      : page.locator('.ant-collapse-item, .ant-card, .ant-table').first();
+    const coND = await moc
+      .waitFor({ state: 'visible', timeout: 20_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (coND) return;
+    ghi?.(`tab ${String(tenTab)}`, `panel rỗng (lần ${lan + 1}) → tải lại trang`);
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await choHetSpin(page);
+    await nghi(page, 2000, 3000);
+  }
+  throw new Error(`Mở tab "${String(tenTab)}" nhưng panel không nạp nội dung sau 3 lần tải lại`);
+}
+
+/**
+ * Mở một khối thu gọn (antd collapse) theo tiêu đề.
+ *
+ * Khối đang thu gọn thì antd KHÔNG render nội dung: mọi nút/ô bên trong đều "không tìm thấy" và
+ * lỗi nghe như sai selector. Nhận biết bằng icon: `plus-square` = đang đóng, `minus-square` = đã mở.
+ * Đo 01/10/2026: tab Phân công của vụ án hình sự có hai khối đóng sẵn
+ * ("Danh sách quyết định phân công", "Thành phần hội đồng xét xử") nên không thấy nút "Phân công".
+ */
+export async function moKhoi(page: Page, tieuDe: RegExp, ghi?: GhiChu) {
+  const { choHetSpin, nghi, hienTrong } = await import('./antd');
+  /**
+   * Header khối là `<button>` mang TÊN TRỢ NĂNG gồm cả icon, vd. "plus-square Danh sách quyết định
+   * phân công". `filter({ hasText })` trên `button` không khớp khi chữ nằm trong phần tử con được
+   * tính vào accessible name nhưng không phải text node của button (đo 01/10/2026) — nên thử cả
+   * `getByRole` theo tên trợ năng.
+   */
+  const dong = page
+    .getByRole('button', { name: tieuDe })
+    .or(page.locator('button').filter({ hasText: tieuDe }))
+    .first();
+  if (!(await hienTrong(dong, 20_000))) {
+    const ds = (await page.getByRole('button').allInnerTexts().catch(() => []))
+      .map(s => s.replace(/\s+/g, ' ').trim())
+      .filter(Boolean);
+    ghi?.('mở khối', `không thấy khối ${String(tieuDe)}. Nút đang có: ${[...new Set(ds)].slice(0, 20).join(' | ')}`);
+    return false;
+  }
+  const dangDong = await dong.locator('img[aria-label="plus-square"], .anticon-plus-square').count();
+  if (dangDong) {
+    await dong.click();
+    await choHetSpin(page);
+    await nghi(page, 800, 1200);
+    ghi?.('mở khối', `đã mở "${String(tieuDe)}"`);
+  }
+  return true;
 }

@@ -14,6 +14,22 @@ const docThoiGian = (s: string) => {
   return m ? new Date(+m[3], +m[2] - 1, +m[1], +m[4], +m[5], +m[6]) : undefined;
 };
 
+/** Số trang của tab "Chờ duyệt" sẽ dò khi tìm đề xuất của vụ (hàng chờ Chánh án trên STG 30+ dòng) */
+const SO_TRANG_DO = 3;
+
+/**
+ * Dấu hiệu nhận vụ có khớp đoạn chữ này không.
+ *
+ * Dấu hiệu TOÀN SỐ (số bản án "12", "13") KHÔNG được khớp kiểu chuỗi con: trang nào cũng có "12" trong
+ * một ngày hoặc một giờ nào đó, nên mở trúng văn bản của vụ khác vẫn bị coi là "đúng vụ" rồi duyệt/ký
+ * lên văn bản của họ. Yêu cầu số đứng riêng và hai bên không phải chữ số hay dấu "/" (loại ngày
+ * 12/09/2026, giờ 21:59:12 và số dạng 13/2026/KDTM-ST).
+ */
+export const khopDauHieu = (chu: string, dauHieu: string) => {
+  if (!/^[0-9]+$/.test(dauHieu)) return chu.includes(dauHieu);
+  return new RegExp(`(^|[^0-9/:])${dauHieu}([^0-9/:]|$)`).test(chu);
+};
+
 interface BanGhiPheDuyet {
   id: string;
   idDuLieu?: string;
@@ -83,9 +99,12 @@ export class PheDuyetPage {
     if (!rec) throw new Error(`Không thấy yêu cầu phê duyệt cho ${khoa} trong danh sách`);
     if (rec.trangThaiTongHop === '2') return false; // đã duyệt xong ở lần chạy trước
 
-    // Mở đúng đường FE dùng: tờ trình (MS_02 hoặc TO_TRINH_*) → trang V2; văn bản khác → màn ký.
+    // Mở đúng đường FE dùng: tờ trình (Tờ trình phân công hoặc TO_TRINH_*) → trang V2; văn bản khác → màn ký.
+    // Nhận cả mã cũ MS_02 và mã mới 19-GDT.TC01-2026: UAT có thể chưa đổi mã biểu mẫu.
     // Trang V2 trống (vai Trưởng/Phó phòng) thì chuyenSangTrangKyNeuTrangV2Trong() tự chuyển sang màn ký.
-    const laToTrinh = rec.maBieuMau === 'MS_02' || /TO_TRINH/.test(rec.loaiYeuCau || '');
+    const MA_TO_TRINH_PHAN_CONG = ['MS_02', '19-GDT.TC01-2026'];
+    const laToTrinh =
+      MA_TO_TRINH_PHAN_CONG.includes(rec.maBieuMau || '') || /TO_TRINH/.test(rec.loaiYeuCau || '');
     const p = laToTrinh
       ? new URLSearchParams({
           idToTrinh: rec.idDuLieu || '',
@@ -216,25 +235,53 @@ export class PheDuyetPage {
    * Trả về true khi đã mở đúng vụ ở tab "Chờ duyệt"; false khi đề xuất của vụ này đã duyệt xong từ
    * lần chạy trước (tìm thấy ở tab "Đã duyệt"); ném lỗi khi không thấy ở cả hai tab.
    */
-  async moChiTietDungVu(loai: string | RegExp, dauHieu: string[], tuLuc: Date, toiDa = 6): Promise<boolean> {
+  async moChiTietDungVu(
+    loai: string | RegExp,
+    dauHieu: string[],
+    tuLuc: Date,
+    toiDa = 6,
+    /**
+     * Tên người tạo đề xuất — màn "Phê duyệt đề xuất" CÓ ô lọc "Người tạo đề xuất" (và "Loại đề xuất",
+     * "Ngày tạo đề xuất"): lọc trước thì hàng chờ 30+ dòng của Chánh án co lại còn vài dòng, đỡ phải dò
+     * từng trang. Người dùng chỉ ra 03/10/2026.
+     */
+    nguoiTao = '',
+  ): Promise<boolean> {
     const { page } = this;
     const can = dauHieu.filter(Boolean);
     const ten = loai instanceof RegExp ? loai.source : loai;
     const dongKhop = () => page.locator('.ant-table-row').filter({ hasText: loai });
 
     await this.mo();
-    await this.datBoLoc(typeof loai === 'string' ? loai : undefined, '');
-    const tong = Math.min(await dongKhop().count(), toiDa);
-    for (let i = 0; i < tong; i++) {
-      const t = docThoiGian(await dongKhop().nth(i).innerText().catch(() => ''));
-      if (t && t.getTime() < tuLuc.getTime() - 60_000) continue; // đề xuất cũ, không phải lượt này
-      await this.moChiTiet(dongKhop().nth(i));
-      try {
-        await this.xacNhanDungVu(can);
-        return true;
-      } catch {
-        await this.mo();
-        await this.datBoLoc(typeof loai === 'string' ? loai : undefined, '');
+    await this.datBoLoc(typeof loai === 'string' ? loai : undefined, nguoiTao);
+    /** Sang trang thứ `trang` của danh sách đang mở (trang 1 = không bấm gì) */
+    const moTrang = async (trang: number) => {
+      for (let i = 1; i < trang; i++) {
+        const sau = page.locator('.ant-pagination-next:not(.ant-pagination-disabled)').first();
+        if (!(await sau.isVisible().catch(() => false))) return false;
+        await sau.click().catch(() => undefined);
+        await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
+        await nghi(page, 1000, 1500);
+      }
+      return true;
+    };
+    for (let trang = 1; trang <= SO_TRANG_DO; trang++) {
+      await this.mo();
+      await this.datBoLoc(typeof loai === 'string' ? loai : undefined, nguoiTao);
+      if (!(await moTrang(trang))) break;
+      const tong = Math.min(await dongKhop().count(), toiDa);
+      for (let i = 0; i < tong; i++) {
+        const t = docThoiGian(await dongKhop().nth(i).innerText().catch(() => ''));
+        if (t && t.getTime() < tuLuc.getTime() - 60_000) continue; // đề xuất cũ, không phải lượt này
+        await this.moChiTiet(dongKhop().nth(i));
+        try {
+          await this.xacNhanDungVu(can);
+          return true;
+        } catch {
+          await this.mo();
+          await this.datBoLoc(typeof loai === 'string' ? loai : undefined, nguoiTao);
+          if (!(await moTrang(trang))) break;
+        }
       }
     }
     // Không còn ở "Chờ duyệt" → có thể đã duyệt xong từ lần chạy trước
@@ -243,8 +290,11 @@ export class PheDuyetPage {
     await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
     await nghi(page, 1000, 1500);
     if (can.length) {
-      const daDuyet = dongKhop().filter({ hasText: new RegExp(can.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')) });
-      if (await daDuyet.count()) return false;
+      const ds = dongKhop();
+      for (let i = 0; i < (await ds.count()); i++) {
+        const chu = (await ds.nth(i).innerText().catch(() => '')).replace(/\s+/g, ' ');
+        if (can.some(t => khopDauHieu(chu, t))) return false;
+      }
     }
     throw new Error(
       `Không thấy đề xuất "${ten}" của vụ này (dấu hiệu: ${can.join(' / ') || '-'}) ở cả "Chờ duyệt" lẫn "Đã duyệt"`,
@@ -261,7 +311,7 @@ export class PheDuyetPage {
     const can = dauHieu.filter(Boolean);
     if (!can.length) return;
     const chu = (await page.locator('body').innerText().catch(() => '')).replace(/\s+/g, ' ');
-    if (!can.some(t => chu.includes(t))) {
+    if (!can.some(t => khopDauHieu(chu, t))) {
       throw new Error(
         'Trang phê duyệt đang mở KHÔNG phải của vụ này (không thấy ' + can.join(' / ') + ' trên trang) — ' +
           'mở theo tên loại văn bản đã trúng đề xuất của vụ khác. Cần id văn bản trong sổ cái.',

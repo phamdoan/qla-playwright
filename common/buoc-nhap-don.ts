@@ -72,7 +72,18 @@ export async function nhapDonTuBanAn(page: Page, b: BanAnSoTham, testInfo: TestI
   // Nội dung [Gợi ý] phải dựng đúng từ 3 ô vừa nhập
   const noiDung = await test.step('Bấm [Gợi ý] cho Nội dung đơn', () => trang.goiYNoiDungDon());
   ghi('nội dung gợi ý', noiDung);
-  expect(noiDung.trim(), 'Nội dung [Gợi ý] không khớp dữ liệu bản án đã nhập').toBe(b.noiDungGoiY);
+  /**
+   * Có `noiDungGoiY` (luồng đọc Excel) thì khớp y nguyên — đó là cách bắt lỗi "màn dựng nội dung sai
+   * so với 3 ô vừa nhập". Không có (luồng FLOW/CASE/STEP: bản án do chính case sinh ra nên không ai
+   * biết trước câu gợi ý) thì chỉ đòi nội dung KHÁC RỖNG và có số bản án trong đó — vẫn là bằng
+   * chứng do hệ thống dựng, không phải chuỗi gieo.
+   */
+  if (b.noiDungGoiY) {
+    expect(noiDung.trim(), 'Nội dung [Gợi ý] không khớp dữ liệu bản án đã nhập').toBe(b.noiDungGoiY);
+  } else {
+    expect(noiDung.trim(), 'Bấm [Gợi ý] nhưng Nội dung đơn vẫn trống').not.toBe('');
+    expect(noiDung, `Nội dung [Gợi ý] không nhắc số bản án ${b.soBanAn}`).toContain(b.soBanAn);
+  }
 
   const daDien = await test.step('Điền các trường còn thiếu', () => trang.dienTruongThieu(d));
   ghi('trường tự điền', daDien.join(', ') || '(đủ)');

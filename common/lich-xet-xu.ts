@@ -26,6 +26,31 @@ type GhiChu = (khoa: string, giaTri: string) => void;
  * "element is not stable" rồi "not visible"), nên phải THỬ LẠI và chỉ tin khi đọc lại đúng giá trị.
  */
 export async function datGioTrongPanel(page: Page, o: Locator, muon: string, nhan: string): Promise<string> {
+  /**
+   * Ô DATETIME (có cả ngày): panel giờ chỉ đặt được GIỜ, phần ngày giữ nguyên hôm nay → biểu mẫu báo
+   * "Ngày Biên bản nghị án (02/10/2026) không được trước Ngày mở phiên tòa (16/10/2026)" (đo
+   * 02/10/2026 ở 51-DS phúc thẩm). Truyền "dd/mm/yyyy HH:mm" thì gõ CẢ CHUỖI một lần rồi Enter —
+   * `fill` một lần nên mặt nạ không kịp chèn dấu, và đọc lại để chỉ tin khi ô nhận đúng.
+   */
+  if (/\d{2}\/\d{2}\/\d{4}/.test(muon)) {
+    for (let lan = 0; lan < 3; lan++) {
+      await expect(o, `Form không có ô "${nhan}"`).toBeVisible({ timeout: 15_000 });
+      await o.click({ timeout: 10_000 }).catch(() => {});
+      await o.press('ControlOrMeta+a');
+      await o.press('Delete');
+      await o.fill(muon).catch(() => {});
+      await o.press('Enter');
+      /**
+       * KHÔNG bấm Escape để đóng panel: Escape đóng luôn cả modal biểu mẫu, ô bị tháo khỏi DOM và lần
+       * đọc lại trả về "(không đọc được)" (đo 02/10/2026). Enter đã commit; panel còn mở thì cú click
+       * kế tiếp (ô khác / nút Lưu) tự đóng.
+       */
+      const doc = (await o.inputValue().catch(() => '')).trim();
+      if (doc === muon || (doc.includes(muon.split(/\s+/)[0]) && doc.includes(muon.split(/\s+/)[1]))) return doc;
+    }
+    throw new Error(`Không đặt được "${nhan}" = ${muon} — ô đang là "${(await o.inputValue().catch(() => '')) || '(rỗng)'}"`);
+  }
+
   const [gio, phut] = muon.split(':');
   let cuoi = '';
   for (let lan = 0; lan < 3; lan++) {
@@ -61,7 +86,12 @@ export async function datGioTrongPanel(page: Page, o: Locator, muon: string, nha
     if (await hienTrong(nutOk, 2_000)) await nutOk.click().catch(() => {});
 
     cuoi = (await o.inputValue().catch(() => '')).trim();
-    if (cuoi === muon) return cuoi;
+    /**
+     * Đạt khi ô CHỨA giờ muốn, không đòi khớp y nguyên: có ô là DATETIME nên nhận
+     * "02/10/2026 13:30" cho giờ "13:30" — đúng giá trị, mà so bằng thì báo hỏng oan
+     * (đo 02/10/2026 ở ô "Thời gian nghị án" của 51-DS phúc thẩm).
+     */
+    if (cuoi === muon || cuoi.includes(muon)) return cuoi;
   }
   throw new Error(`Không đặt được "${nhan}" = ${muon} — ô đang là "${cuoi || '(không đọc được)'}"`);
 }

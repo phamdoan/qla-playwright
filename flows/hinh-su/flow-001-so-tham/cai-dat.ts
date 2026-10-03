@@ -18,9 +18,9 @@ export const CAI_DAT: BangCaiDat<InputHinhSu> = {
   '02-thu-ly': ({ page, input, ghi }) => thuLyVuAnHinhSu(page, input, ghi),
   '03-phan-cong-tham-phan': ({ page, input, ghi }) => phanCongThamPhan(page, input, ghi),
   '04-phan-cong-hoi-tham-thu-ky': ({ page, input, ghi }) => phanCongHoiThamThuKy(page, input, ghi),
-  '05-mo-phien-toa': ({ page, input, ghi }) => moPhienToa(page, input, ghi),
-  '06-dua-ra-xet-xu-020': ({ page, input, ghi, can }) =>
-    duaRaXetXu020(page, input, ghi, can('ngayMoPhienToa')),
+  // Thứ tự NGƯỢC spec: 020 đi trước, lịch xét xử do hệ thống sinh khi ký 020 (xem flow.ts)
+  '05-dua-ra-xet-xu-020': ({ page, input, ghi }) => duaRaXetXu020(page, input, ghi),
+  '06-mo-phien-toa': ({ page, input, ghi }) => moPhienToa(page, input, ghi),
 
   // Bước 07 (bản án sơ thẩm) chưa cài đặt — xem flows/hinh-su/flow-001-so-tham/flow.ts
 };

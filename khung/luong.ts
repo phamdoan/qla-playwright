@@ -26,6 +26,7 @@ import { BrowserContext, Page, test } from '@playwright/test';
 import { choHetSpin } from '../common/antd';
 import { choPhepGhiTKM } from '../account';
 import { moTrangVaiCauHinh } from '../common/luong-tkm';
+import { taiKhoan } from '../common/cau-hinh-luong';
 import { DinhDanhCase, moCase } from './case-state';
 import { DinhNghiaBuoc, DinhNghiaFlow, bangPhuThuoc, routeCuaBuoc } from './flow';
 
@@ -78,8 +79,22 @@ export function locCase<I>(dsCase: CaseChay<I>[]): CaseChay<I>[] {
   let ra = chon.length ? dsCase.filter(c => chon.includes(c.dd.caseId)) : dsCase;
   if (chon.length) {
     const thieu = chon.filter(m => !dsCase.some(c => c.dd.caseId === m));
+    /**
+     * KHÔNG ném lỗi khi case không thuộc luồng NÀY.
+     *
+     * `QLA_CASE` là biến toàn cục mà mỗi file spec gọi `khaiLuong` một lần, nên chạy không lọc
+     * `--file` là mọi luồng đều đọc biến đó: `QLA_CASE=case-002` (của KDTM) làm luồng HÌNH SỰ ném
+     * lỗi "case không khai trong danh sách" và GIẾT CẢ LƯỢT ngay lúc nạp — người chạy tưởng sai dữ
+     * liệu, thật ra chỉ là thiếu `--` trước `--file` nên npm nuốt mất cờ lọc (đo 03/10/2026).
+     *
+     * Luồng không có case nào được chọn thì bỏ qua luồng đó và NÓI RÕ trên log; gõ sai tên case vẫn
+     * thấy ngay vì mọi luồng đều in dòng này và không test nào chạy.
+     */
     if (thieu.length) {
-      throw new Error(`QLA_CASE có case không khai trong danh sách: ${thieu.join(', ')}`);
+      console.log(
+        `    · bỏ qua luồng "${dsCase[0]?.dd.flow ?? '(không rõ)'}": QLA_CASE=${chon.join(',')} không có ` +
+          `trong danh sách case của luồng (${dsCase.map(c => c.dd.caseId).join(', ') || 'rỗng'})`,
+      );
     }
   }
   const soCase = Number(process.env.QLA_SO_CASE || '');
@@ -117,18 +132,23 @@ export function khaiLuong<I>({ flow, dsCase, caiDat, vai, phut = 10 }: ThamSoLuo
       for (const dn of flow.buoc) {
         const than = caiDat[dn.ma];
 
-        if (!than) {
+        /**
+         * MỘT CHỖ KHAI DUY NHẤT cho mọi bước — kể cả bước chưa cài đặt.
+         *
+         * Playwright UI sắp xếp test theo VỊ TRÍ KHAI BÁO (file:dòng). Bản trước khai bước chưa cài
+         * đặt ở một `test(...)` riêng NẰM TRÊN, nên nó luôn nhảy lên đầu danh sách: UI hiện "bước 46"
+         * trước "bước 01" (người dùng chỉ ra 03/10/2026). Gộp về một chỗ thì thứ tự trên màn đúng
+         * bằng thứ tự khai trong flow.ts.
+         */
+        test(`buoc ${dn.ma} · ${dn.ten}`, async ({ browser }, testInfo) => {
           // Bước đã khai trong flow nhưng chưa cài đặt: vẫn hiện trong `--list` để thấy luồng còn
           // thiếu gì, và KHÔNG bao giờ báo xanh.
-          test(`buoc ${dn.ma} · ${dn.ten}`, async ({}, testInfo) => {
+          if (!than) {
             testInfo.annotations.push({ type: 'chưa cài đặt', description: `Nguồn: ${dn.nguon}` });
             testInfo.annotations.push({ type: 'màn hình', description: dn.manHinh });
             test.fixme(true, `Chưa cài đặt — đặc tả: ${dn.nguon} (${flow.nguon})`);
-          });
-          continue;
-        }
-
-        test(`buoc ${dn.ma} · ${dn.ten}`, async ({ browser }, testInfo) => {
+            return;
+          }
           test.skip(!choPhepGhiTKM(), 'Môi trường không cho ghi dữ liệu (QLA_TKM_CHO_PHEP_GHI ≠ 1)');
           test.skip(
             process.env.QLA_BO_QUA_DA_XONG === '1' && state.daXong(dn.ma),
@@ -162,10 +182,30 @@ export function khaiLuong<I>({ flow, dsCase, caiDat, vai, phut = 10 }: ThamSoLuo
           };
 
           const vaiChay = vai?.(dn, input) || dn.vai;
-          let phien = phienTheoVai.get(vaiChay);
+          /**
+           * PHIÊN GIỮ THEO TÀI KHOẢN, KHÔNG THEO TÊN VAI.
+           *
+           * Nhiều vai dùng CHUNG một tài khoản (config/tai-khoan.local.json: vuTruongDanSu và
+           * thuKyVuDanSu cùng một CCCD; vuTruong và thuKyVuHoSoKhangNghi cũng vậy). Giữ phiên theo
+           * tên vai thì khi sang vai thứ hai, khung mở thêm một context NỮA rồi đăng nhập lại CHÍNH
+           * tài khoản đang mở — WSO2 chỉ cho một phiên nên nó quay vòng về /sso/login và bước chết
+           * dù nghiệp vụ không có gì sai (đo 03/10/2026: bước 27 rồi bước 31 hỏng đúng kiểu đó, thử
+           * 5 vòng + dọn cookie vẫn không qua).
+           *
+           * Khoá theo CCCD: hai vai cùng tài khoản dùng chung một phiên — hết quay vòng, và đỡ luôn
+           * 15–20 giây mở phiên.
+           */
+          const khoaPhien = (() => {
+            try {
+              return taiKhoan(vaiChay).cccd || vaiChay;
+            } catch {
+              return vaiChay;
+            }
+          })();
+          let phien = phienTheoVai.get(khoaPhien);
           if (!phien) {
             phien = await moTrangVaiCauHinh(browser, testInfo, vaiChay);
-            phienTheoVai.set(vaiChay, phien);
+            phienTheoVai.set(khoaPhien, phien);
             ghi('phiên', `mở phiên mới cho vai ${vaiChay}`);
           }
           const { page, context } = phien;
@@ -190,6 +230,30 @@ export function khaiLuong<I>({ flow, dsCase, caiDat, vai, phut = 10 }: ThamSoLuo
                 );
               }
               await choHetSpin(page);
+              /**
+               * TRANG 404 CỦA SPA: HTTP vẫn 200 (index.html trả bình thường) nhưng router không dựng
+               * được màn — vùng nội dung là "Rất tiếc! Không tìm thấy trang!". Gặp lúc chunk JS của màn
+               * tải lỗi, mở lại là qua; tải lại (reload) KHÔNG gỡ được vì vẫn đúng URL đang hỏng.
+               * Đo 03/10/2026: bước 14 chết ở đây và báo nhầm thành "màn hình không có tab".
+               */
+              const la404 = async () =>
+                page
+                  .getByText(/Rất tiếc! Không tìm thấy trang|Không tìm thấy trang/i)
+                  .first()
+                  .isVisible()
+                  .catch(() => false);
+              if (await la404()) {
+                ghi('mở màn hình', `gặp trang 404 → mở lại ${duongDan}`);
+                await page.goto('dashboard', { waitUntil: 'domcontentloaded' }).catch(() => undefined);
+                await page.goto(duongDan, { waitUntil: 'domcontentloaded' });
+                await choHetSpin(page);
+                if (await la404()) {
+                  throw new Error(
+                    `Màn hình trả về trang 404 "Không tìm thấy trang" khi mở ${duongDan} (đã thử lại 1 lần). ` +
+                      `Kiểm tra khoá trong sổ cái còn đúng không, hoặc chờ môi trường rồi chạy lại bước này.`,
+                  );
+                }
+              }
             }
             const bangChung = await than({ page, context, input, dd, ghi, duLieu, can });
             // CHECKPOINT — chỉ ghi PASSED khi có bằng chứng do hệ thống cấp
