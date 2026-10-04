@@ -13,9 +13,9 @@
  * KHÔNG BẤM LƯU. Chỉ tải file đơn (bắt buộc để vào được form), bỏ qua OCR, rồi đọc màn.
  */
 import { test } from '@playwright/test';
-import { choHetSpin, hienTrong, nghi } from '../../common/antd';
-import { moTrangVaiCauHinh } from '../../common/luong-tkm';
-import { ThemMoiDonPage } from '../../pages/them-moi-don.page';
+import { choHetSpin, hienTrong, nghi } from '../../../common/antd';
+import { moTrangVaiCauHinh } from '../../../common/luong-tkm';
+import { ThemMoiDonPage } from '../../../pages/them-moi-don.page';
 
 /** Các select cần liệt kê lựa chọn: nhãn → id trên form */
 const SELECT_CAN_DO: Record<string, string> = {
