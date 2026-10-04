@@ -18,6 +18,7 @@ import type { DinhDanhCase } from '../../../khung/case-state';
 import { DD as DD_001, INPUT as INPUT_001 } from './case-001/input';
 import { DD as DD_002, INPUT as INPUT_002 } from './case-002/input';
 import { caseVuAnThucKdtm } from '../../vu-an-thuc/sinh-case';
+import { DD as DD_PREPROD, INPUT as INPUT_PREPROD } from './case-preprod/input';
 
 /** Định danh của một case bất kỳ trong flow này — khoá gieo bất biến, biết trước khi chạy */
 export function ddCase(caseId: string): DinhDanhCase {
@@ -35,12 +36,25 @@ export function ddCase(caseId: string): DinhDanhCase {
  * cả luồng bằng dữ liệu gieo ĐÃ SỬA — chủ toạ phúc thẩm và Thẩm phán TANDTC đều CHỈ ĐỊNH vào tài khoản
  * của bộ, nên bản án phúc thẩm ký được và Chương trình làm việc HĐXX về đúng Phó Chánh án.
  */
-export const DS_CASE: CaseChay<InputKdtm>[] = [
-  { dd: DD_001, input: INPUT_001 },
-  { dd: DD_002, input: INPUT_002 },
-  // Rỗng khi không bật QLA_VU_AN_THUC → hành vi mặc định của luồng không đổi
-  ...(caseVuAnThucKdtm() as CaseChay<InputKdtm>[]),
-];
+/**
+ * MÔI TRƯỜNG PRE-PROD CHẠY MỘT CASE RIÊNG, và KHÔNG chạy case-001/002.
+ *
+ * Vì sao chọn theo môi trường thay vì bắt người chạy gõ `--case`: pre-prod là môi trường TRẮNG của
+ * TAND tỉnh Bắc Ninh, còn case-001/002 gieo người và đơn vị của TANDTC / Hà Nội — chạy chúng ở đó là
+ * sai hạt giống ngay từ ô chủ toạ. Người chạy chỉ cần `npm run preprod`, không tham số nào.
+ *
+ * Trạng thái case nằm riêng theo bản sao thư mục nên case-preprod không đụng gì tới STG.
+ */
+const LA_PREPROD = (process.env.QLA_ENV || 'stg') === 'preprod';
+
+export const DS_CASE: CaseChay<InputKdtm>[] = LA_PREPROD
+  ? [{ dd: DD_PREPROD, input: INPUT_PREPROD as unknown as InputKdtm }]
+  : [
+      { dd: DD_001, input: INPUT_001 },
+      { dd: DD_002, input: INPUT_002 },
+      // Rỗng khi không bật QLA_VU_AN_THUC → hành vi mặc định của luồng không đổi
+      ...(caseVuAnThucKdtm() as CaseChay<InputKdtm>[]),
+    ];
 
 /**
  * Sinh case từ một BẢNG dữ liệu (Excel/CSV của Tester) — lối đi cho hàng nghìn case.
