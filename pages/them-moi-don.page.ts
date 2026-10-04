@@ -461,9 +461,13 @@ export class ThemMoiDonPage {
   }
 
   /** Hình thức nhận (mặc định "Trực tiếp") */
-  async datHinhThucNhan(nhan: string) {
+  /** Trả về chuỗi mô tả để bước ghi vào bằng chứng — trước đây không trả gì nên log in "undefined" */
+  async datHinhThucNhan(nhan: string): Promise<string> {
     const o = this.page.locator('#thongTinChiTietDon_hinhThucNhan');
-    if ((await nhanSelect(this.page, o)) !== nhan) await chonSelect(this.page, o, nhan);
+    const dangCo = (await nhanSelect(this.page, o)).trim();
+    if (dangCo === nhan) return `đã đúng: ${nhan}`;
+    await chonSelect(this.page, o, nhan);
+    return `${dangCo || '(trống)'} → ${nhan}`;
   }
 
   /**
@@ -567,11 +571,27 @@ export class ThemMoiDonPage {
     const thuLy = page.locator('#thongTinChuyenDonVO_trangThaiThuLyDon');
     if (await hienThi(thuLy)) {
       if (!(await nhanSelect(page, thuLy)).includes('Thụ lý mới')) await chonSelect(page, thuLy, 'Thụ lý mới');
+      /**
+       * "Ngày thụ lý" — KIỂM CẢ "CÓ CHO NHẬP", không chỉ "có hiện".
+       *
+       * Đo pre-prod 04/10/2026: ô này HIỆN nhưng `disabled` (hệ thống tự điền theo ngày thụ lý thật),
+       * trong khi trên STG nó cho nhập. Mã cũ chỉ kiểm `hienThi()` rồi gọi `chonNgay`, mà helper gõ
+       * có `expect(...).toBeEditable()` → cả bước 24 đỏ với "Ô nhập đang bị khoá, không thể nhập",
+       * sau khi đã điền xong 24 ô và 4 bảng con. Đỏ ở ô mà hệ thống vốn không cho sửa là đỏ vô ích.
+       *
+       * Ô bị khoá thì BỎ QUA và trả về lý do — bằng chứng thật của việc thụ lý là SỐ THỤ LÝ do máy
+       * chủ cấp, `themMoiDon` đã bắt buộc có (thiếu là lỗi ngay ở đó).
+       */
       const ngayThuLy = page.locator('#thongTinChuyenDonVO_ngayThuLy');
-      if ((await hienThi(ngayThuLy)) && !(await ngayThuLy.inputValue())) {
-        await chonNgay(ngayThuLy, ddmmyyyy(new Date()));
+      if (!(await hienThi(ngayThuLy))) return 'ô "Ngày thụ lý" không hiện';
+      if (await ngayThuLy.inputValue()) return `Ngày thụ lý đã có sẵn: ${await ngayThuLy.inputValue()}`;
+      if (!(await ngayThuLy.isEditable().catch(() => false))) {
+        return 'ô "Ngày thụ lý" bị khoá (hệ thống tự điền) — bỏ qua, bằng chứng là số thụ lý máy chủ cấp';
       }
+      await chonNgay(ngayThuLy, ddmmyyyy(new Date()));
+      return `đã nhập Ngày thụ lý = ${ddmmyyyy(new Date())}`;
     }
+    return 'ô "Thụ lý đơn" không hiện';
   }
 
   /**

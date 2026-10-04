@@ -118,7 +118,10 @@ export async function themMoiDon(
     ghi('thông tin khiếu nại', co ? 'đã thêm 1 dòng' : 'màn không có bảng này');
   }
 
-  await test.step('Xử lý đơn: tư cách + đơn vị nhận', () => trang.datTuCachVaDonViNhan(d));
+  ghi(
+    'xử lý đơn',
+    await test.step('Xử lý đơn: tư cách + đơn vị nhận + thụ lý mới', () => trang.datTuCachVaDonViNhan(d)),
+  );
   ghi('đơn vị chuyển đến', d.donViChuyenDen || '(mục đầu danh mục)');
 
   const idDon = await test.step('Lưu thông tin', () => trang.luu(d));
