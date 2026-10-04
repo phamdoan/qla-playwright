@@ -86,27 +86,28 @@ export const INPUT = {
   /**
    * Quan hệ pháp luật (Thống kê) — khai bằng TÊN ĐÚNG TRONG DANH MỤC, không dò từ khoá.
    *
-   * Nguồn: `qla/db-structure/ddl-qhpl.sql`. Với KDTM + Đơn khởi kiện, FE tính mã gốc
-   * `QHPL_TC_KDTM` (`ThemMoi/payload/qhplThongKe.ts · tinhMaQhplThongKeGoc`) và danh mục có đúng
-   * 29 mục con, ĐỀU LÀ LÁ nên nạp hết ngay từ đầu:
+   * Với KDTM + Đơn khởi kiện, FE tính mã gốc `QHPL_TC_KDTM`
+   * (`ThemMoi/payload/qhplThongKe.ts · tinhMaQhplThongKeGoc`).
    *
-   *   .001 Mua bán hàng hoá           .002 Gia công hàng hóa      .003 Cung ứng dịch vụ
-   *   .004 Phân phối                  .005 Đại diện, đại lý       .006 Ký gửi
-   *   .007 Ký quỹ                     .008 Cầm giữ tài sản        .009 Bảo lãnh
-   *   .010 Thế chấp                   .011 Đặt cọc                .012 Thuê, cho thuê, thuê mua
-   *   .013 Xây dựng                   .014 Tư vấn kỹ thuật        .019 Bảo hiểm
-   *   .018 Đầu tư tài chính, ngân hàng .020 Thăm dò, khai thác    .026 Các tranh chấp khác
-   *   .027 Liên doanh liên kết        .028 Hợp đồng đầu tư        .029 Hợp đồng quảng cáo  (…)
+   * ⚠ DANH MỤC ĐÃ BỊ TÁI CẤU TRÚC NGÀY 03/10/2026 — hỏi thẳng CSDL STG ngày 04/10/2026
+   * (`QTDM.DANHMUC` nơi `MA_LOAI_DANHMUC='QHPL_TC_KDTM'`, mọi dòng đều có `NGAY_SUA=2026-10-03`):
+   *   · thêm nhóm mới `.030 Tranh chấp hợp đồng thương mại` (cấp 1), và
+   *   · ĐƯA 12 lá hợp đồng xuống LÀM CON của `.030`, đồng thời ĐỔI TÊN chúng:
+   *     `.001` từ "Mua bán hàng hoá" → **"Tranh chấp hợp đồng mua bán hàng hóa"** (hoá → hóa).
    *
-   * ⚠ Chính tả trong danh mục KHÔNG nhất quán: .001 ghi "hoá" còn .002 ghi "hóa". Ô là TreeSelect
-   * lọc theo title trên các nút đã nạp, nên lệch một dấu là danh sách rỗng → treo cả phút rồi hỏng.
-   * Đo 30/09/2026: bộ từ khoá cũ ("Tranh chấp hợp đồng mua bán", "mua bán hàng hóa", …) không khớp
-   * mục nào, vì danh mục không có mục nào tên bắt đầu bằng "Tranh chấp hợp đồng".
+   * Hệ quả: hạt giống cũ (`tenQhplThongKe: 'Mua bán hàng hoá'`, không có nhánh cha) KHÔNG còn mục
+   * nào khớp — cây chỉ nạp cấp 1, mà lá giờ ở cấp 2. Phải khai `qhplChaThongKe` để
+   * `chonQhplThongKe` MỞ NHÁNH rồi bấm lá, y như luồng dân sự.
+   *
+   * Danh mục lá chọn được của cả 4 loại án nằm ở `data/vu-an-thuc/ban-an-cong-bo.ts` (đọc máy móc
+   * từ CSDL, không gõ tay).
    */
   maQhplThongKe: 'QHPL_TC_KDTM.001',
-  tenQhplThongKe: 'Mua bán hàng hoá',
+  tenQhplThongKe: 'Tranh chấp hợp đồng mua bán hàng hóa',
+  /** Nhánh cha cấp 1 của lá — bắt buộc từ 03/10/2026, xem ghi chú trên */
+  qhplChaThongKe: 'Tranh chấp hợp đồng thương mại',
   /** Ô "Quan hệ pháp luật chi tiết" — chữ tự do, không phải danh mục */
-  quanHePhapLuatChiTiet: 'Tranh chấp hợp đồng mua bán hàng hoá',
+  quanHePhapLuatChiTiet: 'Tranh chấp hợp đồng mua bán hàng hóa',
   lyDoKhongHoaGiai: 'Các bên đã thỏa thuận không tiến hành hòa giải tại Tòa án.',
 
   // ───────── Bước 01 · b6 Đương sự ─────────
@@ -383,12 +384,14 @@ export const INPUT = {
    * khi vụ GĐT sinh từ đơn (đo 02/10/2026). Danh mục THỐNG KÊ, chữ có thể khác ô "Quan hệ pháp luật".
    */
   /**
-   * Giá trị gieo là CHUỖI LỌC, không phải nhãn đầy đủ: danh mục thống kê là cây ảo hoá, nhãn lá dạng
-   * "- Mua bán hàng hoá" kèm mã "QHPL_xxxx", nên khớp cả câu "Tranh chấp hợp đồng mua bán hàng hoá" là
-   * trượt. Lọc quá ngắn ("mua bán") thì trúng "- Mua bán cổ phiếu, trái phiếu…" — cả hai đều đo
-   * 02/10/2026. Dùng "hàng ho" để đỡ cả hai cách viết hoá/hóa.
+   * Giá trị gieo là CHUỖI LỌC, không phải nhãn đầy đủ: danh mục thống kê là cây ảo hoá và chỉ lọc
+   * trên các nút ĐÃ NẠP, nên gõ trọn tên lá cấp 2 là ra rỗng. Lọc quá ngắn ("mua bán") thì trúng
+   * "Mua bán cổ phiếu, trái phiếu…" (đo 02/10/2026).
+   *
+   * Từ 03/10/2026 lá `.001` nằm ở cấp 2 nên `chonQhplThongKe` dùng `qhplChaThongKe` để mở nhánh và
+   * KHÔNG dùng chuỗi lọc nữa; chuỗi này còn được màn "Thông tin vụ án" của cụm GĐT dùng (bước 33).
    */
-  quanHePhapLuatThongKe: 'mua bán hàng ho',
+  quanHePhapLuatThongKe: 'mua bán hàng hóa',
   /**
    * 75-DS: thẻ chọn trong khối `role=radiogroup` "Quyết định đối với bản án sơ thẩm". Không chọn thì
    * bấm "Thêm mới bản án" chỉ hiện toast "Không thể lưu bản án — Chọn quyết định đối với bản án sơ

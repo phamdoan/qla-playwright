@@ -38,7 +38,10 @@
     "tien-trinh:theo-doi": "node tools/tien-trinh.js --theo-doi=15 --loi",
     "kdtm:flow-001:stg:song-song": "node tools/chay-ui.js stg --ghi --cli --song-song=2 --file=flow-001-st-pt",
     "gdt:mo-tay-so-tham": "node tools/chay-ui.js stg --ghi --cli --hien --cham --file=mo-tay-vu-so-tham",
-    "gom-anh": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/gom-anh.ps1"
+    "gom-anh": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/gom-anh.ps1",
+    "ds:mo-tay-chuyen-den": "node tools/chay-ui.js stg --ghi --cli --hien --cham --file=mo-tay-ho-so-chuyen-den",
+    "ban-an-cong-bo:sinh": "node tools/sinh-ban-an-cong-bo/sinh.js",
+    "ds:vu-an-thuc": "node tools/chay-ui.js stg --ghi --cli --file=flow-001-st-pt"
   },
   "keywords": [],
   "author": "",

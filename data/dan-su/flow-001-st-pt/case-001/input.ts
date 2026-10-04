@@ -47,9 +47,9 @@ export const INPUT = {
    * nhóm "Tranh chấp về giao dịch dân sự, hợp đồng dân sự" (QHPL_TC_DS.003) có 22 mục lá, trong đó
    * QHPL_TC_DS.003.005 = "Tranh chấp hợp đồng vay tài sản".
    *
-   * ⚠ Khác KDTM ở chỗ TÊN LÁ: KDTM lá là "Mua bán hàng hoá" (ngắn), còn dân sự lá mang trọn chữ
-   * "Tranh chấp hợp đồng vay tài sản". `chonQhplThongKe` khớp tên lá CHÍNH XÁC (`^tên$`) nên phải
-   * gieo đúng chuỗi này.
+   * `chonQhplThongKe` khớp tên lá CHÍNH XÁC (`^tên$`) nên phải gieo đúng chuỗi này.
+   * (Trước 03/10/2026 lá KDTM tên ngắn và nằm ở cấp 1 nên bẫy "lá cấp 2" chỉ lộ ở dân sự; từ
+   * 03/10/2026 danh mục KDTM cũng đã chuyển lá xuống cấp 2 — xem input của case-001 KDTM.)
    */
   /**
    * NHÁNH CHA của lá — bắt buộc với dân sự: cây chỉ nạp cấp 1, lá nằm ở cấp 2 nên phải mở nhánh này
