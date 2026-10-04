@@ -52,8 +52,25 @@ export const credentialsTKM = () => {
   return { user, pass: process.env.QLA_TKM_PASS || matKhauMacDinh(user) };
 };
 
-/** Môi trường hiện tại có cho phép test ghi dữ liệu nghiệp vụ không (mặc định: không) */
-export const choPhepGhiTKM = () => process.env.QLA_TKM_CHO_PHEP_GHI === '1';
+/**
+ * Môi trường hiện tại có cho phép test ghi dữ liệu nghiệp vụ không (mặc định: không).
+ *
+ * HAI NGUỒN, và `QLA_GHI_CLI` phải thắng:
+ *   · `QLA_TKM_CHO_PHEP_GHI` — khai trong tệp `.env.<hồ sơ>`, tức mặc định của MÔI TRƯỜNG;
+ *   · `QLA_GHI_CLI`          — do `tools/chay-ui.js --ghi` đặt, tức Ý ĐỊNH CỦA LƯỢT CHẠY.
+ *
+ * Vì sao cần biến thứ hai: `playwright.config.ts` nạp tệp env bằng `dotenv.config({ override: true })`,
+ * nên giá trị trong tệp GHI ĐÈ biến mà `chay-ui.js` vừa đặt. `.env.preprod` có dòng
+ * `QLA_TKM_CHO_PHEP_GHI=` (trống, để pre-prod mặc định chỉ đọc) → `--ghi` bị xoá sạch.
+ *
+ * Hậu quả đã xảy ra (đo 04/10/2026): `npm run don:preprod` in "ghi dữ liệu: CÓ (tạo đơn thật)" —
+ * vì chay-ui.js in TRƯỚC khi dotenv ghi đè — rồi cả 6 test **bị bỏ qua** với lý do "Môi trường
+ * không cho ghi dữ liệu". Log nói một đằng, hành vi một nẻo; đọc log thì tưởng đã chạy.
+ *
+ * `QLA_GHI_CLI` không có trong tệp env nào nên dotenv không chạm tới được.
+ */
+export const choPhepGhiTKM = () =>
+  process.env.QLA_GHI_CLI === '1' || process.env.QLA_TKM_CHO_PHEP_GHI === '1';
 
 /**
  * Các vai của luồng "Luồng nhập data.txt" (Bước 3–9). Tài khoản khai riêng, không dùng chung

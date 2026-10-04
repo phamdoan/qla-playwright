@@ -53,7 +53,19 @@ const env = {
   // Không dùng npm_lifecycle_event vì npx ghi đè biến này → config sẽ nạp nhầm .env mặc định.
   QLA_HO_SO_ENV: HO_SO_THEO_MOI_TRUONG[tenMoiTruong],
 };
-if (choPhepGhi) env.QLA_TKM_CHO_PHEP_GHI = '1';
+if (choPhepGhi) {
+  env.QLA_TKM_CHO_PHEP_GHI = '1';
+  /**
+   * Cờ THỨ HAI, không có trong tệp .env nào, nên dotenv không xoá được.
+   *
+   * playwright.config.ts nạp tệp env với `override: true`, nên dòng `QLA_TKM_CHO_PHEP_GHI=`
+   * (trống) trong .env.preprod GHI ĐÈ cờ vừa đặt ở trên → --ghi mất tác dụng, và dòng log bên dưới
+   * in "ghi dữ liệu: CÓ" trước khi bị ghi đè nên nói sai hoàn toàn. Đo 04/10/2026: cả 6 test của
+   * luồng đơn trên pre-prod bị BỎ QUA với lý do "Môi trường không cho ghi dữ liệu".
+   * Xem `account.ts · choPhepGhiTKM`.
+   */
+  env.QLA_GHI_CLI = '1';
+}
 if (lay('dong')) env.QLA_TKM_DONG = lay('dong');
 if (lay('so-dong')) env.QLA_TKM_SO_DONG = lay('so-dong');
 if (lay('ma-don')) env.QLA_TKM_MA_DON = lay('ma-don');
