@@ -57,7 +57,8 @@
     "preprod:b24": "node tools/chay-ui.js preprod --ghi --cli --file=flow-002-gdt-tt-nhap-data --buoc=24",
     "don:do-thu-ly": "node tools/chay-ui.js preprod --cli --file=do-thu-ly-don",
     "preprod:lam-lai": "node tools/chay-ui.js preprod --ghi --cli --file=flow-002-gdt-tt-nhap-data",
-    "don:do-phe-duyet": "node tools/chay-ui.js preprod --cli --file=do-phe-duyet"
+    "don:do-phe-duyet": "node tools/chay-ui.js preprod --cli --file=do-phe-duyet",
+    "don:do-lap-van-ban": "node tools/chay-ui.js preprod --cli --file=do-lap-van-ban"
   },
   "keywords": [],
   "author": "",
