@@ -98,6 +98,20 @@ export async function themMoiDon(
   ghi('trường đã điền', daDien.join(', ') || '(không thiếu ô nào)');
 
   await test.step('Tra cứu bản án', () => trang.traCuuBanAn());
+
+  /**
+   * ĐỌC NHÃN TÒA NGAY TẠI FORM, TRƯỚC KHI LƯU.
+   *
+   * Các bước 27→45 nhận diện đúng vụ bằng "dấu hiệu vụ" dựng từ số/ngày/TÒA bản án, nên tòa phải là
+   * NHÃN ĐẦY ĐỦ hệ thống giữ ("Tòa án nhân dân thành phố Hà Nội"), không phải chuỗi lọc đã gieo
+   * ("thành phố Hà Nội").
+   *
+   * Lần đầu tôi đọc SAU `kiemTraSauLuu()` — lúc đó đã mở lại đơn nên không còn ở form, hàm trả rỗng
+   * và rơi vào đường lùi `|| d.toaAn`, ghi ra đúng chuỗi lọc. Khớp theo chuỗi con thì có thể vẫn
+   * chạy được, nhưng đó là may, không phải đúng.
+   */
+  const toaDaChon = (await tenToaDangChon(page).catch(() => '')) || d.toaAn;
+  ghi('bản án đề nghị', `${d.soBanAn} — ${d.ngayBanAn} — ${toaDaChon}`);
   ghi('thời hiệu giải quyết', await test.step('Thời hiệu giải quyết', () => trang.chonThoiHieuGiaiQuyetNeuTrong()));
   // Thủ tục giải quyết đặt SAU tra cứu: màn tự điền khi tra ra bản án, đặt trước là bị ghi đè.
   ghi('thủ tục giải quyết', await test.step('Thủ tục giải quyết', () => trang.datThuTucGiaiQuyet(d.thuTucGiaiQuyet)));
@@ -160,20 +174,6 @@ export async function themMoiDon(
     'Đơn chưa được thụ lý (thiếu số thụ lý) → các bước phân công/tờ trình sẽ không thấy đơn. ' +
       'Kiểm ô "Thụ lý mới" ở khối Xử lý đơn.',
   ).toBeTruthy();
-
-  /**
-   * TRẢ LUÔN BẢN ÁN ĐỀ NGHỊ (số · ngày · tòa) để các bước sau dùng.
-   *
-   * Vì sao: từ bước 27, các màn phê duyệt nhận diện đúng vụ bằng "dấu hiệu vụ" dựng từ số/ngày/tòa
-   * bản án (`banAnTuState`), mà hàm đó đọc từ CaseState do **bước 22** của luồng 45 bước sinh ra.
-   * Luồng GĐT riêng KHÔNG có bước 22 → bước 27 đỏ với 'state thiếu "soBanAnPhucTham"'.
-   *
-   * Bước này tự sinh bản án rồi nhập tay, nên chính nó là nơi biết ba giá trị đó. Tòa án ĐỌC LẠI
-   * NHÃN TRÊN FORM (không dùng chuỗi lọc đã gieo): nhãn mới là tên tòa đầy đủ mà hệ thống giữ, và
-   * đó mới là chuỗi khớp được với dòng trên các màn phê duyệt.
-   */
-  const toaDaChon = (await tenToaDangChon(page).catch(() => '')) || d.toaAn;
-  ghi('bản án đề nghị', `${d.soBanAn} — ${d.ngayBanAn} — ${toaDaChon}`);
 
   return { idDon, maDon, soThuLy, soBanAn: d.soBanAn, ngayBanAn: d.ngayBanAn, toaAn: toaDaChon };
 }
