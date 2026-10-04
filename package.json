@@ -54,7 +54,8 @@
     "don:preprod": "node tools/chay-ui.js preprod --ghi --cli --file=flow-001-them-moi-don --case=don-01-ban-an-khong-ocr,don-02-quyet-dinh-khong-ocr,don-03-mien-giam-tha-khong-ocr",
     "don:preprod:ui": "node tools/chay-ui.js preprod --ghi --file=flow-001-them-moi-don --case=don-01-ban-an-khong-ocr,don-02-quyet-dinh-khong-ocr,don-03-mien-giam-tha-khong-ocr",
     "gdt:stg": "node tools/chay-ui.js stg --ghi --cli --file=flow-002-gdt-tt-nhap-data",
-    "preprod:b24": "node tools/chay-ui.js preprod --ghi --cli --file=flow-002-gdt-tt-nhap-data --buoc=24"
+    "preprod:b24": "node tools/chay-ui.js preprod --ghi --cli --file=flow-002-gdt-tt-nhap-data --buoc=24",
+    "don:do-thu-ly": "node tools/chay-ui.js preprod --cli --file=do-thu-ly-don"
   },
   "keywords": [],
   "author": "",
