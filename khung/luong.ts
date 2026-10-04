@@ -68,7 +68,12 @@ export interface ThamSoLuong<I> {
   /** Đổi vai theo case (vd. case ở tòa khác cấp). Mặc định lấy `vai` khai trong flow. */
   vai?: (buoc: DinhNghiaBuoc, input: I) => string;
   /** Hạn giờ mỗi bước, phút (mặc định 10) */
-  phut?: number | ((buoc: DinhNghiaBuoc) => number);
+  /**
+   * Hạn giờ mỗi bước (phút). Nhận cả `input` của case, giống `vai`, vì hạn giờ có thể phụ thuộc
+   * DỮ LIỆU chứ không chỉ mã bước: luồng Thêm mới đơn có case đi OCR (chờ bóc tách tệp PDF, FE tự
+   * dừng sau 15 phút) và case nhập tay (vài phút) — CÙNG một mã bước.
+   */
+  phut?: number | ((buoc: DinhNghiaBuoc, input: I) => number);
 }
 
 /** Lọc case theo biến môi trường — để chạy lại một case mà không sửa code */
@@ -155,7 +160,7 @@ export function khaiLuong<I>({ flow, dsCase, caiDat, vai, phut = 10 }: ThamSoLuo
             process.env.QLA_BO_QUA_DA_XONG === '1' && state.daXong(dn.ma),
             `Đã xong ở lượt trước (${state.duongDan})`,
           );
-          testInfo.setTimeout((typeof phut === 'function' ? phut(dn) : phut) * 60_000);
+          testInfo.setTimeout((typeof phut === 'function' ? phut(dn, input) : phut) * 60_000);
 
           // Chặn trước khi mở trình duyệt: bước trước chưa xong thì không tốn một phiên đăng nhập
           state.canXong(dn.ma);

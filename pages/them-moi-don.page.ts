@@ -33,6 +33,22 @@ export interface ThongTinDon {
   ngayGhiTrenDon: string;
   /** Phúc thẩm: để khối "Danh sách bản án/quyết định liên quan" cho thêm bản án sơ thẩm */
   capXetXu: string;
+  /**
+   * "Loại QĐ/BA" — bỏ trống thì giữ mặc định của màn ("Bản án").
+   * CHỈ ba giá trị: "Bản án" | "Quyết định" | "Quyết định miễn/giảm THA" — đo màn 04/10/2026,
+   * KHÔNG theo `QTDM.DANHMUC` (xem `datLoaiQdBa`).
+   */
+  loaiQdBa?: string;
+  /**
+   * "Hình thức nhận" — bỏ trống thì giữ mặc định ("Trực tiếp").
+   * Năm giá trị đo được: Trực tiếp · Tiếp công dân · Bưu điện · Điện tử · Nội bộ.
+   */
+  hinhThucNhan?: string;
+  /**
+   * "Thủ tục giải quyết" — bỏ trống thì giữ giá trị màn tự điền sau khi tra cứu.
+   * Bốn giá trị đo được: Giám đốc thẩm · Tái thẩm · Giám đốc thẩm - Tái thẩm · Chưa xác định.
+   */
+  thuTucGiaiQuyet?: string;
   soBanAn: string;
   ngayBanAn: string;
   loaiAn: string;
@@ -808,6 +824,40 @@ export class ThemMoiDonPage {
     const sauKhiChon = await nhanSelect(page, o);
     expect(sauKhiChon.trim(), `Không chọn được Thủ tục giải quyết "${giaTri}"`).toBe(giaTri);
     return `${dangCo.trim() || '(trống)'} → ${giaTri}`;
+  }
+
+  /**
+   * "Loại QĐ/BA" — ô quyết định đơn này đề nghị xem xét BẢN ÁN hay QUYẾT ĐỊNH.
+   *
+   * Trước 04/10/2026 ô này KHÔNG được điền, chỉ đọc lại để so sau khi lưu, nên mọi đơn do kịch bản
+   * tạo đều là "Bản án" (giá trị mặc định của màn).
+   *
+   * ⚠ DANH MỤC KHÔNG LẤY TỪ `QTDM.DANHMUC`. Đo bằng spec dò `tests/quan-ly-don/flows/do-loai-qd-ba`
+   * ngày 04/10/2026: màn mở ĐÚNG BA lựa chọn — "Bản án", "Quyết định", "Quyết định miễn/giảm THA".
+   * Trong khi `QTDM.DANHMUC` nơi `MA_LOAI_DANHMUC='LOAI_QUYET_DINH_BAN_AN'` có SÁU giá trị khác
+   * hẳn (Bản án/Quyết định · Quyết định kháng nghị · Bản án · Quyết định · Công văn · Thông báo), và
+   * tra ngược nhãn "Quyết định miễn/giảm THA" trong cả bảng danh mục thì KHÔNG RA DÒNG NÀO.
+   * Nên nguồn sự thật của ô này là MÀN HÌNH, không phải bảng danh mục — gieo giá trị khác ba giá trị
+   * trên là chắc chắn hỏng.
+   *
+   * Đo cùng lượt: đổi Loại QĐ/BA KHÔNG làm ẩn/hiện ô nào trong khối "Thông tin bản án đề nghị"
+   * (Số bản án · Ngày bản án · Tòa án ra bản án · Cấp xét xử · Thủ tục giải quyết đều giữ nguyên).
+   */
+  async datLoaiQdBa(giaTri?: string): Promise<string> {
+    const { page } = this;
+    if (!giaTri) return 'không khai trong bộ dữ liệu — giữ giá trị mặc định của màn';
+    const o = page.locator('#thongTinBanAn_loaiQdBa');
+    if (!(await o.isVisible().catch(() => false))) return 'ô Loại QĐ/BA ẩn — bỏ qua';
+    const dangCo = (await nhanSelect(page, o)).trim();
+    if (dangCo === giaTri) return `đã đúng: ${giaTri}`;
+    await chonSelect(page, o, giaTri, { goDeLoc: false });
+    const sauKhiChon = (await nhanSelect(page, o)).trim();
+    expect(
+      sauKhiChon,
+      `Không chọn được Loại QĐ/BA "${giaTri}". Màn chỉ có: Bản án | Quyết định | ` +
+        'Quyết định miễn/giảm THA (đo 04/10/2026) — danh mục này KHÔNG theo QTDM.DANHMUC.',
+    ).toBe(giaTri);
+    return `${dangCo || '(trống)'} → ${giaTri}`;
   }
 
   /**
