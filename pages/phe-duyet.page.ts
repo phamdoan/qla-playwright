@@ -379,7 +379,7 @@ export class PheDuyetPage {
         await chonSelect(page, page.locator('#nguoiDeXuatTrinh'), nguoiTrinhTiep, { goDeLoc: false });
       }
     }
-    const nut = await this.nutKy([/Lưu và ký logic/, /^Ký số$/]);
+    const nut = await this.nutKy([/Lưu và ký logic/, /Ký logic$/, /^Ký số$/]);
     await this.bamVaChoApi(nut.nut, /ky-so-va-duyet|ky-logic|\/duyet$/);
   }
 
@@ -468,12 +468,15 @@ export class PheDuyetPage {
   /**
    * NÚT KÝ — tên khác nhau giữa các môi trường, trả về nút ĐẦU TIÊN thật có trên màn.
    *
-   * Đo pre-prod 04/10/2026: màn phê duyệt chỉ có ba nút **Ký số** · **Lưu** · **Từ chối ký** —
-   * KHÔNG có "Lưu và ký logic" hay "Ký logic" như STG, nên mã cũ treo 30 s rồi hỏng ở `click()`.
+   * ⚠ TÊN KHẢ TRUY CẬP CÓ TIỀN TỐ TÊN ICON. Trên màn "Ký số văn bản" của pre-prod, nút ký logic có
+   * tên khả truy cập là **"code Ký logic"** (icon `code` đứng trước), nên `/^Ký logic$/` KHÔNG khớp
+   * mà `/Ký logic$/` thì khớp. Cùng một bẫy với "rollback Đổi loại kết quả" và "printer In hồ sơ".
    *
-   * "Ký số" là ký bằng chứng thư số thật. Trên môi trường kiểm thử thì đó là hành vi mong muốn, nhưng
-   * nếu nó mở hộp thoại của hệ điều hành / đòi USB token thì Playwright KHÔNG điều khiển được — khi
-   * đó bước sẽ đỏ ở chỗ khác và phải báo lại, đừng coi là lỗi bộ chọn.
+   * Đo 04/10/2026: lần đầu tôi chỉ liệt kê nút trong `main` của màn phê duyệt (thấy Ký số | Lưu |
+   * Từ chối ký) rồi KẾT LUẬN SAI rằng pre-prod không có ký logic. Màn "Ký số văn bản" có cả hai.
+   *
+   * Thứ tự ưu tiên: KÝ LOGIC TRƯỚC, "Ký số" sau. "Ký số" là ký bằng chứng thư số thật — nếu nó mở
+   * hộp thoại hệ điều hành hoặc đòi USB token thì Playwright không điều khiển được.
    */
   private async nutKy(uuTien: RegExp[]) {
     for (const ten of uuTien) {
