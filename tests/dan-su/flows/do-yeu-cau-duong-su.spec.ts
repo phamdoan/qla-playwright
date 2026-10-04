@@ -46,12 +46,10 @@ test('dò · yêu cầu của đương sự: vụ HNGĐ so với vụ dân sự 
     });
   const { page } = await moTrangVaiCauHinh(browser, testInfo, process.env.QLA_VAI || 'chanhAnDanSu');
 
-  for (const maVu of dsMaVu) {
-    console.log(`\n${'═'.repeat(78)}\n═ VỤ ${maVu}\n${'═'.repeat(78)}`);
-
-    const id = await timVuTheoMa(page, maVu).catch(() => '');
+  for (const { ma: maVu, id } of dsVu) {
+    console.log(`\n${'═'.repeat(78)}\n═ VỤ ${maVu}  (id ${id})\n${'═'.repeat(78)}`);
     if (!id) {
-      console.log('  ⚠ không tìm được vụ này trên màn hồ sơ sơ thẩm — bỏ qua');
+      console.log('  ⚠ thiếu id — khai dạng mã=id, bỏ qua');
       continue;
     }
 
