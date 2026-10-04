@@ -24,6 +24,7 @@
  */
 import { BrowserContext, Page, test } from '@playwright/test';
 import { choHetSpin } from '../common/antd';
+import { batDauChupLienTuc } from '../common/anh';
 import { choPhepGhiTKM } from '../account';
 import { moTrangVaiCauHinh } from '../common/luong-tkm';
 import { taiKhoan } from '../common/cau-hinh-luong';
@@ -255,10 +256,40 @@ export function khaiLuong<I>({ flow, dsCase, caiDat, vai, phut = 10 }: ThamSoLuo
                 }
               }
             }
-            const bangChung = await than({ page, context, input, dd, ghi, duLieu, can });
+            /**
+             * Tiền tố đường dẫn ảnh của BƯỚC NÀY — `common/bieu-mau.ts · chupAnhNhapLieu` dùng nó để
+             * chụp biểu mẫu lúc đã điền xong, ngay trước khi bấm Lưu.
+             */
+            if (process.env.QLA_ANH === '1') {
+              process.env.QLA_ANH_TIEN_TO = `${process.env.QLA_THU_MUC_ANH || 'anh-buoc'}/${dd.caseId}/${dn.ma}`;
+            }
+            // Chụp theo nhịp suốt bước (cờ --anh-tat-ca) — dừng ngay khi bước xong hoặc hỏng
+            const dungChup = batDauChupLienTuc(page, process.env.QLA_ANH_TIEN_TO || '');
+            let bangChung: Record<string, string>;
+            try {
+              bangChung = await than({ page, context, input, dd, ghi, duLieu, can });
+            } finally {
+              await dungChup();
+            }
             // CHECKPOINT — chỉ ghi PASSED khi có bằng chứng do hệ thống cấp
             state.xongBuoc(dn.ma, bangChung);
             for (const [k, v] of Object.entries(bangChung)) if (v) ghi(`bằng chứng · ${k}`, v);
+            /**
+             * ẢNH BẰNG CHỨNG CỦA BƯỚC (chỉ khi QLA_ANH=1, tức chạy với cờ `--anh`).
+             *
+             * Chụp NGAY SAU KHI BƯỚC XONG: đó là trạng thái màn đáng chụp. Ảnh cỡ thật 1920×1080,
+             * tên tệp mang mã bước nên xếp theo tên là đúng thứ tự — khỏi phải rút khung hình từ
+             * trace (khung trace bị thu nhỏ ~800px, phóng lên là vỡ).
+             *
+             * Không quay video: mỗi bước một .webm tốc độ thật, 45 bước thành hàng GB và chậm hẳn
+             * (người dùng chốt 03/10/2026 — tự dựng video từ ảnh).
+             */
+            if (process.env.QLA_ANH === '1') {
+              const thuMuc = process.env.QLA_THU_MUC_ANH || 'anh-buoc';
+              const tep = `${thuMuc}/${dd.caseId}/${dn.ma}.png`;
+              await page.screenshot({ path: tep }).catch(() => undefined);
+              ghi('ảnh bước', tep);
+            }
           } catch (e) {
             state.hongBuoc(dn.ma, e instanceof Error ? e.message : String(e));
             throw e;

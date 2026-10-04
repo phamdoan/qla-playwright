@@ -50,9 +50,11 @@ if (lay('so-case')) env.QLA_SO_CASE = lay('so-case');
 if (args.includes('--bo-qua-da-xong')) env.QLA_BO_QUA_DA_XONG = '1';
 // --hien: mở trình duyệt thật để thao tác/quan sát (dùng với spec mo-tay có page.pause())
 if (args.includes('--hien')) env.QLA_MO_TAY = '1';
-// --quay: quay video .webm từng bước (cỡ khung nhìn 1920×1080) · --anh: chụp .png cuối mỗi bước
-if (args.includes('--quay')) env.QLA_QUAY = '1';
+// --anh: chụp .png cỡ thật 1920×1080 SAU MỖI BƯỚC, đặt tên theo mã bước (xem khung/luong.ts)
 if (args.includes('--anh')) env.QLA_ANH = '1';
+// --anh-tat-ca: chụp THEO NHỊP suốt mỗi bước (ảnh .jpg) để dựng video; --anh-nhip=<ms> đổi nhịp
+if (args.includes('--anh-tat-ca')) { env.QLA_ANH = '1'; env.QLA_ANH_TAT_CA = '1'; }
+if (lay('anh-nhip')) env.QLA_ANH_NHIP = lay('anh-nhip');
 // Mặc định CHẠY NHANH (gõ tức thì, thời gian nghỉ x0.3). Cần quan sát thì thêm --cham.
 if (!args.includes('--cham')) env.QLA_GO_PHIM_MS = '0';
 
@@ -134,8 +136,7 @@ console.log(`Môi trường: ${moiTruong.toUpperCase()} | ghi dữ liệu: ${cho
 if (env.QLA_TKM_DONG) console.log(`Dòng Excel: ${env.QLA_TKM_DONG}`);
 if (env.QLA_TKM_SO_DONG) console.log(`Số dòng Excel: ${env.QLA_TKM_SO_DONG}`);
 if (loc) console.log(`Chỉ chạy spec khớp: ${loc}`);
-if (env.QLA_QUAY) console.log('Quay video: CÓ (.webm 1920×1080, nằm cạnh trace trong thư mục kết quả)');
-if (env.QLA_ANH) console.log('Chụp ảnh: CÓ (.png cuối mỗi bước)');
+if (env.QLA_ANH) console.log('Chụp ảnh: CÓ — mốc (.png) ở anh-buoc/<case>/<mã bước>*.png' + (env.QLA_ANH_TAT_CA ? ` · theo nhịp ${env.QLA_ANH_NHIP || 1000}ms (.jpg) ở <mã bước>-tien-trinh/` : ''));
 if (songSong) console.log(`Chạy song song: ${songSong} case cùng lúc (mỗi case vẫn tuần tự từng bước)`);
 if (env.QLA_GDT_MA) console.log(`Vụ GĐT/TT: ${env.QLA_GDT_MA}`);
 if (env.QLA_CASE) console.log(`Case: ${env.QLA_CASE}`);

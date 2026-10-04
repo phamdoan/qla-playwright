@@ -8,6 +8,7 @@
 import path from 'node:path';
 import { Locator, Page, expect } from '@playwright/test';
 import { choHetSpin, hienTrong, nghi, nguyenNhanLoi, toastDaHien, xacNhanLuu } from './antd';
+import { chupAnhMoc } from './anh';
 
 export type GhiChu = (nhan: string, mo: string) => void;
 
@@ -50,6 +51,15 @@ export async function luuBieuMau(
 ) {
   const nut = nutTheoChu(bm, tenNutLuu);
   if (!(await hienTrong(nut, 5_000))) return false;
+  /**
+   * ẢNH LÚC ĐANG NHẬP LIỆU — chụp NGAY TRƯỚC KHI BẤM LƯU, tức biểu mẫu đã điền đủ.
+   *
+   * Ảnh cuối bước (khung/luong.ts) chỉ cho thấy MÀN KẾT QUẢ sau khi đóng biểu mẫu, không thấy dữ liệu
+   * nhập vào — người dùng chỉ ra 03/10/2026. Hai loại ảnh bổ cho nhau:
+   *   <mã bước>-nhap-N.png  · biểu mẫu đã điền, trước khi lưu
+   *   <mã bước>.png         · màn sau khi bước xong
+   */
+  await chupAnhMoc(page, ten);
   await nut.click();
   // Một số biểu mẫu mở hộp xác nhận sau khi bấm Lưu; không bấm thì bản ghi không được tạo mà cũng
   // KHÔNG có toast lỗi nào — nhìn ra ngoài chỉ thấy "bảng 0 dòng".

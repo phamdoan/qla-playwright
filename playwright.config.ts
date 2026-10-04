@@ -50,19 +50,21 @@ export default defineConfig({
     baseURL: `${ORIGIN}/qla/`,
     trace: 'on-first-retry',
     /**
-     * ẢNH VÀ VIDEO CỠ THẬT — bật theo nhu cầu, không bật mặc định vì tốn đĩa và chậm.
+     * ẢNH CỠ THẬT (1920×1080) — bật bằng cờ `--anh` (QLA_ANH=1), không bật mặc định vì tốn đĩa.
      *
-     *   --quay (QLA_QUAY=1): quay .webm từng bước, ĐÚNG cỡ khung nhìn 1920×1080 → dùng làm video.
-     *   --anh  (QLA_ANH=1) : chụp .png ở cuối mỗi bước, cỡ khung nhìn.
+     * Hai thứ cùng bật theo cờ này:
+     *   · `screenshot: 'on'` — ảnh cuối mỗi test do Playwright tự chụp;
+     *   · ảnh RIÊNG TỪNG BƯỚC do khung chụp ngay sau khi bước xong, đặt tên theo MÃ BƯỚC
+     *     (`khung/luong.ts` → `anh-buoc/<case>/<mã bước>.png`) — cái này mới dùng được để làm tư liệu.
      *
-     * Vì sao không phóng to ảnh trong trace: khung hình screencast của trace bị thu nhỏ sẵn (~800px)
-     * nên phóng lên là vỡ; video/ảnh ở đây mới là cỡ thật (03/10/2026, cần dựng video demo).
+     * KHÔNG quay video: mỗi bước một .webm tốc độ thật nên 45 bước thành hàng GB và chậm hẳn; làm
+     * video thì dựng từ ảnh (người dùng chốt 03/10/2026).
+     *
+     * Cũng KHÔNG rút khung hình từ trace: khung screencast trong trace bị thu nhỏ sẵn (~800px),
+     * phóng to là vỡ.
      */
     screenshot: process.env.QLA_ANH === '1' ? 'on' : 'only-on-failure',
-    video:
-      process.env.QLA_QUAY === '1'
-        ? { mode: 'on' as const, size: { width: 1920, height: 1080 } }
-        : ('retain-on-failure' as const),
+    video: 'retain-on-failure',
     locale: 'vi-VN',
     timezoneId: 'Asia/Ho_Chi_Minh',
     viewport: { width: 1920, height: 1080 },

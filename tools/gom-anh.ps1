@@ -34,6 +34,19 @@ function Sach([string]$s) {
   return $r.Trim()
 }
 
+# ───── 0. ẢNH THẬT TỪNG BƯỚC (chạy với --anh) — ưu tiên hơn khung hình rút từ trace ─────
+$thuMucAnh = Join-Path $Nguon "anh-buoc"
+if (Test-Path $thuMucAnh) {
+  New-Item -ItemType Directory -Force -Path $Dich | Out-Null
+  $dsAnh = Get-ChildItem -Path $thuMucAnh -Recurse -Filter "*.png"
+  foreach ($a in $dsAnh) {
+    $caseId = $a.Directory.Name
+    Copy-Item $a.FullName (Join-Path $Dich ("$caseId - " + $a.Name)) -Force
+  }
+  Write-Host "Anh that tung buoc: $($dsAnh.Count) tep -> $Dich"
+  if ($dsAnh.Count) { Write-Host "(bo qua viec rut khung hinh tu trace vi da co anh co that)"; exit 0 }
+}
+
 # ───── 1. Danh sách trace.zip ─────
 $goc = if ($ThuMucKetQua) { Join-Path $Nguon $ThuMucKetQua } else { $Nguon }
 $dsTrace = Get-ChildItem -Path $goc -Recurse -Filter 'trace.zip' -ErrorAction SilentlyContinue |
@@ -140,18 +153,6 @@ foreach ($t in $dsTrace) {
 
 $ketQua | Sort-Object Buoc | ForEach-Object { Write-Host ("  {0,-72} {1,3} / {2}" -f $_.Buoc, $_.Khung, $_.Tong) }
 
-# ───── 3b. VIDEO (.webm) nếu lượt chạy bật --quay ─────
-$dsVideo = Get-ChildItem -Path $goc -Recurse -Filter "*.webm" -ErrorAction SilentlyContinue
-if ($dsVideo) {
-  foreach ($v in $dsVideo) {
-    $ten = Sach $v.Directory.Name
-    if ($ten.Length -gt 70) { $ten = $ten.Substring(0, 70) }
-    Copy-Item $v.FullName (Join-Path $Dich ("$ten - video.webm")) -Force
-    $tongAnh++
-  }
-  Write-Host """  video (.webm): $($dsVideo.Count) tep"""
-}
-
 # ───── 3. Ảnh lỗi thật (nếu có) ─────
 $dsPng = Get-ChildItem -Path $goc -Recurse -Filter '*.png' -ErrorAction SilentlyContinue |
   Where-Object { $_.FullName -like '*test-results*' }
@@ -165,6 +166,8 @@ if ($dsPng) {
 }
 
 Write-Host "`nXONG: $tongAnh anh -> $Dich"
+
+
 
 
 
