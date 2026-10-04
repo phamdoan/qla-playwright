@@ -12,8 +12,22 @@ import { kiemTraSauLuu, themMoiDon } from './them-moi.flow';
 export interface InputThemMoiDon {
   /** Vai chạy cả luồng (cán bộ HCTP nhập đơn) */
   vaiNhapDon: string;
-  /** `ocr` = bóc tách tệp PDF rồi điền phần thiếu · `khong-ocr` = bấm "Quay lại", nhập tay */
+  /**
+   * `ocr` = bóc tách tệp PDF rồi điền phần thiếu · `khong-ocr` = bấm "Quay lại", nhập tay.
+   *
+   * ⚠ PRE-PROD CHỈ CHẠY KHÔNG OCR (chốt 04/10/2026). Case `ocr` chạy trên pre-prod sẽ bị NÉM LỖI
+   * ngay ở bước 01, không âm thầm đổi sang nhập tay — đổi lặng lẽ thì người chạy tưởng đã kiểm
+   * đường OCR trên pre-prod.
+   */
   duongVao: 'ocr' | 'khong-ocr';
+  /**
+   * TÊN TỆP PDF tải lên, tìm trong `data/`. Bỏ trống → `BanAn_A.pdf` (hoặc `QLA_FILE_DON`).
+   *
+   * Dùng tệp THẬT lấy từ `D:\gtel\OCR - Giám đốc thẩm - tái thẩm-…` (9 PDF: đơn GĐT, phiếu chuyển,
+   * CV kiến nghị, QĐ kháng nghị VKSNDTC…). Mỗi case một tệp khác nhau để tài liệu đính kèm của các
+   * đơn không giống hệt nhau.
+   */
+  tepDon?: string;
   /** Khoá bộ mặc định theo loại án trong page object (`LOAI_AN`) */
   loaiAnMa: LoaiAn;
 

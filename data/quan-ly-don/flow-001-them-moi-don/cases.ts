@@ -24,6 +24,29 @@
  *
  * ⚠ CASE OCR CHẬM: bóc tách tệp PDF mất vài phút, FE tự dừng sau 15 phút. Ba case OCR nên chạy
  * riêng, đừng chạy cùng ba case không-OCR nếu đang cần kết quả nhanh.
+ *
+ * ⚠ PRE-PROD CHỈ CHẠY BA CASE KHÔNG OCR (chốt 04/10/2026). Case `ocr` chạy trên pre-prod bị NÉM LỖI
+ * ngay ở bước 01 — xem `them-moi.flow.ts`. Lệnh sẵn: `npm run don:preprod`.
+ *
+ * ───────────────────────── TỆP ĐƠN TẢI LÊN LÀ TỆP THẬT ─────────────────────────
+ *
+ * Màn Thêm mới bắt buộc tải tệp trước khi vào form. Mỗi case dùng MỘT tệp khác nhau, lấy từ bộ tài
+ * liệu thật `D:\gtel\OCR - Giám đốc thẩm - tái thẩm-20261002T081636Z-1-001` (9 PDF), đã chép vào
+ * `data/` với tên ASCII:
+ *
+ *   don-gdt.pdf                       ← "Đơn GĐT.pdf"                        4,4 MB
+ *   phieu-chuyen-kem-don-gdt.pdf      ← "Phiếu chuyển + Đơn GĐT.pdf"         1,6 MB
+ *   qd-khang-nghi-vksndtc.pdf         ← "04-QĐ kháng nghị số 11 … VKSNDTC"   229 KB
+ *   don-de-nghi-gdt.pdf               ← "Don de nghị GDT.pdf"                10,4 MB
+ *   don-giam-doc-tham.pdf             ← "Don giam doc tham.pdf"              13,2 MB
+ *   cv-kien-nghi.pdf                  ← "CV Kiến nghị.pdf"                   1,8 MB
+ *   (còn cv-chuyen-don.pdf, phieu-chuyen-don.pdf, don-khieu-nai-tu-phap-kem-cv.pdf chưa dùng)
+ *
+ * Ba case KHÔNG OCR nhận tệp NHỎ (229 KB – 4,4 MB) để lượt chạy nhanh; ba case OCR nhận tệp lớn,
+ * nhiều nội dung hơn cho bộ bóc tách.
+ *
+ * `data/*.pdf` bị gitignore — tài liệu thật KHÔNG lên repo công khai, và `git archive` không mang
+ * sang bản sao, nên phải dựng bản sao bằng `node tools/dung-ban-sao-chay.js <tên>`.
  */
 import type { CaseChay } from '../../../khung/luong';
 import type { InputThemMoiDon } from '../../../flows/quan-ly-don/flow-001-them-moi-don/cai-dat';
@@ -56,6 +79,7 @@ const DS: KhaiCase[] = [
     input: {
       vaiNhapDon: VAI,
       duongVao: 'khong-ocr',
+      tepDon: 'don-gdt.pdf',
       loaiAnMa: 'DAN_SU',
       loaiQdBa: 'Bản án',
       capXetXu: 'Phúc thẩm',
@@ -69,6 +93,7 @@ const DS: KhaiCase[] = [
     input: {
       vaiNhapDon: VAI,
       duongVao: 'khong-ocr',
+      tepDon: 'phieu-chuyen-kem-don-gdt.pdf',
       loaiAnMa: 'DAN_SU',
       loaiQdBa: 'Quyết định',
       capXetXu: 'Phúc thẩm',
@@ -82,6 +107,7 @@ const DS: KhaiCase[] = [
     input: {
       vaiNhapDon: VAI,
       duongVao: 'khong-ocr',
+      tepDon: 'qd-khang-nghi-vksndtc.pdf',
       /**
        * "Quyết định miễn/giảm THA" là chuyện thi hành án → gieo án HÌNH SỰ, và case này cũng là case
        * duy nhất đi qua bảng "Thông tin khiếu nại" (bảng chỉ có ở án hình sự).
@@ -100,6 +126,7 @@ const DS: KhaiCase[] = [
     input: {
       vaiNhapDon: VAI,
       duongVao: 'ocr',
+      tepDon: 'don-de-nghi-gdt.pdf',
       loaiAnMa: 'DAN_SU',
       loaiQdBa: 'Bản án',
       capXetXu: 'Phúc thẩm',
@@ -113,6 +140,7 @@ const DS: KhaiCase[] = [
     input: {
       vaiNhapDon: VAI,
       duongVao: 'ocr',
+      tepDon: 'don-giam-doc-tham.pdf',
       loaiAnMa: 'HINH_SU',
       loaiQdBa: 'Quyết định',
       capXetXu: 'Giám đốc thẩm',
@@ -125,6 +153,7 @@ const DS: KhaiCase[] = [
     input: {
       vaiNhapDon: VAI,
       duongVao: 'ocr',
+      tepDon: 'cv-kien-nghi.pdf',
       loaiAnMa: 'DAN_SU',
       loaiQdBa: 'Quyết định miễn/giảm THA',
       capXetXu: 'Tái thẩm',

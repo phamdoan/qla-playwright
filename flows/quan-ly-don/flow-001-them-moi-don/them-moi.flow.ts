@@ -9,6 +9,8 @@
  * thì GHI LẠI LÝ DO vào bằng chứng của bước, không im lặng bỏ qua. Bước chỉ xanh khi máy chủ trả
  * `idDon`.
  */
+import fs from 'fs';
+import path from 'path';
 import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 import { ThemMoiDonPage, taoThongTinDon, type ThongTinDon } from '../../../pages/them-moi-don.page';
@@ -37,11 +39,36 @@ export async function themMoiDon(
 ): Promise<Record<string, string>> {
   const trang = new ThemMoiDonPage(page);
   const d = duLieuDon(input);
+
+  /**
+   * PRE-PROD CHỈ CHẠY KHÔNG OCR (chốt 04/10/2026). Ném lỗi thay vì âm thầm chuyển sang nhập tay:
+   * đổi lặng lẽ thì lượt chạy vẫn xanh và người đọc báo cáo tưởng đường OCR đã được kiểm trên
+   * pre-prod, trong khi nó chưa từng chạy ở đó.
+   */
+  const moiTruong = process.env.QLA_ENV || 'stg';
+  if (moiTruong === 'preprod' && input.duongVao === 'ocr') {
+    throw new Error(
+      'Pre-prod chỉ chạy KHÔNG OCR, mà case này khai duongVao="ocr". ' +
+        'Dùng các case don-01/02/03 (không OCR) — hoặc `npm run don:preprod`.',
+    );
+  }
+
+  ghi('môi trường', moiTruong);
   ghi('đường vào', input.duongVao === 'ocr' ? 'OCR (bóc tách tệp PDF)' : 'không OCR (nhập tay)');
   ghi('loại án', d.loaiAn);
 
+  /** Tệp tải lên: tên tệp của case, tìm trong `data/`; không khai thì theo mặc định của page object */
+  const tepDon = input.tepDon ? path.resolve(__dirname, '../../../data', input.tepDon) : undefined;
+  if (tepDon && !fs.existsSync(tepDon)) {
+    throw new Error(
+      `Không có tệp đơn "${input.tepDon}" trong data/. Tệp PDF bị gitignore nên bản sao chạy riêng ` +
+        'phải được mang sang bằng `node tools/dung-ban-sao-chay.js <tên> ` (xem công cụ đó).',
+    );
+  }
+  ghi('tệp đơn tải lên', input.tepDon || '(mặc định BanAn_A.pdf)');
+
   await test.step('Mở màn Thêm mới từ Danh sách đơn', () => trang.moTuDanhSachDon({ quaMenu: true }));
-  await test.step('Tải tệp đơn PDF (bắt buộc)', () => trang.taiLenFileDon());
+  await test.step('Tải tệp đơn PDF (bắt buộc)', () => trang.taiLenFileDon(tepDon));
 
   if (input.duongVao === 'ocr') {
     /**
