@@ -58,7 +58,33 @@ test('dò · yêu cầu của đương sự: vụ HNGĐ so với vụ dân sự 
       await page.goto(`vu-an/dan-su/so-tham/chi-tiet?id=${id}&tab=${tab}`, { waitUntil: 'domcontentloaded' });
       await choHetSpin(page);
       await nghi(page, 1800, 2600);
+      /**
+       * CHỨNG MINH ĐÃ VÀO ĐÚNG TRANG trước khi kết luận gì.
+       *
+       * Ba lượt dò trước đều báo "không có khối nào" cho CẢ HAI vụ — kể cả vụ dân sự ĐÃ QUA bước 12 —
+       * và mỗi trang chỉ mất ~4 s, quá nhanh cho trang có dữ liệu. Một phép đo không chứng minh được
+       * nó đo đúng trang thì vô giá trị: "không thấy khối" và "không vào được trang" trông y như nhau.
+       */
       console.log(`\n── tab ${tab}`);
+      console.log(`   URL thật  : ${page.url()}`);
+      const tieuDe = [
+        ...new Set(
+          (await page.locator('h1, h2, h3, .ant-tabs-tab-active').allInnerTexts().catch(() => []))
+            .map(t => CAT(t, 46))
+            .filter(Boolean),
+        ),
+      ];
+      console.log(`   tiêu đề   : ${tieuDe.join(' | ') || '(không có)'}`);
+      console.log(
+        `   trên trang: ${await page.locator('.ant-table-wrapper').count()} bảng · ` +
+          `${await page.locator('.ant-card').count()} card · ` +
+          `${await page.locator('.ant-collapse-item').count()} khối gập`,
+      );
+      const than = await page.locator('body').innerText().catch(() => '');
+      if (/Không tìm thấy trang|Rất tiếc/i.test(than)) {
+        console.log('   ⚠ TRANG 404 — không vào được chi tiết vụ; mọi kết luận bên dưới vô nghĩa');
+        continue;
+      }
 
       /** Bảng/khối nào nói về yêu cầu của đương sự */
       const khoi = page
