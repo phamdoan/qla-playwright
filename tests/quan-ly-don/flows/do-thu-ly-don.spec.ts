@@ -55,6 +55,30 @@ test('dò · đơn chưa có số thụ lý: thụ lý nằm ở đâu', async (
     console.log('DÒNG ĐƠN: không thấy trên trang đầu của Danh sách đơn');
   }
 
+  /**
+   * MENU "⋯" TRÊN DÒNG — đo 04/10/2026: dòng đơn KHÔNG có nút chữ nào, chỉ hai icon
+   * `clock-circle` và `more`; bấm vào dòng cũng KHÔNG mở chi tiết (URL giữ nguyên danh-sach-don).
+   * Nên mọi hành động với đơn (kể cả thụ lý) phải nằm trong menu này.
+   */
+  if (await hienTrong(dong, 3_000)) {
+    const nutMore = dong.locator('button:has(.anticon-more), .anticon-more').last();
+    if (await hienTrong(nutMore, 5_000)) {
+      await nutMore.click();
+      await nghi(page, 700, 1100);
+      const muc = await page
+        .locator('.ant-dropdown:not(.ant-dropdown-hidden) li, .ant-dropdown:not(.ant-dropdown-hidden) .ant-dropdown-menu-item')
+        .allInnerTexts()
+        .catch(() => [] as string[]);
+      console.log(`\nMENU "⋯" CỦA DÒNG ĐƠN (${muc.length} mục):`);
+      for (const m of muc) console.log(`   · ${CAT(m, 60)}`);
+      if (!muc.length) console.log('   (không mở được dropdown)');
+      await page.keyboard.press('Escape');
+      await nghi(page, 300, 500);
+    } else {
+      console.log('\nMENU "⋯": không thấy icon more trên dòng');
+    }
+  }
+
   // ── Nút của chính màn Danh sách đơn (thụ lý có thể là hành động hàng loạt) ──
   const nutMan = [
     ...new Set(
