@@ -379,7 +379,8 @@ export class PheDuyetPage {
         await chonSelect(page, page.locator('#nguoiDeXuatTrinh'), nguoiTrinhTiep, { goDeLoc: false });
       }
     }
-    await this.bamVaChoApi(page.getByRole('button', { name: /Lưu và ký logic/ }), /ky-so-va-duyet|ky-logic|\/duyet$/);
+    const nut = await this.nutKy([/Lưu và ký logic/, /^Ký số$/]);
+    await this.bamVaChoApi(nut.nut, /ky-so-va-duyet|ky-logic|\/duyet$/);
   }
 
   /** Chánh/Phó Chánh án (MS_02): nhập ý kiến → "Phê duyệt" */
@@ -461,6 +462,34 @@ export class PheDuyetPage {
     }
     await this.nhapYKien(noiDung);
     await this.bamVaChoApi(page.getByRole('button', { name: /Ký logic$/ }).first(), /ky-so-va-duyet|ky-logic|\/duyet$/);
+  }
+
+
+  /**
+   * NÚT KÝ — tên khác nhau giữa các môi trường, trả về nút ĐẦU TIÊN thật có trên màn.
+   *
+   * Đo pre-prod 04/10/2026: màn phê duyệt chỉ có ba nút **Ký số** · **Lưu** · **Từ chối ký** —
+   * KHÔNG có "Lưu và ký logic" hay "Ký logic" như STG, nên mã cũ treo 30 s rồi hỏng ở `click()`.
+   *
+   * "Ký số" là ký bằng chứng thư số thật. Trên môi trường kiểm thử thì đó là hành vi mong muốn, nhưng
+   * nếu nó mở hộp thoại của hệ điều hành / đòi USB token thì Playwright KHÔNG điều khiển được — khi
+   * đó bước sẽ đỏ ở chỗ khác và phải báo lại, đừng coi là lỗi bộ chọn.
+   */
+  private async nutKy(uuTien: RegExp[]) {
+    for (const ten of uuTien) {
+      const nut = this.page.getByRole('button', { name: ten }).first();
+      if (await hienTrong(nut, 4_000)) return { nut, ten: ten.source };
+    }
+    const co = [
+      ...new Set(
+        (await this.page.locator('main').getByRole('button').allInnerTexts().catch(() => []))
+          .map(t => t.replace(/s+/g, ' ').trim())
+          .filter(Boolean),
+      ),
+    ];
+    throw new Error(
+      `Không thấy nút ký nào trong ${uuTien.map(r => r.source).join(' | ')}. Nút đang có: ${co.join(' | ') || '(không có)'}`,
+    );
   }
 
   /**
