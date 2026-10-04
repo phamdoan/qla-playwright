@@ -17,6 +17,7 @@ import { FLOW_001 } from '../../../flows/kinh-doanh-thuong-mai/flow-001-st-pt-gd
 import type { DinhDanhCase } from '../../../khung/case-state';
 import { DD as DD_001, INPUT as INPUT_001 } from './case-001/input';
 import { DD as DD_002, INPUT as INPUT_002 } from './case-002/input';
+import { caseVuAnThucKdtm } from '../../vu-an-thuc/sinh-case';
 
 /** Định danh của một case bất kỳ trong flow này — khoá gieo bất biến, biết trước khi chạy */
 export function ddCase(caseId: string): DinhDanhCase {
@@ -37,6 +38,8 @@ export function ddCase(caseId: string): DinhDanhCase {
 export const DS_CASE: CaseChay<InputKdtm>[] = [
   { dd: DD_001, input: INPUT_001 },
   { dd: DD_002, input: INPUT_002 },
+  // Rỗng khi không bật QLA_VU_AN_THUC → hành vi mặc định của luồng không đổi
+  ...(caseVuAnThucKdtm() as CaseChay<InputKdtm>[]),
 ];
 
 /**

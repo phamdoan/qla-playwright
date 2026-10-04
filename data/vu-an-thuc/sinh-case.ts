@@ -23,13 +23,13 @@
  * Hai loại còn lại đi cùng đường theo đặc tả nhưng CHƯA có lượt chạy nào chứng minh — case đầu tiên
  * của mỗi loại nên chạy riêng trước khi chạy cả bộ.
  *
- * 30 bản ghi KDTM trong bộ dữ liệu KHÔNG sinh case ở đây: luồng KDTM là 45 bước và có cụm GĐT/TT,
- * cần hạt giống khác (xem `data/kinh-doanh-thuong-mai/.../cases.ts`).
+ * 30 bản ghi KDTM đi đường riêng: `caseVuAnThucKdtm()` ở cuối tệp, cắm vào luồng KDTM 45 bước.
  */
 import type { CaseChay } from '../../khung/luong';
 import type { DinhDanhCase } from '../../khung/case-state';
 import { tenDuongSu } from '../../khung/ten-viet';
 import { FLOW_DS_001 } from '../../flows/dan-su/flow-001-st-pt/flow';
+import { FLOW_001 as FLOW_KDTM } from '../../flows/kinh-doanh-thuong-mai/flow-001-st-pt-gdt-bao-cao/flow';
 import { INPUT as INPUT_KDTM } from '../kinh-doanh-thuong-mai/flow-001-st-pt-gdt-bao-cao/case-001/input';
 import { DS_BAN_AN_CONG_BO, type BanAnCongBo } from './ban-an-cong-bo';
 
@@ -90,8 +90,14 @@ export function caseTuBanAn(ba: BanAnCongBo): CaseChay<typeof INPUT_KDTM> {
 /**
  * Các case sinh từ bản án thật, theo biến `QLA_VU_AN_THUC`. Không bật thì trả về mảng rỗng.
  *
- * Mã bản án gõ sai sẽ NÉM LỖI ngay lúc nạp spec — chọn nhầm mã mà im lặng bỏ qua thì người chạy
- * tưởng đã chạy case mình muốn.
+ * MÃ KHÔNG THUỘC LUỒNG NÀY THÌ BỎ QUA ÊM, chỉ mã KHÔNG TỒN TẠI mới ném lỗi.
+ *
+ * Đúng cái bẫy mà `khung/luong.ts · locCase` đã gặp với `QLA_CASE`: một biến môi trường toàn cục,
+ * mà mỗi file spec nạp danh sách case của luồng mình — nên `QLA_VU_AN_THUC=bacb-001` (một bản ghi
+ * KDTM) làm luồng DÂN SỰ ném lỗi ngay lúc nạp và GIẾT CẢ LƯỢT, kể cả lượt chạy KDTM mà người dùng
+ * đang muốn (đo 04/10/2026, sau khi cắm thêm `caseVuAnThucKdtm`).
+ *
+ * Gõ sai mã vẫn thấy ngay, vì không luồng nào nhận nó và không test nào chạy.
  */
 export function caseVuAnThuc(): CaseChay<typeof INPUT_KDTM>[] {
   const bat = (process.env.QLA_VU_AN_THUC || '').trim();
@@ -101,16 +107,83 @@ export function caseVuAnThuc(): CaseChay<typeof INPUT_KDTM>[] {
   if (bat === '1' || bat.toLowerCase() === 'all') return dungLuong.map(caseTuBanAn);
 
   const chon = bat.split(',').map(s => s.trim()).filter(Boolean);
-  const ra = chon.map(id => {
-    const b = dungLuong.find(x => x.id === id);
-    if (!b) {
-      throw new Error(
-        `QLA_VU_AN_THUC="${id}" không có trong bộ bản án thật dùng được cho luồng dân sự. ` +
-          `Mã hợp lệ là bacb-xxx với loại đơn thuộc {${LOAI_DON_LUONG_DAN_SU.join(', ')}} ` +
-          `(xem data/vu-an-thuc/ban-an-cong-bo.ts).`,
-      );
-    }
-    return b;
-  });
+  const laMaThat = chon.filter(id => DS_BAN_AN_CONG_BO.some(b => b.id === id));
+  const khongCo = chon.filter(id => !laMaThat.includes(id));
+  if (khongCo.length) {
+    throw new Error(
+      `QLA_VU_AN_THUC: không có bản án nào mang mã ${khongCo.map(s => `"${s}"`).join(', ')}. ` +
+        `Mã hợp lệ là bacb-001…bacb-${String(DS_BAN_AN_CONG_BO.length).padStart(3, '0')} ` +
+        `(xem data/vu-an-thuc/ban-an-cong-bo.ts).`,
+    );
+  }
+
+  const ra = dungLuong.filter(b => laMaThat.includes(b.id));
+  const khacLuong = laMaThat.length - ra.length;
+  if (khacLuong > 0 && ra.length === 0) {
+    console.log(
+      `    · bỏ qua luồng "${FLOW_DS_001.flow}": ${khacLuong} mã QLA_VU_AN_THUC đã chọn đều thuộc ` +
+        `loại đơn khác (luồng này nhận ${LOAI_DON_LUONG_DAN_SU.join(' / ')})`,
+    );
+  }
   return ra.map(caseTuBanAn);
+}
+
+// ──────────────────────────── LUỒNG KDTM (45 bước, có cụm GĐT/TT) ────────────────────────────
+
+/**
+ * Case cho LUỒNG KDTM từ 30 bản ghi "Kinh doanh, thương mại" của bộ bản án thật.
+ *
+ * Vì sao tách khỏi `caseVuAnThuc()`: luồng KDTM là 45 bước và có cụm GĐT/TT (bước 24→45), khác
+ * `rootCaseKey` nên phải khai theo `FLOW_KDTM`. Phần dữ liệu gieo thì giống hệt — vẫn chồng lên
+ * `INPUT_KDTM`, chỉ thay loại đơn và quan hệ pháp luật.
+ *
+ * Luồng KDTM là luồng DUY NHẤT hiện nuôi được 4C/4D (giám đốc thẩm / tái thẩm), vì chỉ nó đi qua
+ * cụm GĐT. Mã case mang hậu tố `-kdtm` để không đụng mã case của luồng dân sự.
+ *
+ * Bật bằng chính `QLA_VU_AN_THUC`, dùng mã bacb của bản ghi KDTM:
+ *   QLA_VU_AN_THUC=bacb-001   npm run kdtm:flow-001:stg
+ */
+export function caseVuAnThucKdtm(): CaseChay<typeof INPUT_KDTM>[] {
+  const bat = (process.env.QLA_VU_AN_THUC || '').trim();
+  if (!bat) return [];
+
+  const cua = DS_BAN_AN_CONG_BO.filter(b => b.loaiDon === 'Kinh doanh, thương mại');
+  const chon =
+    bat === '1' || bat.toLowerCase() === 'all'
+      ? cua
+      : bat
+          .split(',')
+          .map(s => s.trim())
+          .filter(Boolean)
+          // KHÔNG ném lỗi với mã không thuộc KDTM: cùng một biến môi trường nuôi cả hai luồng, nên
+          // `QLA_VU_AN_THUC=bacb-022` (HNGĐ) phải lọt qua đây êm chứ không giết lượt chạy KDTM.
+          .map(id => cua.find(x => x.id === id))
+          .filter((b): b is BanAnCongBo => !!b);
+
+  return chon.map(ba => {
+    const caseId = `${maCaseTuBanAn(ba)}-kdtm`;
+    const g = caseTuBanAn(ba);
+    const tenNguyenDon = tenDuongSu(caseId, 'nguyenDon');
+    const tenBiDon = tenDuongSu(caseId, 'biDon', 'nu');
+    return {
+      dd: {
+        phanHe: FLOW_KDTM.phanHe,
+        flow: FLOW_KDTM.flow,
+        caseId,
+        module: FLOW_KDTM.module,
+        rootCaseKey: `${FLOW_KDTM.module}|${FLOW_KDTM.flow}|${caseId}`,
+      },
+      input: {
+        ...g.input,
+        nguyenDon: { ...INPUT_KDTM.nguyenDon, nguyenVan: tenNguyenDon, hoTen: tenNguyenDon },
+        biDon: { ...INPUT_KDTM.biDon, nguyenVan: tenBiDon, hoTen: tenBiDon },
+        noiDungYeuCau:
+          `Đề nghị Tòa án giải quyết ${ba.tenQhpl.charAt(0).toLowerCase() + ba.tenQhpl.slice(1)} ` +
+          `giữa ${tenNguyenDon} và ${tenBiDon}. ` +
+          `Tham chiếu bản án số ${ba.soBanAn} ngày ${ba.ngay} của ${ba.toaAn}.`,
+        tenNguoiKhangCao: tenBiDon,
+        tieuDeLichXetXu: `Phiên tòa sơ thẩm kinh doanh, thương mại — ${tenNguyenDon}`,
+      },
+    };
+  });
 }
