@@ -105,5 +105,42 @@ export async function moTrangVaiCauHinh(browser: Browser, testInfo: TestInfo, va
     fs.mkdirSync(path.dirname(file), { recursive: true });
     await context.storageState({ path: file });
   }
+  await chonNguCanhLamViec(page, vai);
   return { page, context };
+}
+
+/**
+ * HỘP "Chọn đơn vị và vai trò làm việc" — phải trả lời thì phiên mới có ngữ cảnh làm việc.
+ *
+ * Tài khoản có NHIỀU đơn vị hoặc nhiều vai trò thì `app.tsx` bật `WorkContextSelector` ngay sau khi
+ * vào app (tiêu đề "Chọn đơn vị và vai trò làm việc", hoặc "Chọn vai trò làm việc" khi chỉ một đơn
+ * vị). Chưa chọn thì MỌI cú lưu bị máy chủ từ chối với đúng câu đó — kịch bản báo "Chờ 'Lưu văn bản
+ * thành công' nhưng gặp lỗi: Vui lòng chọn đơn vị và vai trò làm việc" (đo 03/10/2026, KDTM bước 26).
+ *
+ * Chọn MỤC ĐẦU của từng ô rồi "Tiếp tục" — tất định, và ghi ra log để biết phiên đang ở ngữ cảnh nào.
+ * (Vai trò quyết định quyền chức năng và phạm vi dữ liệu, nên dòng log này là dữ kiện cần khi một
+ * bước báo thiếu quyền.)
+ */
+export async function chonNguCanhLamViec(page: Page, vai = ''): Promise<void> {
+  const hop = page
+    .locator('.ant-modal')
+    .filter({ hasText: /Chọn (đơn vị và )?vai trò làm việc/ })
+    .first();
+  if (!(await hop.isVisible({ timeout: 5_000 }).catch(() => false))) return;
+
+  const dsO = hop.locator('[role="combobox"]');
+  const daChon: string[] = [];
+  for (let i = 0; i < (await dsO.count()); i++) {
+    const o = dsO.nth(i);
+    await o.click().catch(() => undefined);
+    const muc = page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option').first();
+    if (await muc.isVisible({ timeout: 5_000 }).catch(() => false)) {
+      daChon.push((await muc.innerText().catch(() => '')).replace(/\s+/g, ' ').trim().slice(0, 60));
+      await muc.click().catch(() => undefined);
+    }
+    await page.waitForTimeout(400);
+  }
+  await hop.getByRole('button', { name: /Tiếp tục/ }).first().click().catch(() => undefined);
+  await hop.waitFor({ state: 'hidden', timeout: 20_000 }).catch(() => undefined);
+  console.log(`    · ngữ cảnh làm việc${vai ? ` (${vai})` : ''}: ${daChon.join(' / ') || '(không đọc được)'}`);
 }

@@ -96,8 +96,78 @@ export async function phucThamTiepNhanHoSo(
     }
   }
 
+  /**
+   * MÀN NÀY CÓ HAI HÀNG TAB — phải chọn đúng cả hai.
+   *
+   * Hàng trên là LOẠI HỒ SƠ ("Tất cả · Vụ án dân sự · Việc dân sự"), hàng dưới mới là trạng thái
+   * ("Chờ tiếp nhận · Đã tiếp nhận · Đã thụ lý"). Hàng trên đang ở "Việc dân sự" thì lưới không có vụ
+   * án nào, và kịch bản báo "Tab Chờ tiếp nhận không có vụ …" dù hồ sơ đã sang (đo 03/10/2026,
+   * case-ds-004: bước 15 ghi rõ vụ đang ở "Chờ tiếp nhận" mà bước 16 không thấy).
+   */
+  const tabVuAn = page.getByRole('tab', { name: /^Vụ án/ }).first();
+  if ((await hienTrong(tabVuAn, 3_000)) && (await tabVuAn.getAttribute('aria-selected')) !== 'true') {
+    await tabVuAn.click();
+    await choHetSpin(page);
+    await nghi(page, 1000, 1500);
+  }
+  /**
+   * BẰNG CHỨNG của hàng tab loại hồ sơ: NHÃN NÚT TIẾP NHẬN đổi theo loại đang chọn —
+   * "Tiếp nhận hồ sơ VỤ ÁN đã chọn" hay "… hồ sơ VIỆC DÂN SỰ đã chọn". Chỉ dựa vào `aria-selected`
+   * là trượt: đo 03/10/2026 log ghi đã bấm "Vụ án" mà nút vẫn là "việc dân sự", lưới vì thế không có
+   * vụ án nào.
+   */
+  const nhanNutTiepNhan = await page
+    .getByRole('button', { name: /Tiếp nhận hồ sơ .* đã chọn/ })
+    .first()
+    .innerText()
+    .catch(() => '');
+  ghi('tiếp nhận hồ sơ', `loại hồ sơ đang chọn: ${nhanNutTiepNhan.replace(/\s+/g, ' ').trim() || '(không đọc được)'}`);
+  if (/việc dân sự/i.test(nhanNutTiepNhan)) {
+    for (const ten of [/^Vụ án dân sự$/, /^Vụ án/, /^Tất cả$/]) {
+      const t = page.getByRole('tab', { name: ten }).first();
+      if (!(await hienTrong(t, 1_500))) continue;
+      await t.click().catch(() => undefined);
+      await choHetSpin(page);
+      await nghi(page, 900, 1400);
+      const lai = await page
+        .getByRole('button', { name: /Tiếp nhận hồ sơ .* đã chọn/ })
+        .first()
+        .innerText()
+        .catch(() => '');
+      if (!/việc dân sự/i.test(lai)) {
+        ghi('tiếp nhận hồ sơ', `đã chuyển loại hồ sơ sang: ${lai.replace(/\s+/g, ' ').trim()}`);
+        break;
+      }
+    }
+  }
+
+  /**
+   * GỠ THẺ LỌC "Tìm kiếm theo: <mã> ×" — TẢI LẠI TRANG KHÔNG XOÁ ĐƯỢC NÓ.
+   *
+   * Màn này giữ từ khoá thành một THẺ riêng dưới ô tìm, và app NHỚ bộ lọc qua lần tải lại (đo
+   * 03/10/2026, case-ds-004: reload xong thẻ vẫn còn, lưới ghi "Không có dữ liệu"). Xoá chữ trong ô
+   * tìm cũng không gỡ thẻ. Kết quả: lưới 0 dòng và kịch bản kết luận nhầm "vụ chưa sang tòa phúc
+   * thẩm" — mất ba lượt chạy vì tôi đoán thay vì mở ảnh chụp ra đọc.
+   *
+   * Gỡ ĐÚNG thẻ: tìm phần tử có chữ là CHÍNH mã vụ án, rồi bấm icon đóng NẰM TRONG nó. Bắt bằng
+   * `getByRole('img', {name:/Đóng|close/})` chung chung thì trúng icon khác trên màn.
+   */
+  for (let i = 0; i < 3; i++) {
+    const chuThe = page.getByText(maVuAnSoTham, { exact: true }).first();
+    if (!(await hienTrong(chuThe, 2_000))) break;
+    const nutXoa = chuThe
+      .locator('xpath=.|following-sibling::*|..')
+      .getByRole('img', { name: /Đóng|close/i })
+      .first();
+    if (!(await hienTrong(nutXoa, 2_000))) break;
+    await nutXoa.click().catch(() => undefined);
+    await choHetSpin(page);
+    await nghi(page, 1000, 1500);
+    ghi('tiếp nhận hồ sơ', `đã gỡ thẻ lọc "${maVuAnSoTham}" (lần ${i + 1})`);
+  }
+
   const tabCho = page.getByRole('tab', { name: /Chờ tiếp nhận/i }).first();
-  if ((await tabCho.getAttribute('aria-selected')) !== 'true') {
+  if ((await hienTrong(tabCho, 15_000)) && (await tabCho.getAttribute('aria-selected')) !== 'true') {
     await tabCho.click();
     await choHetSpin(page);
     await nghi(page, 1200, 1800);
@@ -344,7 +414,18 @@ export async function phucThamTiepNhanHoSo(
      * "Chi tiết" (đo 30/09/2026). Nút "Thụ lý" nằm ngay trên MÀN CHI TIẾT HỒ SƠ sau khi tiếp
      * nhận xong, nên thử luôn ở đây.
      */
-    const nutThuLy = page.getByRole('button', { name: /Thụ lý/i }).first();
+    /**
+     * NHẮM ĐÚNG NÚT, TRÁNH THANH ĐIỀU HƯỚNG.
+     *
+     * Tìm toàn trang theo /Thụ lý/i thì trúng mục menu trên cùng "Đơn - HCTP Tiếp nhận, THỤ LÝ và
+     * văn thư 27" → bấm xong vẫn đứng nguyên màn hồ sơ chuyển đến (đo 03/10/2026, case-ds-004).
+     * Nút thật của màn tên là "Mở vụ án phúc thẩm để thụ lý"; bản khác đặt tên ngắn thì tìm trong
+     * vùng nội dung chính, không tìm cả trang.
+     */
+    const nutThuLy = page
+      .getByRole('button', { name: /Mở vụ án phúc thẩm để thụ lý/i })
+      .or(page.locator('main, .ant-layout-content').getByRole('button', { name: /^Thụ lý/i }))
+      .first();
     if (await hienTrong(nutThuLy, 8_000)) {
       ghi('tiếp nhận', `bấm "${(await nutThuLy.innerText()).replace(/\s+/g, ' ').trim()}" trên màn chi tiết hồ sơ`);
       await nutThuLy.click();
@@ -434,7 +515,18 @@ async function moChiTietPhucTham(
      * Bấm "Chi tiết" chỉ mở lại MÀN HỒ SƠ CHUYỂN ĐẾN. Nút "Thụ lý" — thứ mở màn VỤ ÁN phúc thẩm —
      * nằm trên chính màn đó (StepData b5 ghi nhầm là nút trên dòng danh sách).
      */
-    const nutThuLy = page.getByRole('button', { name: /Thụ lý/i }).first();
+    /**
+     * NHẮM ĐÚNG NÚT, TRÁNH THANH ĐIỀU HƯỚNG.
+     *
+     * Tìm toàn trang theo /Thụ lý/i thì trúng mục menu trên cùng "Đơn - HCTP Tiếp nhận, THỤ LÝ và
+     * văn thư 27" → bấm xong vẫn đứng nguyên màn hồ sơ chuyển đến (đo 03/10/2026, case-ds-004).
+     * Nút thật của màn tên là "Mở vụ án phúc thẩm để thụ lý"; bản khác đặt tên ngắn thì tìm trong
+     * vùng nội dung chính, không tìm cả trang.
+     */
+    const nutThuLy = page
+      .getByRole('button', { name: /Mở vụ án phúc thẩm để thụ lý/i })
+      .or(page.locator('main, .ant-layout-content').getByRole('button', { name: /^Thụ lý/i }))
+      .first();
     if (await hienTrong(nutThuLy, 8_000)) {
       ghi('vụ án phúc thẩm', `bấm "${(await nutThuLy.innerText()).replace(/\s+/g, ' ').trim()}" trên màn hồ sơ`);
       await nutThuLy.click();
@@ -1400,7 +1492,56 @@ export async function phucThamBanAn(
     return docBangChungBanAnPT(ghi, sau, ngayMoPhienToa, ttCu.toa, ttCu.so, await banAnTuApi(page, idVuAnPhucTham, ghi));
   }
 
+  /**
+   * ĐÓNG BIỂU MẪU CÒN SÓT TRƯỚC KHI TÌM NÚT.
+   *
+   * Bước 21 (73-DS/51-DS) có lúc để lại một biểu mẫu đang mở; nó phủ lên tab nên danh sách nút chỉ
+   * còn "Lưu | Ký số | Ký logic | In biểu mẫu | Đóng" và kịch bản báo "không thấy nút Tạo bản án"
+   * trong khi màn không hỏng gì (đo 03/10/2026, luồng dân sự case-ds-003).
+   */
+  const bmConMo = page.locator('.ant-drawer-open, .ant-modal:visible').filter({
+    // Tên trợ năng có TIỀN TỐ TÊN ICON (vd. "close Đóng") → KHÔNG neo hai đầu
+    has: page.getByRole('button', { name: /Đóng/ }),
+  });
+  if (await hienTrong(bmConMo.first(), 3_000)) {
+    ghi('22 bản án PT', 'còn biểu mẫu mở đè lên tab → đóng lại trước khi tìm nút "Tạo bản án"');
+    await bmConMo.first().getByRole('button', { name: /Đóng/ }).first().click().catch(() => undefined);
+    await choHetSpin(page);
+    await nghi(page, 800, 1200);
+    await moTab(page, 'Xét xử').catch(() => undefined);
+    await moKhoi(page, /Kết quả xét xử/, ghi).catch(() => undefined);
+  }
+
   const nutTao = page.getByRole('button', { name: /Tạo bản án/i }).first();
+  /**
+   * LOẠI KẾT QUẢ PHẢI LÀ "BẢN ÁN" THÌ NÚT "TẠO BẢN ÁN" MỚI HIỆN.
+   *
+   * Khối "Kết quả xét xử" có ô chọn Loại kết quả = **Bản án | Quyết định**
+   * (qla-webapp .../ChiTietVuAn/tabs/xet-xu/ChonLoaiKetQua.tsx: DANH_SACH_LOAI_KET_QUA). Chọn rồi thì
+   * chỗ đó chỉ còn nút "Đổi loại kết quả", và nếu loại đang là "Quyết định" thì KHÔNG có "Tạo bản án"
+   * — kịch bản báo "không thấy nút" trong khi màn vẫn bình thường (đo 03/10/2026, KDTM bước 22).
+   * Gặp vậy thì bấm "Đổi loại kết quả" rồi chọn lại "Bản án".
+   */
+  if (!(await hienTrong(nutTao, 5_000))) {
+    // Nút thật là "rollback Đổi loại kết quả" (tên icon đứng trước) → không neo hai đầu
+    const nutDoi = page.getByRole('button', { name: /Đổi loại kết quả/i }).first();
+    if (await hienTrong(nutDoi, 3_000)) {
+      ghi('22 bản án PT', 'loại kết quả đang KHÔNG phải "Bản án" → bấm "Đổi loại kết quả" để chọn lại');
+      await nutDoi.click().catch(() => undefined);
+      await choHetSpin(page);
+      await nghi(page, 800, 1200);
+      const theBanAn = page
+        .getByRole('button', { name: /Bản án/ })
+        .or(page.locator('[role="radio"], .ant-card').filter({ hasText: /^Bản án/ }))
+        .first();
+      if (await hienTrong(theBanAn, 5_000)) {
+        await theBanAn.click().catch(() => undefined);
+        await choHetSpin(page);
+        await nghi(page, 800, 1200);
+        ghi('22 bản án PT', 'đã chọn lại loại kết quả = "Bản án"');
+      }
+    }
+  }
   if (!(await hienTrong(nutTao, 15_000))) {
     throw new Error(
       `Không thấy nút "Tạo bản án" ở tab Xét xử phúc thẩm. Nút đang có: ${[

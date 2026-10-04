@@ -33,6 +33,25 @@ export const INPUT = {
   ...INPUT_DS_001,
   /** Chủ toạ = tài khoản đang chạy (vai `chanhAnDanSuVuAn`) để ký được 47-DS và bản án 52-DS */
   tenThamPhanChuToa: 'Lưu Tuấn Dũng',
+  /**
+   * TÒA PHÚC THẨM = TAND TỐI CAO, hỏi thẳng CSDL ngày 04/10/2026 (bảng VU_CHUYEN):
+   *   D01.133 (TAND TP Hải Phòng) → DON_VI_TIEPNHAN = D01 "Tòa án nhân dân tối cao" (11 hồ sơ),
+   *   còn D01.131.09 (khu vực 9 Hà Nội) → D01.131 (TAND TP Hà Nội).
+   *
+   * Trước đó tôi suy luận hồ sơ của tòa tỉnh phải lên TAND CẤP CAO và kết luận "ngoài tầm tài
+   * khoản" — SAI. Vai `phoChanhAn` (Nguyễn Hải Trâm) thuộc đúng đơn vị D01 nên tiếp nhận được.
+   */
+  vaiPhucTham: 'phoChanhAn',
+
+  /**
+   * NGƯỜI KÝ PHÚC THẨM = CHÍNH TÀI KHOẢN CHẠY phúc thẩm (Nguyễn Hải Trâm, D01).
+   *
+   * 84-DS là quyết định KÝ SỐ: để người khác làm chủ toạ thì kịch bản chỉ "Trình ký" được, phân
+   * công chưa có hiệu lực, và bước 20 bị hệ thống chặn với đúng câu "Vụ án chưa phân công Thẩm
+   * phán/Thư ký nên chưa có người nhận thông báo" (đo 04/10/2026). Hạt giống cũ ghi Nguyễn Xuân Kỳ
+   * — thẩm phán của TAND TP Hà Nội, không thuộc D01.
+   */
+  nguoiKyPhucTham: 'Nguyễn Hải Trâm',
   nguyenDon: { ...INPUT_DS_001.nguyenDon, nguyenVan: TEN_NGUYEN_DON, hoTen: TEN_NGUYEN_DON },
   biDon: { ...INPUT_DS_001.biDon, nguyenVan: TEN_BI_DON, hoTen: TEN_BI_DON },
   noiDungYeuCau: `Đề nghị Tòa án giải quyết tranh chấp hợp đồng vay tài sản giữa ${TEN_NGUYEN_DON} và ${TEN_BI_DON}.`,

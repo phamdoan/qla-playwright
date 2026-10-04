@@ -13,6 +13,7 @@
 import { Page, expect } from '@playwright/test';
 import { choHetSpin, go, hienTrong, nghi, toastGanDay } from '../../../common/antd';
 import { xacNhanHopThoai } from '../../../common/bieu-mau';
+import { API, layToken } from '../../../common/api-don';
 import type { INPUT } from '../../../data/kinh-doanh-thuong-mai/flow-001-st-pt-gdt-bao-cao/case-001/input';
 
 type DuLieuVao = typeof INPUT;
@@ -25,6 +26,32 @@ const DUONG_DAN_THAT = 'vu-an/dan-su/so-tham/ho-so-chuyen-di';
 void DUONG_DAN_TAI_LIEU;
 
 /** @param maVuAnSoTham mã vụ án bước 06 sinh (vd. VA26-004950) */
+/**
+ * Trạng thái bản ghi CHUYỂN ĐI của một vụ, hỏi thẳng máy chủ.
+ *
+ * Trả về dạng "<mã> = <nghĩa>" để ghi sổ cho người đọc: 999 Chưa chuyển · 000 Chờ tiếp nhận ·
+ * 001 Đã tiếp nhận · 002 Từ chối tiếp nhận (qla-webapp types/vu-chuyen.ts).
+ */
+async function trangThaiChuyenDi(page: Page, maVuAn: string): Promise<string> {
+  const token = await layToken(page);
+  const r = await page.request.get(
+    `${API}/vu-chuyen/dan-su/so-tham/chuyen-di/danh-sach?maVuAn=${encodeURIComponent(maVuAn)}&current=1&pageSize=20`,
+    { headers: { authorization: token, accept: 'application/json' } },
+  );
+  const j: any = await r.json().catch(() => null);
+  const ds: any[] = j?.data?.data || j?.data?.content || j?.data || [];
+  const dong = ds.find(x => String(x.maVuAn || x.ma || '').includes(maVuAn));
+  if (!dong) return `(API không có bản ghi chuyển đi của ${maVuAn})`;
+  const ten: Record<string, string> = {
+    '999': 'Chưa chuyển',
+    '000': 'Chờ tiếp nhận',
+    '001': 'Đã tiếp nhận',
+    '002': 'Từ chối tiếp nhận',
+  };
+  const ma = String(dong.trangThai ?? '');
+  return `${ma} = ${ten[ma] || '(không rõ)'}`;
+}
+
 export async function chuyenHoSoLenPhucTham(
   page: Page,
   _input: DuLieuVao,
@@ -57,8 +84,28 @@ export async function chuyenHoSoLenPhucTham(
     const daChuyen = page.locator('.ant-table-row').filter({ hasText: maVuAnSoTham }).first();
     if (await hienTrong(daChuyen, 6_000)) {
       const dongCho = (await daChuyen.innerText()).replace(/\s+/g, ' ').trim();
-      ghi('chuyển hồ sơ phúc thẩm', `đã chuyển ở lượt trước — đang ở tab "Chờ tiếp nhận": ${dongCho}`);
-      return { ngayChuyenHoSoPhucTham: new Date().toLocaleDateString('vi-VN') };
+      /**
+       * ĐỌC TRẠNG THÁI TRÊN DÒNG, KHÔNG TIN TAB ĐANG MỞ.
+       *
+       * Lưới màn này KHÔNG tự nạp lại khi đổi tab (đã ghi ở bước 16): bấm "Chờ tiếp nhận" xong lưới
+       * vẫn là kết quả của tab trước, nên thấy dòng ở đó KHÔNG có nghĩa là hồ sơ đã chuyển.
+       *
+       * Hậu quả thật (03/10/2026, case-ds-004): bước 15 báo "đã chuyển ở lượt trước" rồi trả PASSED,
+       * trong khi bản ghi vẫn ở trạng thái `999 = Chưa chuyển` — API `/vu-chuyen/dan-su/so-tham/
+       * chuyen-di/danh-sach` xác nhận; vụ sang được của case-ds-003 có trạng thái `001 = Đã tiếp
+       * nhận`. Xanh giả ở đây làm bước 16 chết oan và tốn bốn lượt chạy đi tìm nhầm chỗ.
+       *
+       * Nay chỉ coi là đã chuyển khi CHÍNH DÒNG ghi trạng thái đã chuyển; còn ghi "Chưa chuyển" thì
+       * đi tiếp xuống phần thực hiện chuyển bên dưới.
+       */
+      if (/Chờ tiếp nhận|Đã tiếp nhận|Đã thụ lý/i.test(dongCho) && !/Chưa chuyển/i.test(dongCho)) {
+        ghi('chuyển hồ sơ phúc thẩm', `đã chuyển ở lượt trước — trạng thái trên dòng: ${dongCho}`);
+        return { ngayChuyenHoSoPhucTham: new Date().toLocaleDateString('vi-VN') };
+      }
+      ghi(
+        'chuyển hồ sơ phúc thẩm',
+        `dòng có ở tab "Chờ tiếp nhận" nhưng trạng thái CHƯA chuyển → vẫn thực hiện chuyển: ${dongCho.slice(0, 160)}`,
+      );
     }
   }
 
@@ -255,6 +302,25 @@ export async function chuyenHoSoLenPhucTham(
   }
   ghi('chuyển hồ sơ phúc thẩm', toast || `vụ ${maVuAnSoTham} đã rời tab "Chưa chuyển"`);
 
+  /**
+   * BẰNG CHỨNG CUỐI LẤY TỪ MÁY CHỦ, KHÔNG LẤY TỪ LƯỚI.
+   *
+   * "Vụ đã rời tab Chưa chuyển" là dấu hiệu yếu: lưới màn này không tự nạp lại khi đổi tab, nên nó
+   * từng cho PASSED trong khi hồ sơ CHƯA hề chuyển (03/10/2026, case-ds-004 — bước 16 vì thế chết
+   * oan, tốn bốn lượt chạy đi tìm nhầm chỗ).
+   *
+   * API danh sách chuyển đi trả `trangThai`: 999 = Chưa chuyển · 000 = Chờ tiếp nhận · 001 = Đã tiếp
+   * nhận (qla-webapp types/vu-chuyen.ts · TrangThaiVuChuyen). Còn 999 là HỎNG, phải báo ngay.
+   */
+  const trangThai = await trangThaiChuyenDi(page, maVuAnSoTham).catch((e: Error) => `(không tra được: ${e.message})`);
+  ghi('chuyển hồ sơ phúc thẩm', `trạng thái máy chủ: ${trangThai}`);
+  if (/^999/.test(trangThai)) {
+    throw new Error(
+      `Bấm chuyển xong nhưng máy chủ vẫn ghi vụ ${maVuAnSoTham} ở trạng thái "999 = Chưa chuyển" ` +
+        `(API /vu-chuyen/dan-su/so-tham/chuyen-di/danh-sach). Hồ sơ CHƯA sang tòa phúc thẩm.`,
+    );
+  }
+
   const ngayChuyenHoSoPhucTham = new Date().toLocaleDateString('vi-VN');
-  return { ngayChuyenHoSoPhucTham };
+  return { ngayChuyenHoSoPhucTham, trangThaiChuyenHoSo: trangThai };
 }

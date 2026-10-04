@@ -265,7 +265,8 @@ export const FLOW_001: DinhNghiaFlow = {
       route: '',
       vai: 'chanhAn',
       vao: ['maVuAnSoTham'],
-      ra: ['ngayChuyenHoSoPhucTham'],
+      // trangThaiChuyenHoSo: trạng thái MÁY CHỦ trả (999 Chưa chuyển · 000 Chờ tiếp nhận · 001 Đã tiếp nhận)
+      ra: ['ngayChuyenHoSoPhucTham', 'trangThaiChuyenHoSo'],
       nguon: 'StepData KDTM · Sơ thẩm Step8 (tài liệu ghi /qla/quan-ly-so-tham/dan-su/chuyen-di-phuc-tham)',
       xacMinh: 'TAI-LIEU',
       bangChungXacMinh:
