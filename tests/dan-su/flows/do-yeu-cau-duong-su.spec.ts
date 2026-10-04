@@ -55,9 +55,29 @@ test('dò · yêu cầu của đương sự: vụ HNGĐ so với vụ dân sự 
 
     // Tab "Xét xử" là nơi form bản án đọc danh sách yêu cầu của đương sự
     for (const tab of ['thong-tin-chung', 'xet-xu']) {
-      await page.goto(`vu-an/dan-su/so-tham/chi-tiet?id=${id}&tab=${tab}`, { waitUntil: 'domcontentloaded' });
-      await choHetSpin(page);
-      await nghi(page, 1800, 2600);
+      /**
+       * VÀO TRANG RỒI TẢI LẠI, và chờ tới khi trang THẬT SỰ DỰNG XONG.
+       *
+       * `goto` thẳng vào URL chi tiết trả về VỎ RỖNG: đo 04/10/2026, URL đúng nhưng trang có
+       * 0 bảng · 0 card · 0 khối gập và không tiêu đề — trên CẢ HAI vụ, kể cả vụ đã qua bước 12.
+       * Không phải 404, chỉ là SPA chưa nạp nội dung. Khung chạy luồng có sẵn cơ chế nhận 404 và thử
+       * lại; spec dò viết tay thì không, nên ba lượt dò trước đọc vỏ rỗng mà tưởng là "thiếu khối".
+       *
+       * Chờ theo DẤU HIỆU TRANG ĐÃ DỰNG (có ít nhất một card/bảng/khối gập), không chờ theo thời gian.
+       */
+      for (let lan = 0; lan < 3; lan++) {
+        await page.goto(`vu-an/dan-su/so-tham/chi-tiet?id=${id}&tab=${tab}`, { waitUntil: 'domcontentloaded' });
+        await choHetSpin(page);
+        await nghi(page, 2000, 3000);
+        const dungXong = await page
+          .locator('.ant-card, .ant-table-wrapper, .ant-collapse-item')
+          .first()
+          .waitFor({ state: 'visible', timeout: 20_000 })
+          .then(() => true)
+          .catch(() => false);
+        if (dungXong) break;
+        console.log(`   (lần ${lan + 1}: trang còn rỗng, tải lại)`);
+      }
       /**
        * CHỨNG MINH ĐÃ VÀO ĐÚNG TRANG trước khi kết luận gì.
        *
