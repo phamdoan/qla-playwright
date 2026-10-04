@@ -290,16 +290,41 @@ export async function gdtCvpTrinhPca(page: Page, dd: DinhDanhCase, ghi: GhiChu, 
   await pd.mo();
   const con = await moDeXuat(pd, khoaToTrinh, TEN_TO_TRINH, dauHieu(b, input));
   if (con) {
-    await pd.ykienVaKyLogic(
+    const kq = await pd.ykienVaKyLogic(
       'Đồng ý phân công Thẩm phán, kính trình Phó Chánh án phê duyệt.',
       giaTri('capTrinhTiep'),
       giaTri('nguoiTrinhTiep'),
     );
-    ghi('27 CVP', `đã cho ý kiến và trình ${giaTri('capTrinhTiep')} (${giaTri('nguoiTrinhTiep')})`);
+    ghi('27 CVP', kq.moTa);
+    /**
+     * TRÌNH TIẾP KHÔNG LÀM ĐƯỢC THÌ PHẢI ĐỎ Ở ĐÂY, không để bước 28 đỏ thay.
+     *
+     * Trước 04/10/2026 bước này ghi bằng chứng "đã cho ý kiến và trình <cấp> (<người>)" lấy thẳng từ
+     * dữ liệu gieo, KHÔNG kiểm màn có ô "Đề xuất trình tiếp" hay không. Trên pre-prod màn ký không có
+     * ô đó, nên văn bản chỉ được KÝ chứ chưa chuyển cho ai — mà bước 27 vẫn xanh và vẫn báo đã trình.
+     * Bước 28 sau đó đỏ với "Không thấy đề xuất …", khiến người đọc đi tìm sai chỗ (tôi mất ba lượt
+     * chạy để nhận ra).
+     */
+    if (!kq.daTrinhTiep) {
+      throw new Error(
+        `Đã ký tờ trình nhưng KHÔNG trình tiếp được: ${kq.moTa}.\n` +
+          `  → Văn bản không vào hộp phê duyệt của ${giaTri('capTrinhTiep')} ` +
+          `(${giaTri('nguoiTrinhTiep')}), nên bước 28 sẽ không tìm thấy.\n` +
+          '  → Cần biết trên môi trường này văn bản chuyển tiếp bằng đường nào: ' +
+          'dò bằng `npm run don:do-phe-duyet` với vai nhận.',
+      );
+    }
   } else {
     ghi('27 CVP', 'đề xuất không còn ở danh sách chờ duyệt → đã xử lý ở lượt trước');
   }
-  return { gdtToTrinhDaTrinhPca: `${khoaToTrinh} · đã trình ${giaTri('capTrinhTiep')}` };
+  /**
+   * BẰNG CHỨNG PHẢI LÀ KHOÁ SẠCH, không nối thêm nhãn.
+   *
+   * Trước đây trả `${khoaToTrinh} · đã trình <cấp>` — một chuỗi TỰ DỰNG, không phải thứ máy chủ trả,
+   * và bước 28 dùng chuỗi đó để tra id nên không bao giờ khớp. Khung đòi "bằng chứng do hệ thống
+   * cấp"; nối nhãn vào giá trị là lách đúng quy tắc đó.
+   */
+  return { gdtToTrinhDaTrinhPca: khoaToTrinh };
 }
 
 // ───────────── BƯỚC 28 · Phó Chánh án phê duyệt tờ trình (B9) ─────────────

@@ -369,18 +369,39 @@ export class PheDuyetPage {
   /**
    * Chánh/Phó Văn phòng (MS_02): nhập ý kiến, chọn cấp trình tiếp + người trình tiếp (Chánh án) → "Lưu và ký logic".
    */
-  async ykienVaKyLogic(noiDung: string, capTrinhTiep?: string, nguoiTrinhTiep?: string) {
+  /**
+   * Trả về ĐÃ TRÌNH TIẾP ĐƯỢC HAY KHÔNG, để bước gọi báo đúng việc nó làm.
+   *
+   * ⚠ LỖI CŨ Ở ĐÂY LÀ MỘT DẠNG XANH GIẢ. Hai ô "Đề xuất trình tiếp" chỉ có trên trang V2 nên mã đặt
+   * chúng `if (count())` rồi đi tiếp — hợp lý. Nhưng bước 27 lại GHI BẰNG CHỨNG "đã cho ý kiến và
+   * trình Phó Chánh án (…)" lấy thẳng từ dữ liệu gieo, KHÔNG kiểm hai ô đó có tồn tại không. Kết quả:
+   * bước 27 xanh và báo đã trình, trong khi văn bản chỉ được KÝ chứ chưa chuyển cho ai.
+   *
+   * Đo pre-prod 04/10/2026: màn ký chỉ có hai ô ý kiến + các nút Ký số / Ký logic / Từ chối ký / Lưu
+   * — KHÔNG có ô cấp trình tiếp. Hộp "Phê duyệt đề xuất" của Phó Chánh án (dò bằng `do-phe-duyet`)
+   * không có đề xuất này ở bất kỳ tab nào, dù hộp đó vẫn nhận văn bản khác trong cùng ngày. Bước 28
+   * vì thế đỏ với câu "Không thấy đề xuất …" — đúng hiện tượng, sai nguyên nhân.
+   */
+  async ykienVaKyLogic(
+    noiDung: string,
+    capTrinhTiep?: string,
+    nguoiTrinhTiep?: string,
+  ): Promise<{ daTrinhTiep: boolean; moTa: string }> {
     const { page } = this;
     await this.nhapYKien(noiDung);
-    // "Đề xuất trình tiếp" chỉ có trên trang V2 (Chánh VP chuyển tiếp Chánh án); màn ký không có
+    let daTrinhTiep = false;
+    let moTa = 'màn ký KHÔNG có ô "Đề xuất trình tiếp" → chỉ ký, KHÔNG chuyển cho ai';
     if (capTrinhTiep && (await page.locator('#capTrinhTiep').count())) {
       await chonSelect(page, page.locator('#capTrinhTiep'), capTrinhTiep, { goDeLoc: false });
       if (await page.locator('#nguoiDeXuatTrinh').count()) {
         await chonSelect(page, page.locator('#nguoiDeXuatTrinh'), nguoiTrinhTiep, { goDeLoc: false });
       }
+      daTrinhTiep = true;
+      moTa = `đã chọn trình tiếp: ${capTrinhTiep}${nguoiTrinhTiep ? ` (${nguoiTrinhTiep})` : ''}`;
     }
     const nut = await this.nutKy([/Lưu và ký logic/, /Ký logic$/, /^Ký số$/]);
     await this.bamVaChoApi(nut.nut, /ky-so-va-duyet|ky-logic|\/duyet$/);
+    return { daTrinhTiep, moTa: `${moTa} · nút đã bấm: ${nut.ten}` };
   }
 
   /** Chánh/Phó Chánh án (MS_02): nhập ý kiến → "Phê duyệt" */
