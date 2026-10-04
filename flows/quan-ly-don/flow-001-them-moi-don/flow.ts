@@ -51,7 +51,7 @@ export const FLOW_QLD_001: DinhNghiaFlow = {
       route: 'quan-ly-don/danh-sach-don',
       vai: 'canBo',
       vao: [],
-      ra: ['idDon', 'maDon'],
+      ra: ['idDon', 'maDon', 'banChup'],
       nguon: NGUON,
       xacMinh: 'API',
       bangChungXacMinh:
@@ -63,7 +63,7 @@ export const FLOW_QLD_001: DinhNghiaFlow = {
       manHinh: 'Chi tiết đơn (/qla/quan-ly-don/them-moi/{idDon})',
       route: 'quan-ly-don/them-moi/{idDon}',
       vai: 'canBo',
-      vao: ['idDon'],
+      vao: ['idDon', 'banChup'],
       ra: ['soTruongKhop', 'soBangKhop'],
       nguon: NGUON,
       xacMinh: 'MAN-HINH',

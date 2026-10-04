@@ -46,5 +46,5 @@ export interface InputThemMoiDon {
 
 export const CAI_DAT: BangCaiDat<InputThemMoiDon> = {
   '01-them-moi-don': ({ page, input, ghi }) => themMoiDon(page, input, ghi),
-  '02-kiem-tra-sau-luu': ({ page, input, ghi }) => kiemTraSauLuu(page, input, ghi),
+  '02-kiem-tra-sau-luu': ({ page, input, ghi, can }) => kiemTraSauLuu(page, input, ghi, can('banChup')),
 };

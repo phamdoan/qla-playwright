@@ -240,9 +240,20 @@ const tieuDeBang = (page: Page, tieuDe: string) =>
 /** CollapsibleTableWrapper đóng khi bảng rỗng → bấm tiêu đề để mở; trả về khung bao (tiêu đề + bảng) */
 async function moBangThuGon(page: Page, tieuDe: string) {
   const td = tieuDeBang(page, tieuDe);
-  await td.scrollIntoViewIfNeeded();
-  if ((await td.locator('.anticon-right').count()) > 0) {
-    await td.click();
+  /**
+   * CHỜ CÓ HẠN và NUỐT LỖI cho cú cuộn.
+   *
+   * Đo 04/10/2026 (lượt chạy đầu của ba case không-OCR): bước 02 chết với
+   * `locator.scrollIntoViewIfNeeded: Timeout 30000ms` — NGAY SAU khi `isVisible()` vừa trả true.
+   * Màn chi tiết đơn còn nạp tiếp sau khi tiêu đề hiện, nên phần tử bị dựng lại giữa hai lệnh và
+   * cú cuộn chờ một node đã rời DOM cho hết 30 s rồi làm đỏ cả bước.
+   *
+   * Cuộn chỉ để nhìn thấy, không phải bằng chứng — mở bảng đã được canh bằng số mũi `.anticon-right`,
+   * và dòng trong bảng mới là phép phán quyết. Nên cuộn hỏng thì đi tiếp, đừng làm đỏ vì nó.
+   */
+  await td.scrollIntoViewIfNeeded({ timeout: 5_000 }).catch(() => {});
+  if ((await td.locator('.anticon-right').count().catch(() => 0)) > 0) {
+    await td.click({ timeout: 10_000 }).catch(() => {});
     await nghi(page);
   }
   return td.locator('xpath=..');
@@ -739,9 +750,40 @@ export class ThemMoiDonPage {
    * Bảng người tham gia tố tụng → Thêm mới → Drawer (FormPhapNhanConNguoi) → Lưu.
    * `tuCach` bỏ trống khi drawer đã điền sẵn (Nguyên đơn / Bị đơn).
    */
+  /**
+   * Tiêu đề các bảng ProTable ĐANG CÓ trên màn — để thông báo lỗi nói được sự thật thay vì treo.
+   *
+   * Khối "Người tham gia tố tụng" KHÔNG giống nhau giữa các loại án: ba tiêu đề đóng cứng dưới đây
+   * ("Nguyên đơn/Người khởi kiện"…) là của án dân sự. Đo 04/10/2026: case `don-03` (án HÌNH SỰ,
+   * Quyết định miễn/giảm THA) chết với `locator.click: Timeout 30000ms` chờ nút "Thêm mới" của bảng
+   * "Nguyên đơn/Người khởi kiện" — bảng đó không tồn tại trên màn án hình sự.
+   */
+  async dsTieuDeBangTrenMan(): Promise<string[]> {
+    const ds = await this.page
+      .locator('.ant-pro-table-list-toolbar-title')
+      .allInnerTexts()
+      .catch(() => [] as string[]);
+    return [...new Set(ds.map(s => s.replace(/\s+/g, ' ').trim()).filter(Boolean))];
+  }
+
   async themNguoiThamGiaToTung(tieuDeBang: string, tieuDeDrawer: string, n: NguoiGia, d: ThongTinDon, tuCach?: string) {
     const { page } = this;
-    await nutThemMoiCuaBang(page, tieuDeBang).click();
+    /**
+     * ĐÒI NÚT HIỆN TRƯỚC KHI BẤM, và nếu không có thì ném lỗi KÈM DANH SÁCH BẢNG THẬT.
+     *
+     * `click()` trần chờ hết 30 s rồi báo lỗi về một XPath dài — thông báo đó không nói được là
+     * "màn này không có bảng ấy". Một lượt chạy mất 8,8 phút, nên lỗi phải trả về đủ dữ kiện để
+     * lần sau sửa được ngay, không phải chạy lại để dò.
+     */
+    const nut = nutThemMoiCuaBang(page, tieuDeBang);
+    if (!(await hienTrong(nut, 15_000))) {
+      throw new Error(
+        `Màn không có bảng "${tieuDeBang}" (hoặc bảng không có nút "Thêm mới"). ` +
+          `Loại án "${d.loaiAn}" dùng bộ bảng khác. Bảng đang có trên màn: ` +
+          `${(await this.dsTieuDeBangTrenMan()).join(' | ') || '(không bảng nào)'}`,
+      );
+    }
+    await nut.click();
     await dienFormNguoi(page, drawer(page, tieuDeDrawer), n, d.tinh, tuCach);
     const bang = tieuDeBang_(page, tieuDeBang);
     await expect(bang).toContainText(n.hoTen);
@@ -1054,6 +1096,29 @@ export class ThemMoiDonPage {
     return Object.fromEntries(this.giaTriTruocLuu);
   }
 
+  /**
+   * XUẤT / NẠP LẠI BẢN CHỤP TRƯỚC LƯU, để nó đi qua được RANH GIỚI BƯỚC.
+   *
+   * `giaTriTruocLuu` và `bangCanCo` là state trên INSTANCE page object. Bước 01 và bước 02 là hai
+   * bước khác nhau nên bước 02 dựng instance MỚI, cả hai đều rỗng → `kiemTraSauLuu` bỏ qua mọi
+   * trường (`truoc === undefined` thì `continue`) và báo "trường khớp: 0/0 · bảng khớp: 0/0".
+   * Đó là một phép kiểm KHÔNG KIỂM GÌ mà vẫn xanh — đúng loại xanh giả mà bộ này cấm.
+   *
+   * Đo 04/10/2026, lượt chạy ĐẦU TIÊN của ba case không-OCR trên STG. Khung chuyển dữ liệu giữa các
+   * bước bằng BẰNG CHỨNG (`ra` của bước trước → `vao` của bước sau), nên bản chụp phải đi đường đó
+   * chứ không dựa vào việc hai bước tình cờ dùng chung một instance.
+   */
+  xuatBanChup(): string {
+    return JSON.stringify({ truong: Object.fromEntries(this.giaTriTruocLuu), bang: this.bangCanCo });
+  }
+
+  napBanChup(json: string): { soTruong: number; soBang: number } {
+    const o = JSON.parse(json) as { truong?: Record<string, string>; bang?: { ten: string; canCo: string }[] };
+    this.giaTriTruocLuu = new Map(Object.entries(o.truong ?? {}));
+    this.bangCanCo = o.bang ?? [];
+    return { soTruong: this.giaTriTruocLuu.size, soBang: this.bangCanCo.length };
+  }
+
   /** Bấm "Lưu thông tin". Trả về { ok, loi } — loi là toast lỗi (nếu có) */
   async bamLuu() {
     const { page } = this;
@@ -1132,19 +1197,37 @@ export class ThemMoiDonPage {
     return { maDon, ketQua };
   }
 
-  /** Danh sách đơn → tab "Đơn của tôi" → tìm theo mã đơn → phải thấy đúng đơn và người đứng đơn */
+  /**
+   * Danh sách đơn → tab "Đơn của tôi" → tìm theo mã đơn → phải thấy đúng đơn và người đứng đơn.
+   *
+   * VÀO BẰNG MENU, KHÔNG `page.goto`. Đo 04/10/2026 (lượt chạy đầu của ba case không-OCR): bước 02
+   * chết với `locator.scrollIntoViewIfNeeded: Timeout 30000ms` và call log ghi rõ
+   * `waiting for getByPlaceholder('Nhập bất kỳ thông tin nào …')` — tức ô tìm kiếm KHÔNG BAO GIỜ
+   * hiện. `goto` thẳng vào một route của SPA này trả về VỎ RỖNG (cùng hiện tượng đã đo ở spec dò
+   * `do-yeu-cau-duong-su`: URL đúng mà 0 bảng · 0 card). `timDonDaNhapTheoBanAn` ngay trên đây dùng
+   * `moMenu` nên vẫn chạy được — làm theo nó.
+   *
+   * Và CHỜ Ô HIỆN TRƯỚC KHI GÕ: `go()` mở đầu bằng `scrollIntoViewIfNeeded` không hạn giờ, nên ô
+   * thiếu thì treo 30 s rồi báo lỗi về cú cuộn — một thông báo chỉ vào đúng dòng mã mà không nói
+   * được là "màn chưa dựng".
+   */
   async timTrongDanhSachDon(maDon: string, tenNguoiDungDon: string) {
     const { page } = this;
-    await page.goto('quan-ly-don/danh-sach-don');
+    await moMenu(page, ['Quản lý đơn', 'Danh sách đơn']);
     const tab = page.getByRole('tab', { name: /Đơn của tôi/ });
     await expect(tab).toBeVisible({ timeout: 60_000 });
     await tab.click();
     await nghi(page, 500, 1000);
-    await go(page.getByPlaceholder('Nhập bất kỳ thông tin nào (người gửi, nội dung...)'), maDon);
+    const oTim = page.getByPlaceholder('Nhập bất kỳ thông tin nào (người gửi, nội dung...)');
+    await expect(oTim, 'Màn Danh sách đơn chưa dựng xong: không thấy ô tìm kiếm').toBeVisible({
+      timeout: 60_000,
+    });
+    await go(oTim, maDon);
     await page.getByRole('button', { name: /Tìm kiếm$/ }).click();
     const dong = page.locator('.ant-table-row').filter({ hasText: `Mã đơn: ${maDon}` });
     await expect(dong.first()).toBeVisible({ timeout: 60_000 });
-    await expect(dong.first()).toContainText(tenNguoiDungDon);
+    // Tên rỗng thì `toContainText('')` luôn đúng — bỏ hẳn phép kiểm còn rõ hơn là để nó giả vờ kiểm
+    if (tenNguoiDungDon) await expect(dong.first()).toContainText(tenNguoiDungDon);
   }
 }
 

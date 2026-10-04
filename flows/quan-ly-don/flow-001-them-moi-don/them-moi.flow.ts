@@ -175,11 +175,31 @@ export async function themMoiDon(
       'Kiểm ô "Thụ lý mới" ở khối Xử lý đơn.',
   ).toBeTruthy();
 
-  return { idDon, maDon, soThuLy, soBanAn: d.soBanAn, ngayBanAn: d.ngayBanAn, toaAn: toaDaChon };
+  /**
+   * BÀN GIAO BẢN CHỤP TRƯỚC LƯU cho bước 02.
+   *
+   * `trang.luu()` gọi `chupGiaTri()` ngay trước khi bấm Lưu, nên bản chụp nằm trong instance NÀY.
+   * Bước 02 dựng instance khác → không thấy gì → "0/0". Xem `xuatBanChup` ở page object.
+   */
+  const banChup = trang.xuatBanChup();
+  return { idDon, maDon, soThuLy, soBanAn: d.soBanAn, ngayBanAn: d.ngayBanAn, toaAn: toaDaChon, banChup };
 }
 
-export async function kiemTraSauLuu(page: Page, _input: InputThemMoiDon, ghi: Ghi) {
+export async function kiemTraSauLuu(page: Page, _input: InputThemMoiDon, ghi: Ghi, banChup: string) {
   const trang = new ThemMoiDonPage(page);
+  /**
+   * Nạp lại bản chụp của bước 01 TRƯỚC khi so, và ĐÒI nó không rỗng.
+   *
+   * Không có phép đòi này thì bước vẫn xanh với "trường khớp: 0/0" — xanh vì không so gì cả.
+   */
+  const { soTruong, soBang } = trang.napBanChup(banChup);
+  ghi('bản chụp bước 01', `${soTruong} trường · ${soBang} bảng`);
+  expect(
+    soTruong,
+    'Bản chụp trước lưu của bước 01 RỖNG → bước này sẽ "so" 0 trường và xanh giả. ' +
+      'Chạy lại bước 01 để sinh lại khoá `banChup`.',
+  ).toBeGreaterThan(0);
+
   const { maDon, ketQua } = await test.step('Mở lại đơn, so từng trường', () => trang.kiemTraSauLuu());
   ghi('mã đơn', maDon);
 

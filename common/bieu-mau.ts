@@ -6,7 +6,7 @@
  * STG/DEV, nay ở backup) và giữ nguyên hành vi, chỉ đổi phần báo lỗi sang `xacNhanLuu`.
  */
 import path from 'node:path';
-import { Locator, Page, expect } from '@playwright/test';
+import { Locator, Page, Response, expect } from '@playwright/test';
 import { choHetSpin, hienTrong, nghi, nguyenNhanLoi, toastDaHien, xacNhanLuu } from './antd';
 import { chupAnhMoc } from './anh';
 
@@ -31,6 +31,47 @@ export async function xacNhanHopThoai(page: Page) {
       .click({ timeout: 8_000 })
       .catch(() => {});
   }
+}
+
+/**
+ * Ghi lại PHẢN HỒI CỦA CHÍNH CÚ LƯU — kể cả HTTP 200 kèm thân báo lỗi.
+ *
+ * Vì sao cần: `batLoiApi` chỉ nhận status >= 400, mà backend QLA rất hay trả 200 kèm
+ * `{"code":...,"message":"..."}` khi từ chối. Khi đó `luuBieuMau` chỉ ghi được "không thấy toast
+ * thành công" — một câu KHÔNG nói được vì sao, và nó xuất hiện ở CẢ biểu mẫu lưu được lẫn không lưu
+ * được (đo 04/10/2026: vụ dân sự qua bước 12 và vụ HNGĐ đứng ở bước 12 in ra y hệt câu đó, nên câu
+ * đó vô dụng để phân biệt). Có status + mã + lời nhắn của server thì một lượt chạy là đủ kết luận.
+ *
+ * Trả về hàm ĐỌC-RỒI-THÔI-NGHE: gọi đúng một lần, kể cả khi lưu thành công, để không rò listener
+ * sang bước sau (mỗi bước lưu vài biểu mẫu, mỗi biểu mẫu một listener thì page nặng dần).
+ */
+function batPhanHoiLuu(page: Page, soLuong = 4): () => string {
+  const ds: string[] = [];
+  const nghe = (r: Response) => {
+    const ph = r.request().method();
+    if (ph !== 'POST' && ph !== 'PUT' && ph !== 'PATCH') return;
+    if (ds.length >= soLuong) return;
+    const duong = r.url().replace(/^https?:\/\/[^/]+/, '');
+    void (async () => {
+      const than = (await r.text().catch(() => '')).replace(/\s+/g, ' ').trim();
+      let tom = than.slice(0, 300);
+      try {
+        const j = JSON.parse(than);
+        /** Thân "thành công" là cả bản ghi (vài nghìn ký tự) — chỉ giữ mã + lời nhắn */
+        const ma = j?.code ?? j?.status ?? j?.statusCode;
+        const nhan = j?.message ?? j?.error ?? j?.errorMessage ?? j?.detail;
+        if (ma !== undefined || nhan) tom = `code=${ma ?? '?'} message=${String(nhan ?? '').slice(0, 220)}`;
+      } catch {
+        /* không phải JSON thì giữ nguyên phần đầu thân */
+      }
+      ds.push(`${r.status()} ${ph} ${duong} :: ${tom}`);
+    })();
+  };
+  page.on('response', nghe);
+  return () => {
+    page.off('response', nghe);
+    return ds.length ? `phản hồi lưu: ${ds.join(' | ')}` : 'KHÔNG có request POST/PUT nào — nút Lưu không gửi gì đi';
+  };
 }
 
 /**
@@ -60,6 +101,8 @@ export async function luuBieuMau(
    *   <mã bước>.png         · màn sau khi bước xong
    */
   await chupAnhMoc(page, ten);
+  const docPhanHoi = batPhanHoiLuu(page);
+  let daDoc = false;
   await nut.click();
   // Một số biểu mẫu mở hộp xác nhận sau khi bấm Lưu; không bấm thì bản ghi không được tạo mà cũng
   // KHÔNG có toast lỗi nào — nhìn ra ngoài chỉ thấy "bảng 0 dòng".
@@ -69,9 +112,14 @@ export async function luuBieuMau(
   } catch (e) {
     const mo = e instanceof Error ? e.message : String(e);
     // Lỗi validate là chắc chắn hỏng — ném lại. Chỉ "không thấy báo thành công" mới bỏ qua.
-    if (/form còn lỗi/.test(mo)) throw e;
-    ghi?.(`lưu ${ten}`, 'không thấy toast thành công — kiểm bằng dòng trong bảng');
+    if (/form còn lỗi/.test(mo)) {
+      docPhanHoi();
+      throw e;
+    }
+    ghi?.(`lưu ${ten}`, `không thấy toast thành công — ${docPhanHoi()}`);
+    daDoc = true;
   }
+  if (!daDoc) ghi?.(`lưu ${ten}`, docPhanHoi());
   await choHetSpin(page);
   await nghi(page, 1200, 2000);
   return true;
