@@ -17,25 +17,36 @@
     "",
     "CHƯA ĐO — các khoá dùng ở bước 27 trở đi (phê duyệt, kháng nghị, HĐXX). Gieo theo CHỨC VỤ của",
     "bộ tài khoản pre-prod, chắc chắn đúng hơn tên TANDTC nhưng VẪN LÀ PHỎNG ĐOÁN. Bước nào đỏ thì",
-    "thông báo sẽ liệt kê giá trị thật của danh mục đó — sửa theo thông báo, đừng đoán thêm."
+    "thông báo sẽ liệt kê giá trị thật của danh mục đó — sửa theo thông báo, đừng đoán thêm.",
+    "",
+    "SỬA 04/10/2026 — ĐO LẠI BẰNG do-lap-van-ban, và tôi đã suy luận SAI trước đó:",
+    "  · popup \"Lưu số văn bản & In báo cáo\" có 6 ô: Loại văn bản | Người tạo | Người ký |",
+    "    Mức độ ưu tiên | Văn bản đi kèm | Ý kiến trình. KHÔNG có ô \"Người duyệt\", KHÔNG có",
+    "    \"Cấp trình\"/\"Người trình\".",
+    "  · ô Người ký có 7 mục, TẤT CẢ là Văn phòng (Chánh/Phó Chánh Văn phòng, Thư ký viên) —",
+    "    KHÔNG có Phó Chánh án.",
+    "  · Hoàng Thị Hạnh CÓ trong danh sách (mục đầu). Trước đó tôi thấy một danh sách 6 tên không",
+    "    có bà rồi kết luận \"bà không nhận văn bản ở đây\" — SAI. Việc đổi vai chanhVanPhong sang",
+    "    Nguyễn Thị Vân Trang vì thế dựa trên suy luận sai, dù không gây hại (bà cũng có trong danh sách).",
+    "",
+    "HỆ QUẢ NGHIỆP VỤ: văn bản \"Tờ trình khác\" trên pre-prod KHÔNG có chuỗi duyệt tới Phó Chánh án.",
+    "Tạo → một người Văn phòng ký → xong. Nên bước 27 (CVP trình PCA) và 28 (PCA phê duyệt) như đang",
+    "mô hình hoá KHÔNG ÁP DỤNG cho môi trường này. Các khoá nguoiTrinhTiep / capTrinhTiep / nguoiKyQuyetDinh",
+    "dưới đây vì thế CHƯA DÙNG tới và vẫn chưa được đo."
   ],
   "nghiepVu": {
     "nguoiDuyetVanBan": "Nguyễn Thị Vân Trang",
     "nguoiKyVanBan": "Nguyễn Thị Vân Trang",
-
     "capTrinhTiep": "Phó Chánh án",
     "nguoiTrinhTiep": "Nguyễn Trọng Trường",
     "nguoiKyQuyetDinh": "Nguyễn Trọng Trường",
-
     "capTrinhKhangNghi": "Phó Chánh án",
     "nguoiTrinhKhangNghi": "Nguyễn Trọng Trường",
     "nguoiKyToTrinhTANDTC": "Nguyễn Trọng Trường",
     "nguoiKyBieuMau": "Nguyễn Trọng Trường",
-
     "nguoiGiaoTieuHoSo": "Nguyễn Thị Vân Trang",
     "nguoiNhanTieuHoSo": "Nguyễn Thị Hồng Nhung",
     "nguoiNhanTieuHoSoDanSu": "Nguyễn Thị Hồng Nhung",
-
     "nguoiKyPhanCongDon": "Chu Lệ Hường",
     "nguoiNhanDon": "Chu Lệ Hường",
     "nguoiKyThongBaoAnPhi": "Chu Lệ Hường"
