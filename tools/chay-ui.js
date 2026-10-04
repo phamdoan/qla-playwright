@@ -53,6 +53,15 @@ const env = {
   // Không dùng npm_lifecycle_event vì npx ghi đè biến này → config sẽ nạp nhầm .env mặc định.
   QLA_HO_SO_ENV: HO_SO_THEO_MOI_TRUONG[tenMoiTruong],
 };
+/**
+ * --tiep: BỎ QUA các bước ĐÃ XONG ở lượt trước (đọc CaseState) thay vì làm lại.
+ *
+ * Vì sao cần: chạy `npm run preprod` sau khi đã có bước 24 PASSED thì nó LÀM LẠI bước 24 và tạo
+ * THÊM MỘT ĐƠN TRÙNG — đo 04/10/2026: lượt đầu cấp số thụ lý 395, lượt sau 396 cho cùng một case.
+ * Dữ liệu rác, và với bản án đã có đơn thì đơn thứ hai còn thành ĐƠN PHỤ đi sai nhánh.
+ */
+if (args.includes('--tiep')) env.QLA_BO_QUA_DA_XONG = '1';
+
 if (choPhepGhi) {
   env.QLA_TKM_CHO_PHEP_GHI = '1';
   /**
