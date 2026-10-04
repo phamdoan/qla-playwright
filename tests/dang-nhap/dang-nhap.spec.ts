@@ -53,7 +53,20 @@ test.describe(`Đăng nhập SSO (${ORIGIN})`, () => {
       await expect(menuBen, 'Vào dashboard nhưng không thấy menu bên trái').toBeVisible({ timeout: 60_000 });
 
       // Menu lấy từ API theo vai (common/menu.ts) → liệt kê làm bằng chứng quyền của tài khoản
-      const mucMenu = (await menuBen.getByRole('menuitem').allTextContents())
+      /**
+       * ĐẾM CẢ `<a href>`, KHÔNG CHỈ `role=menuitem`.
+       *
+       * MenuV3 dựng mục menu bằng thẻ `<a>` thường, KHÔNG gắn `role="menuitem"` — `common/menu.ts`
+       * đã biết điều đó từ 02/10/2026 (`.filter({ has: locator('a, [role="menuitem"]') })`) nhưng
+       * spec này thì chưa.
+       *
+       * Hậu quả đã xảy ra, không phải giả thiết: đo pre-prod 04/10/2026, tài khoản có menu **172
+       * liên kết** (Quản lý đơn, Danh sách đơn, Đơn khởi kiện/yêu cầu…) mà `getByRole('menuitem')`
+       * trả về **0**, nên test kết luận "chưa được gán vai ở QTUD". Tôi đã báo cáo sai rằng cả 30
+       * tài khoản pre-prod đều không có quyền — thực ra chúng có đủ quyền, chỉ là test đếm sai.
+       * Câu kết luận càng dứt khoát thì đếm sai càng tai hại.
+       */
+      const mucMenu = (await menuBen.locator('a[href], [role="menuitem"]').allTextContents())
         .map((t) => t.replace(/\s+/g, ' ').trim())
         .filter(Boolean);
       await testInfo.attach(`menu-${tk.ma}.txt`, {
