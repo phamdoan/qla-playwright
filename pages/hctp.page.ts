@@ -39,6 +39,9 @@ async function xacNhan(page: Page, ten: RegExp) {
 export class HctpPage {
   constructor(readonly page: Page) {}
 
+  /** Tên "Loại văn bản" THỰC SỰ đã chọn ở lần lập văn bản gần nhất — tên này khác nhau theo môi trường */
+  loaiVanBanDaDung = '';
+
   // ───────────── Bước 2a: Trưởng phòng phân công thẩm phán dự kiến (chỉ định, chỉ đơn của luồng) ─────────────
 
   /**
@@ -151,8 +154,29 @@ export class HctpPage {
    * Danh sách đơn → lọc "Loại văn bản" → tick đơn → "Lưu số văn bản và in báo cáo"
    * → chọn Người duyệt / Người ký → "Lưu văn bản" → "Trình ký".
    */
+  /**
+   * ⚠ TÊN LOẠI VĂN BẢN KHÁC NHAU GIỮA CÁC MÔI TRƯỜNG.
+   *
+   * Đo pre-prod 04/10/2026: ô "Loại văn bản" ở Danh sách đơn có ĐÚNG 9 mục, và KHÔNG có
+   * "Tờ trình phân công thẩm phán":
+   *
+   *   Giấy xác nhận · Giấy xác nhận cơ quan chuyển đơn · Công văn chuyển nội bộ ·
+   *   Công văn chuyển tòa khác · Công văn chuyển ngoài tòa án · Trả lại đơn ·
+   *   Thông báo phân công TP · Yêu cầu bổ sung · Tờ trình khác
+   *
+   * Gần nhất với "tờ trình phân công" (BƯỚC 4 của đặc tả) là **"Tờ trình khác"**; còn
+   * "Thông báo phân công TP" là văn bản của BƯỚC 5. Nên nhận một DANH SÁCH tên theo thứ tự ưu tiên
+   * và dùng tên ĐẦU TIÊN mà danh mục thật có — không gieo cứng một tên rồi đỏ ở môi trường khác.
+   *
+   * `QLA_LOAI_VB_TO_TRINH` cho phép đổi mà không sửa mã (vd. khi môi trường bổ sung tên đúng).
+   */
   async lapTamTrinhPhanCong(maDon: string, nguoiDuyet: string, nguoiKy: string) {
-    return this.lapVanBanTuDanhSachDon(maDon, /Tờ trình phân công thẩm phán/i, 'Tờ trình phân công', nguoiDuyet, nguoiKy, {
+    const uuTien = [
+      ...(process.env.QLA_LOAI_VB_TO_TRINH ? [process.env.QLA_LOAI_VB_TO_TRINH] : []),
+      'Tờ trình phân công thẩm phán',
+      'Tờ trình khác',
+    ];
+    return this.lapVanBanTuDanhSachDon(maDon, uuTien, 'Tờ trình phân công', nguoiDuyet, nguoiKy, {
       xemBieuMau: true,
     });
   }
@@ -167,7 +191,7 @@ export class HctpPage {
    */
   async lapVanBanTuDanhSachDon(
     maDon: string,
-    loaiVanBan: RegExp,
+    loaiVanBan: RegExp | string[],
     tenVanBan: string,
     nguoiDuyet: string,
     nguoiKy: string,
@@ -188,7 +212,7 @@ export class HctpPage {
   /** Một lượt lập văn bản: có bản nháp sẵn thì báo 'nhap', không thì lọc → tick đơn → lưu (→ trình nếu popup cho) */
   private async lapVanBanMotLan(
     maDon: string,
-    loaiVanBan: RegExp,
+    loaiVanBan: RegExp | string[],
     tenVanBan: string,
     nguoiDuyet: string,
     nguoiKy: string,
@@ -201,7 +225,30 @@ export class HctpPage {
     await moMenu(page, ['Quản lý đơn', 'Danh sách đơn']);
     // Select "Loại văn bản :" trên thanh công cụ bảng; tìm theo nhãn (placeholder mất sau khi chọn)
     const oLoai = page.getByRole('combobox', { name: /^Loại văn bản/ }).first();
-    await chonSelect(page, oLoai, loaiVanBan);
+    /**
+     * Mảng tên = THỨ TỰ ƯU TIÊN. Dùng tên ĐẦU TIÊN mà danh mục thật có, vì tên loại văn bản khác
+     * nhau giữa các môi trường (xem `lapTamTrinhPhanCong`). Hết danh sách mà không tên nào khớp thì
+     * ném lỗi của lần thử CUỐI — lỗi đó đã liệt kê đủ các mục danh mục đang có.
+     */
+    if (Array.isArray(loaiVanBan)) {
+      let loiCuoi: Error | undefined;
+      let daChon = '';
+      for (const ten of loaiVanBan) {
+        try {
+          await chonSelect(page, oLoai, ten);
+          daChon = ten;
+          break;
+        } catch (e) {
+          if (!/Danh mục không có mục/.test((e as Error).message)) throw e;
+          loiCuoi = e as Error;
+        }
+      }
+      if (!daChon) throw loiCuoi ?? new Error('Không chọn được Loại văn bản nào trong danh sách ưu tiên');
+      this.loaiVanBanDaDung = daChon;
+    } else {
+      await chonSelect(page, oLoai, loaiVanBan);
+      this.loaiVanBanDaDung = loaiVanBan.source;
+    }
     await go(page.getByLabel('Từ khóa tìm kiếm chung'), maDon);
     await choHetSpin(page);
     await page.getByRole('button', { name: /Tìm kiếm$/ }).click();

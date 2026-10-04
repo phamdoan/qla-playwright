@@ -267,8 +267,11 @@ export async function gdtPhanCongThamPhanDon(page: Page, ghi: GhiChu, soThuLyDon
 
 // ───────────── BƯỚC 26 · Tờ trình phân công thẩm phán → Trình ký (B4) ─────────────
 export async function gdtToTrinhPhanCong(page: Page, ghi: GhiChu, maDon: string) {
-  const khoa = await new HctpPage(page).lapTamTrinhPhanCong(maDon, NGUOI_DUYET, NGUOI_KY);
+  const trang = new HctpPage(page);
+  const khoa = await trang.lapTamTrinhPhanCong(maDon, NGUOI_DUYET, NGUOI_KY);
   if (!khoa) throw new Error('Lập tờ trình xong nhưng không lấy được id yêu cầu phê duyệt');
+  // Tên loại văn bản khác nhau giữa các môi trường → ghi lại tên THỰC SỰ đã dùng
+  ghi('26 loại văn bản', trang.loaiVanBanDaDung || '(không ghi được)');
   ghi('26 tờ trình', `khoá yêu cầu phê duyệt = ${khoa}`);
   return { gdtKhoaToTrinh: String(khoa) };
 }
