@@ -49,7 +49,8 @@
     "don:khong-ocr": "node tools/chay-ui.js stg --ghi --cli --file=flow-001-them-moi-don --case=don-01-ban-an-khong-ocr,don-02-quyet-dinh-khong-ocr,don-03-mien-giam-tha-khong-ocr",
     "don:ocr": "node tools/chay-ui.js stg --ghi --cli --file=flow-001-them-moi-don --case=don-04-ban-an-ocr,don-05-quyet-dinh-ocr,don-06-mien-giam-tha-ocr",
     "don": "node tools/chay-ui.js stg --ghi --cli --file=flow-001-them-moi-don",
-    "don:do-loai-qd-ba": "node tools/chay-ui.js stg --cli --file=do-loai-qd-ba"
+    "don:do-loai-qd-ba": "node tools/chay-ui.js stg --cli --file=do-loai-qd-ba",
+    "ban-sao": "node tools/dung-ban-sao-chay.js"
   },
   "keywords": [],
   "author": "",
