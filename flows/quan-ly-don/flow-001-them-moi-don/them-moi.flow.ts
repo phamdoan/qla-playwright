@@ -136,10 +136,25 @@ export async function themMoiDon(
    * báo "không tìm thấy đơn" thì tìm sai chỗ.
    */
   const { maDon } = await test.step('Mở lại đơn để đọc mã đơn', () => trang.kiemTraSauLuu());
-  const soThuLy = await page.locator('#thongTinChuyenDonVO_soThuLy').inputValue().catch(() => '');
   ghi('mã đơn', maDon || '(chưa có)');
-  ghi('số thụ lý đơn', soThuLy || '(chưa có)');
   expect(maDon, 'Lưu xong nhưng hệ thống không cấp mã đơn').toBeTruthy();
+
+  /**
+   * SỐ THỤ LÝ — hai đường, tuỳ môi trường:
+   *   · ô "Thụ lý mới" lúc tạo đơn đã cấp số (STG) → đọc thẳng từ ô;
+   *   · chưa cấp (pre-prod) → phải bấm "Duyệt thụ lý & cấp số" trong menu ⋯ của dòng đơn.
+   *
+   * Đo pre-prod 04/10/2026: ô "Ngày thụ lý" bị khoá và lưu xong KHÔNG có số thụ lý; thụ lý là một
+   * bước DUYỆT riêng. Không có số thụ lý thì bước phân công thẩm phán và tờ trình KHÔNG THẤY ĐƠN.
+   */
+  let soThuLy = await page.locator('#thongTinChuyenDonVO_soThuLy').inputValue().catch(() => '');
+  if (soThuLy) {
+    ghi('số thụ lý đơn', `${soThuLy} (cấp ngay khi tạo đơn)`);
+  } else {
+    soThuLy = await test.step('Duyệt thụ lý & cấp số (menu ⋯ của dòng đơn)', () =>
+      trang.duyetThuLyVaCapSo(maDon));
+    ghi('số thụ lý đơn', `${soThuLy} (qua "Duyệt thụ lý & cấp số")`);
+  }
   expect(
     soThuLy,
     'Đơn chưa được thụ lý (thiếu số thụ lý) → các bước phân công/tờ trình sẽ không thấy đơn. ' +

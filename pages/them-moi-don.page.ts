@@ -766,6 +766,78 @@ export class ThemMoiDonPage {
    * Số bản án + Ngày bản án + Tòa ra bản án nên nhận đúng bản án.
    * Trả { maDon, soThuLy } của đơn cũ, hoặc null nếu chưa có.
    */
+  /**
+   * "Duyệt thụ lý & cấp số" — hành động trong menu ⋯ của dòng đơn ở Danh sách đơn.
+   *
+   * VÌ SAO CẦN: trên một số môi trường, chọn "Thụ lý mới" trong khối "Xử lý đơn" lúc TẠO đơn KHÔNG
+   * cấp số thụ lý; ô "Ngày thụ lý" còn bị khoá. Thụ lý là một bước DUYỆT riêng sau khi lưu.
+   *
+   * Đo pre-prod 04/10/2026: đơn 9227 tạo xong, không có số thụ lý. Dòng đơn KHÔNG có nút chữ nào,
+   * chỉ hai icon `clock-circle` và `more`; bấm vào dòng cũng không mở chi tiết. Mở menu ⋯ thì có 5
+   * mục: **Duyệt thụ lý & cấp số** · Trả lại cho cán bộ · Xem · Hồ sơ đơn · Lịch sử xử lý HCTP.
+   *
+   * Trả về số thụ lý đọc lại TỪ DÒNG ("Số TL: …") — số do máy chủ cấp, không phải chuỗi gieo.
+   * Không cấp được thì ném lỗi kèm nguyên văn dòng, để lần sau biết đọc ở đâu.
+   */
+  async duyetThuLyVaCapSo(maDon: string): Promise<string> {
+    const { page } = this;
+    await page.goto('quan-ly-don/danh-sach-don', { waitUntil: 'domcontentloaded' });
+    await choHetSpin(page);
+    await nghi(page, 1500, 2200);
+
+    const dong = page.locator('.ant-table-row').filter({ hasText: maDon }).first();
+    await expect(dong, `Không thấy đơn ${maDon} trên Danh sách đơn`).toBeVisible({ timeout: 30_000 });
+
+    const nutMore = dong.locator('button:has(.anticon-more), .anticon-more').last();
+    await expect(nutMore, `Dòng đơn ${maDon} không có menu ⋯`).toBeVisible({ timeout: 15_000 });
+    await nutMore.click();
+    await nghi(page, 700, 1100);
+
+    const dd = page.locator('.ant-dropdown:not(.ant-dropdown-hidden)').last();
+    const muc = dd.locator('li, .ant-dropdown-menu-item').filter({ hasText: /Duyệt thụ lý/i }).first();
+    if (!(await hienTrong(muc, 10_000))) {
+      const co = (await dd.locator('li, .ant-dropdown-menu-item').allInnerTexts().catch(() => []))
+        .map(s => s.replace(/\s+/g, ' ').trim())
+        .filter(Boolean);
+      await page.keyboard.press('Escape');
+      throw new Error(
+        `Menu ⋯ của đơn ${maDon} không có "Duyệt thụ lý & cấp số". Đang có: ${co.join(' | ') || '(rỗng)'}. ` +
+          'Có thể vai đang chạy không được duyệt thụ lý — thử vai cao hơn (Chánh văn phòng / Trưởng phòng).',
+      );
+    }
+    await muc.click();
+    await nghi(page, 900, 1400);
+
+    // Hộp xác nhận (nếu có): bấm nút đồng ý, KHÔNG bấm nút huỷ
+    const xacNhan = page
+      .locator('.ant-modal:visible, .ant-modal-confirm:visible')
+      .last()
+      .getByRole('button', { name: /^(Đồng ý|Xác nhận|Duyệt|OK)$/i })
+      .first();
+    if (await hienTrong(xacNhan, 5_000)) {
+      await xacNhan.click();
+      await nghi(page, 900, 1400);
+    }
+    await ghiNhanToast(page);
+    await choHetSpin(page);
+    await nghi(page, 1500, 2200);
+
+    // Đọc lại số thụ lý TỪ DÒNG — bằng chứng do máy chủ cấp
+    await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => undefined);
+    await choHetSpin(page);
+    await nghi(page, 1500, 2200);
+    const dong2 = page.locator('.ant-table-row').filter({ hasText: maDon }).first();
+    const chu = (await dong2.innerText().catch(() => '')).replace(/\s+/g, ' ');
+    const so = (chu.match(/Số\s*(?:TL|thụ lý)\s*:?\s*([0-9/\-A-Za-zĐđ]+)/i) || [])[1] || '';
+    if (!so) {
+      throw new Error(
+        `Đã bấm "Duyệt thụ lý & cấp số" cho đơn ${maDon} nhưng dòng vẫn không có số thụ lý.\n` +
+          `  Nguyên văn dòng: ${chu.slice(0, 300)}`,
+      );
+    }
+    return so;
+  }
+
   async timDonDaNhapTheoBanAn(noiDungGoiY: string): Promise<{ maDon: string; soThuLy: string } | null> {
     const { page } = this;
     await moMenu(page, ['Quản lý đơn', 'Danh sách đơn']);
