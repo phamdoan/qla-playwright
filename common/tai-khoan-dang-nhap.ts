@@ -70,12 +70,27 @@ export function dsTaiKhoanDangNhap(): TaiKhoanDangNhap[] {
     })
     .filter((tk) => !!tk.cccd);
 
-  if (!boNho.length) {
-    throw new Error(
-      `Chưa khai CCCD cho tài khoản nào: chép config/${FILE_MAU} thành config/${FILE_LOCAL} rồi điền "cccd".`,
-    );
-  }
   return boNho;
+}
+
+/**
+ * Vì sao KHÔNG ném lỗi khi chưa khai tài khoản nào: hàm này gọi ở TẦNG MÔ-ĐUN của
+ * `tests/dang-nhap/dang-nhap.spec.ts` (vòng `for` sinh test), nên ném ở đây là Playwright **không
+ * nạp được spec đó** và `--list` trả về **0 test trong 0 tệp** — chết cả 255 test của mọi luồng
+ * khác, chỉ vì thiếu một tệp cấu hình của riêng test đăng nhập.
+ *
+ * Đo 04/10/2026 khi dựng thư mục chạy pre-prod: thư mục mới chưa có
+ * `config/tai-khoan-dang-nhap.local.json` thì toàn bộ danh sách test rỗng, mà thông báo lại nói về
+ * test đăng nhập — sai hẳn chỗ cần sửa. Cùng một loại lỗi với `locCase` và `caseVuAnThuc`: cấu hình
+ * thiếu của MỘT phần không được giết cả lượt chạy.
+ *
+ * Giờ `dsTaiKhoanDangNhap()` trả mảng rỗng, spec tự `test.skip` kèm lý do rõ ràng.
+ */
+export function lyDoThieuTaiKhoanDangNhap(): string {
+  return (
+    `Chưa khai CCCD cho tài khoản nào: chép config/${FILE_MAU} thành config/${FILE_LOCAL} rồi điền "cccd" ` +
+    `(môi trường hiện tại: ${process.env.QLA_ENV || 'stg'}).`
+  );
 }
 
 /** Session của từng tài khoản, tách theo môi trường (stg/dev/uat/preprod) để không dùng lẫn */

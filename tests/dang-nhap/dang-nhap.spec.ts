@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 import { DASHBOARD_URL, loginSSO } from '../../common/login';
-import { dsTaiKhoanDangNhap, fileAuthDangNhap } from '../../common/tai-khoan-dang-nhap';
+import { dsTaiKhoanDangNhap, fileAuthDangNhap, lyDoThieuTaiKhoanDangNhap } from '../../common/tai-khoan-dang-nhap';
 import { ORIGIN } from '../../playwright.config';
 
 /**
@@ -20,6 +20,16 @@ import { ORIGIN } from '../../playwright.config';
 const ds = dsTaiKhoanDangNhap();
 
 test.describe(`Đăng nhập SSO (${ORIGIN})`, () => {
+  /**
+   * Chưa khai tài khoản nào thì ĐỂ LẠI MỘT TEST BỊ BỎ QUA kèm lý do, KHÔNG ném ở tầng mô-đun:
+   * ném ở đây là Playwright không nạp được tệp này và `--list` trả 0 test cho CẢ repo
+   * (đo 04/10/2026 khi dựng thư mục pre-prod). Xem `common/tai-khoan-dang-nhap.ts`.
+   */
+  if (!ds.length) {
+    test.skip(`(chưa khai tài khoản đăng nhập)`, () => {
+      test.skip(true, lyDoThieuTaiKhoanDangNhap());
+    });
+  }
   for (const tk of ds) {
     test(`${tk.ma} · ${tk.ten}${tk.chucVu ? ` (${tk.chucVu})` : ''}`, async ({ page }, testInfo) => {
       testInfo.annotations.push({ type: 'tài khoản', description: `${tk.cccd} — ${tk.ten} — ${tk.chucVu}` });
