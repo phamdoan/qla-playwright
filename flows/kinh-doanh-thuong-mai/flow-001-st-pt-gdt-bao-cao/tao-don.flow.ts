@@ -62,7 +62,9 @@ export async function taoDonKhoiKien(page: Page, input: DuLieuVao, ghi: GhiChu) 
     await chonSelect(page, page.locator('#loaiDon'), input.loaiDon);
     await chonSelect(page, page.locator('#phanLoai'), input.phanLoaiDon);
 
-    // Chọn đúng tên trong danh mục (QHPL_TC_KDTM.001 = "Mua bán hàng hoá"), không dò từ khoá
+    // Chọn đúng TÊN LÁ trong danh mục, không dò từ khoá. Tên lá đổi theo máy chủ: QHPL_TC_KDTM.001
+    // nay là "Tranh chấp hợp đồng mua bán hàng hóa" và nằm ở cấp 2 (đo 04/10/2026, danh mục KDTM
+    // bị tái cấu trúc 03/10) — nên phải gieo cả `qhplChaThongKe`.
     const qhpl = await chonQhplThongKe(
       page,
       page.locator('#qhplThongKe'),

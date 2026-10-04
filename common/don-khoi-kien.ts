@@ -24,9 +24,12 @@ export const khungSelectCua = (o: import('@playwright/test').Locator) =>
  *     (`qla/db-structure/ddl-qhpl.sql`) → gõ đúng tên là ra.
  *   · `handleSelect` từ chối nút còn cấp con ("Nhóm danh mục này còn cấp con") → phải chọn đúng lá.
  *
- * Vì thế dò từ khoá kiểu "thử lần lượt tới khi ra mục" vừa chậm vừa sai: tên trong danh mục ghi
- * "Mua bán hàng hoá" (hoá) chứ không phải "mua bán hàng hóa" (hóa), và không có mục nào tên
- * "Tranh chấp hợp đồng mua bán hàng hóa". Lệch một dấu là danh sách rỗng, treo ở đây cả phút.
+ * Vì thế dò từ khoá kiểu "thử lần lượt tới khi ra mục" vừa chậm vừa sai: lệch một dấu là danh sách
+ * rỗng, treo ở đây cả phút. Phải gieo đúng tên lá MÁY CHỦ ĐANG TRẢ VỀ.
+ *
+ * ⚠ Tên lá CÓ ĐỔI. Nhóm KDTM bị tái cấu trúc 03/10/2026: `.001` từ "Mua bán hàng hoá" (cấp 1)
+ * thành "Tranh chấp hợp đồng mua bán hàng hóa" (cấp 2, dưới "Tranh chấp hợp đồng thương mại").
+ * Ảnh chụp danh mục lá hiện hành: `tools/sinh-ban-an-cong-bo/danh-muc-qhpl.tsv`.
  */
 export async function chonQhplThongKe(
   page: import('@playwright/test').Page,
