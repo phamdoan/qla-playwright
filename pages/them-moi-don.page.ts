@@ -154,8 +154,8 @@ const nhanSelect = async (page: Page, input: Locator) => {
   return ((await item.first().getAttribute('title')) || (await item.first().innerText())).trim();
 };
 
-/** Tên tòa đang chọn ở "Tòa án ra bản án" (OCR điền hoặc test chọn) */
-const tenToaDangChon = (page: Page) => nhanSelect(page, page.locator('#thongTinBanAn_maToaXetXu'));
+/** Tên tòa đang chọn ở "Tòa án ra bản án" (OCR điền hoặc test chọn) — nhãn ĐẦY ĐỦ mà hệ thống giữ */
+export const tenToaDangChon = (page: Page) => nhanSelect(page, page.locator('#thongTinBanAn_maToaXetXu'));
 
 /**
  * Các trường trên form chính theo thứ tự hiển thị (bắt buộc + nên có).

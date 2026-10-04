@@ -13,9 +13,8 @@ import fs from 'fs';
 import path from 'path';
 import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
-import { ThemMoiDonPage, taoThongTinDon, type ThongTinDon } from '../../../pages/them-moi-don.page';
+import { ThemMoiDonPage, taoThongTinDon, tenToaDangChon, type ThongTinDon } from '../../../pages/them-moi-don.page';
 import { nguoiNgauNhien } from '../../../common/du-lieu';
-import { nhanSelect } from '../../../common/antd';
 import type { InputThemMoiDon } from './cai-dat';
 
 type Ghi = (ten: string, giaTri: string) => void;
@@ -173,7 +172,7 @@ export async function themMoiDon(
    * NHÃN TRÊN FORM (không dùng chuỗi lọc đã gieo): nhãn mới là tên tòa đầy đủ mà hệ thống giữ, và
    * đó mới là chuỗi khớp được với dòng trên các màn phê duyệt.
    */
-  const toaDaChon = (await nhanSelect(page, page.locator('#thongTinBanAn_maToaXetXu')).catch(() => '')) || d.toaAn;
+  const toaDaChon = (await tenToaDangChon(page).catch(() => '')) || d.toaAn;
   ghi('bản án đề nghị', `${d.soBanAn} — ${d.ngayBanAn} — ${toaDaChon}`);
 
   return { idDon, maDon, soThuLy, soBanAn: d.soBanAn, ngayBanAn: d.ngayBanAn, toaAn: toaDaChon };
