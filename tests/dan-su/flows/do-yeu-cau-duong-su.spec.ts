@@ -63,7 +63,18 @@ test('dò · yêu cầu của đương sự: vụ HNGĐ so với vụ dân sự 
       /** Bảng/khối nào nói về yêu cầu của đương sự */
       const khoi = page
         .locator('.ant-card, .ant-collapse-item, .ant-table-wrapper')
-        .filter({ hasText: /Yêu cầu|yêu cầu khởi kiện|Kết quả giải quyết/i });
+        /**
+         * LỌC THEO "BẢN ÁN SƠ THẨM", không theo "Yêu cầu".
+         *
+         * Lượt dò đầu lọc /Yêu cầu|Kết quả giải quyết/ và báo "không có khối nào" cho CẢ HAI vụ — kể
+         * cả vụ dân sự đã qua bước 12. Tức phép đo sai chỗ, không phải vụ thiếu dữ liệu: danh sách
+         * yêu cầu nằm TRONG form bản án, không nằm trên tab vụ án.
+         *
+         * Câu hỏi thật là: bảng "Bản án sơ thẩm" của vụ HNGĐ có dòng nào không. Bước 12 đỏ với
+         * "Lập bản án xong nhưng bảng Bản án sơ thẩm vẫn không có dòng nào", mà ảnh trang lại hiện
+         * mục "Bản án sơ thẩm" kèm hai mốc thời gian — nên có thể bảng CÓ dòng mà phép kiểm không thấy.
+         */
+        .filter({ hasText: /Bản án sơ thẩm|Các lần mở phiên tòa|Quyết định của Hội đồng xét xử/i });
       const n = await khoi.count();
       if (!n) {
         console.log('   (không có khối nào nhắc "Yêu cầu" / "Kết quả giải quyết")');
