@@ -41,7 +41,10 @@
     "gom-anh": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/gom-anh.ps1",
     "ds:mo-tay-chuyen-den": "node tools/chay-ui.js stg --ghi --cli --hien --cham --file=mo-tay-ho-so-chuyen-den",
     "ban-an-cong-bo:sinh": "node tools/sinh-ban-an-cong-bo/sinh.js",
-    "ds:vu-an-thuc": "node tools/chay-ui.js stg --ghi --cli --file=flow-001-st-pt"
+    "ds:vu-an-thuc": "node tools/chay-ui.js stg --ghi --cli --file=flow-001-st-pt",
+    "bctk:do-phu": "node --experimental-strip-types --no-warnings=MODULE_TYPELESS_PACKAGE_JSON tools/bctk/do-phu.mjs",
+    "bctk:danh-muc": "node tools/bctk/sinh-danh-muc.js",
+    "bctk:dung-khung": "node --experimental-strip-types --no-warnings=MODULE_TYPELESS_PACKAGE_JSON tools/bctk/dung-khung-luong.mjs"
   },
   "keywords": [],
   "author": "",
