@@ -26,15 +26,32 @@
 const { spawn } = require('child_process');
 
 const args = process.argv.slice(2);
-const moiTruong = args.includes('dev') ? 'dev' : args.includes('uat') ? 'uat' : 'stg';
+
+/**
+ * Môi trường = tham số vị trí đầu tiên. Tên → hồ sơ `.env.<hồ sơ>` mà playwright.config.ts nạp.
+ *
+ * ⚠ TRƯỚC 04/10/2026 chỗ này là `args.includes('dev') ? 'dev' : args.includes('uat') ? 'uat' : 'stg'`
+ * — nghĩa là gõ `preprod` (hay gõ sai tên) thì **ÂM THẦM CHẠY STAGING** mà vẫn in "Môi trường: STG",
+ * nên người chạy tưởng đang ở pre-prod. Giờ tên lạ là DỪNG.
+ */
+const HO_SO_THEO_MOI_TRUONG = { stg: 'staging', staging: 'staging', dev: 'dev', uat: 'uat', preprod: 'preprod' };
+const tenMoiTruong = args.find(a => !a.startsWith('--')) || 'stg';
+if (!HO_SO_THEO_MOI_TRUONG[tenMoiTruong]) {
+  console.error(
+    `Môi trường "${tenMoiTruong}" không có. Chọn một trong: ${Object.keys(HO_SO_THEO_MOI_TRUONG).join(' | ')}.\n` +
+      'Gõ sai tên trước đây bị rơi về STAGING mà không báo gì — nên giờ dừng hẳn.',
+  );
+  process.exit(1);
+}
+const moiTruong = tenMoiTruong === 'staging' ? 'stg' : tenMoiTruong;
 const choPhepGhi = args.includes('--ghi');
 const lay = ten => (args.find(a => a.startsWith(`--${ten}=`)) || '').split('=')[1];
 
 const env = {
   ...process.env,
-  // Báo cho playwright.config.ts biết nạp .env.dev / .env.staging / .env.uat.
+  // Báo cho playwright.config.ts biết nạp .env.dev / .env.staging / .env.uat / .env.preprod.
   // Không dùng npm_lifecycle_event vì npx ghi đè biến này → config sẽ nạp nhầm .env mặc định.
-  QLA_HO_SO_ENV: moiTruong === 'dev' ? 'dev' : moiTruong === 'uat' ? 'uat' : 'staging',
+  QLA_HO_SO_ENV: HO_SO_THEO_MOI_TRUONG[tenMoiTruong],
 };
 if (choPhepGhi) env.QLA_TKM_CHO_PHEP_GHI = '1';
 if (lay('dong')) env.QLA_TKM_DONG = lay('dong');

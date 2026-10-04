@@ -32,6 +32,33 @@ const MOI_TRUONG: Record<string, string> = {
 };
 const env = process.env.QLA_ENV || 'stg';
 export const ORIGIN = MOI_TRUONG[env] || env; // cho phép truyền thẳng URL
+
+/**
+ * CỔNG CHẶN PRODUCTION — chặn cứng, không có cờ nào mở được.
+ *
+ * Vì sao cần: `ORIGIN` nhận THẲNG một URL khi `QLA_ENV` không khớp tên nào ở trên. Mà pre-prod của
+ * Tối cao là `e-qlta-uat.toaan.gov.vn`, còn PRODUCTION là `e-qlta.toaan.gov.vn` — lệch đúng 4 ký tự
+ * `-uat`. Gõ thiếu bốn ký tự đó, cộng với `--ghi`, là bộ kịch bản đi tạo đơn thật trên hệ thống
+ * đang phục vụ các tòa. Repo này trước 04/10/2026 KHÔNG có cổng nào chặn (cổng cũ nằm ở
+ * `tools/di-chuyen-bieu-mau`, một công cụ khác hẳn).
+ *
+ * Danh sách chặn khớp theo HOST, không theo chuỗi con, để `e-qlta-uat...` không bị chặn oan.
+ */
+const HOST_PRODUCTION = ['e-qlta.toaan.gov.vn', 'qla.toaan.gov.vn'];
+{
+  let host = '';
+  try {
+    host = new URL(ORIGIN).host.toLowerCase();
+  } catch {
+    throw new Error(`QLA_ENV="${env}" không phải tên môi trường đã biết, cũng không phải URL hợp lệ.`);
+  }
+  if (HOST_PRODUCTION.includes(host)) {
+    throw new Error(
+      `CHẶN: "${host}" là PRODUCTION. Bộ kịch bản này tạo/sửa dữ liệu thật nên không được trỏ vào đó.\n` +
+        `Pre-prod là https://e-qlta-uat.toaan.gov.vn (QLA_ENV=preprod) — khác production đúng bốn ký tự "-uat".`,
+    );
+  }
+}
 import { AUTH_FILE, AUTH_FILE_TKM } from './account';
 
 export default defineConfig({

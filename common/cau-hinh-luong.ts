@@ -42,7 +42,23 @@ let boNho: CauHinhLuong | undefined;
 export function cauHinhLuong(): CauHinhLuong {
   if (boNho) return boNho;
   const env = process.env.QLA_ENV || 'stg';
-  const cacTang = [docJson('luong-gdt.json'), docJson('tai-khoan.local.json'), docJson(`luong-gdt.${env}.json`)];
+  /**
+   * Bốn lớp, lớp sau ghi đè lớp trước:
+   *   1. `luong-gdt.json`                 — giá trị nghiệp vụ dùng chung, COMMIT
+   *   2. `tai-khoan.local.json`           — CCCD/mật khẩu từng vai (STG), KHÔNG commit
+   *   3. `tai-khoan.<env>.local.json`     — tài khoản RIÊNG của môi trường, KHÔNG commit
+   *   4. `luong-gdt.<env>.json`           — giá trị nghiệp vụ riêng môi trường, COMMIT
+   *
+   * Lớp 3 thêm ngày 04/10/2026 khi mở môi trường pre-prod: tài khoản pre-prod là bộ khác hẳn STG,
+   * mà lớp 4 là tệp ĐƯỢC COMMIT (`.gitignore` chỉ bỏ qua `config/*.local.json`) — nhét CCCD vào đó
+   * là đẩy số định danh thật lên repo công khai.
+   */
+  const cacTang = [
+    docJson('luong-gdt.json'),
+    docJson('tai-khoan.local.json'),
+    docJson(`tai-khoan.${env}.local.json`),
+    docJson(`luong-gdt.${env}.json`),
+  ];
   const taiKhoan: Record<string, TaiKhoanCauHinh> = {};
   for (const t of cacTang) {
     for (const [vai, v] of Object.entries(t.taiKhoan || {})) taiKhoan[vai] = { ...taiKhoan[vai], ...v };
