@@ -124,7 +124,26 @@ export async function themMoiDon(
   const idDon = await test.step('Lưu thông tin', () => trang.luu(d));
   expect(idDon, 'Máy chủ không trả id đơn sau khi lưu').toBeTruthy();
   ghi('id đơn', idDon);
-  return { idDon, maDon: '' };
+
+  /**
+   * Đọc luôn MÃ ĐƠN và SỐ THỤ LÝ — hai khoá mà các bước GĐT sau cần (bước 25 tìm đơn theo số thụ lý,
+   * bước 26 theo mã đơn). Cả hai do MÁY CHỦ cấp, đọc lại từ màn chi tiết sau khi lưu.
+   *
+   * Không có số thụ lý thì các bước sau KHÔNG THẤY ĐƠN — nên thiếu là lỗi ngay ở đây, chứ để bước 25
+   * báo "không tìm thấy đơn" thì tìm sai chỗ.
+   */
+  const { maDon } = await test.step('Mở lại đơn để đọc mã đơn', () => trang.kiemTraSauLuu());
+  const soThuLy = await page.locator('#thongTinChuyenDonVO_soThuLy').inputValue().catch(() => '');
+  ghi('mã đơn', maDon || '(chưa có)');
+  ghi('số thụ lý đơn', soThuLy || '(chưa có)');
+  expect(maDon, 'Lưu xong nhưng hệ thống không cấp mã đơn').toBeTruthy();
+  expect(
+    soThuLy,
+    'Đơn chưa được thụ lý (thiếu số thụ lý) → các bước phân công/tờ trình sẽ không thấy đơn. ' +
+      'Kiểm ô "Thụ lý mới" ở khối Xử lý đơn.',
+  ).toBeTruthy();
+
+  return { idDon, maDon, soThuLy };
 }
 
 export async function kiemTraSauLuu(page: Page, _input: InputThemMoiDon, ghi: Ghi) {
