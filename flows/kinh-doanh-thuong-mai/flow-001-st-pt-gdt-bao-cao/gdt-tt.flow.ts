@@ -38,6 +38,19 @@ export interface TuyChonBanAnTuState {
    * SƠ THẨM (khi vụ không bị kháng cáo, bản án sơ thẩm có hiệu lực).
    */
   cap?: CapDeNghi;
+  /**
+   * BẢN ÁN DO CASE GIEO — dùng khi chạy RIÊNG cụm GĐT (BƯỚC 2→23 của đặc tả), không có bước 22 nào
+   * để lấy từ state. Phải là bản án CÓ THẬT trên môi trường đang chạy: bước nhập đơn vẫn tra cứu,
+   * không tìm thấy thì dừng ngay. Xem `banAnTuState`.
+   */
+  banAnGieo?: {
+    soBanAn: string;
+    ngayBanAn: string;
+    toaAn: string;
+    /** Nhãn "Loại án" MÀ HỆ THỐNG TRẢ VỀ sau tra cứu (vd. "Kinh doanh thương mại" — KHÔNG dấu phẩy) */
+    loaiAn: string;
+    capXetXu?: string;
+  };
   /** Ô "Thủ tục giải quyết" ở tab Thông tin bản án đề nghị */
   thuTucGiaiQuyet?: 'Giám đốc thẩm' | 'Tái thẩm';
   /** Cột "Người kháng nghị" dùng ở bước lập dự thảo kháng nghị */
@@ -57,6 +70,36 @@ export function banAnTuState(dd: DinhDanhCase, tuyChon: TuyChonBanAnTuState = {}
   const { cap = 'phuc-tham' } = tuyChon;
   const state = moCase(dd, bangPhuThuoc(FLOW_001));
   const duLieu = state.doc().duLieu;
+
+  /**
+   * ĐƯỜNG THỨ HAI: bản án do CASE GIEO, không lấy từ state.
+   *
+   * Vì sao cần: đặc tả `GDT-TT-bao-cao-thong-ke.txt` BẮT ĐẦU TỪ MỘT BẢN ÁN ĐÃ CÓ — BƯỚC 2 là "nhập
+   * dữ liệu đơn", đặc tả không có bước nào tạo bản án. Trên STG ta chạy trọn 45 bước nên bước 22
+   * sinh ra bản án và state có sẵn số/ngày/tòa. Nhưng muốn chạy RIÊNG cụm GĐT (BƯỚC 2→23) — ví dụ
+   * trên một môi trường mới, theo đúng phạm vi đặc tả — thì không có bước 22 nào để lấy.
+   *
+   * Khai `banAnGieo` thì dùng thẳng, và bước nhập đơn vẫn TRA CỨU bản án đó trên hệ thống: bản án
+   * không tồn tại thì dừng ngay với "Không tìm thấy bản án trong hệ thống", KHÔNG nhập tay thành
+   * đơn trỏ vào bản án không có thật.
+   */
+  if (tuyChon.banAnGieo) {
+    const g = tuyChon.banAnGieo;
+    return {
+      dong: 0,
+      soBanAn: g.soBanAn,
+      ngayBanAn: chuanNgay(g.ngayBanAn),
+      toaAn: g.toaAn,
+      toaAnTrongFile: g.toaAn,
+      capXetXu: g.capXetXu ?? (cap === 'phuc-tham' ? 'Phúc thẩm' : 'Sơ thẩm'),
+      loaiAn: g.loaiAn,
+      quanHePhapLuat: tuyChon.quanHePhapLuat,
+      thuTucGiaiQuyet: tuyChon.thuTucGiaiQuyet ?? 'Giám đốc thẩm',
+      nguoiKhangNghi: tuyChon.nguoiKhangNghi,
+      noiDungGoiY: '',
+      ...(tuyChon.nguyenDon ? { nguyenDon: tuyChon.nguyenDon } : {}),
+    } as BanAnSoTham;
+  }
 
   // Khoá + bước sinh ra khoá đó, đúng theo `flow.ts` — thiếu thì chỉ tên bước phải chạy lại
   const nguon =
@@ -150,6 +193,13 @@ const banAnCase = (dd: Parameters<typeof banAnTuState>[0], input: DuLieuVao) =>
     thuTucGiaiQuyet: 'Giám đốc thẩm',
     quanHePhapLuat: input.quanHePhapLuatChiTiet,
     nguyenDon: input.nguyenDon.hoTen,
+    /**
+     * Case khai `banAnGdt` → cụm GĐT chạy RIÊNG theo đúng phạm vi đặc tả (BƯỚC 2→23), lấy bản án
+     * đã có trên môi trường thay vì bản án do bước 22 của chính case sinh ra.
+     */
+    ...((input as { banAnGdt?: NonNullable<TuyChonBanAnTuState['banAnGieo']> }).banAnGdt
+      ? { banAnGieo: (input as { banAnGdt: NonNullable<TuyChonBanAnTuState['banAnGieo']> }).banAnGdt }
+      : {}),
   });
 
 /**
