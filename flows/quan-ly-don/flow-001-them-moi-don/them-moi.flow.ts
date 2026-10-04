@@ -15,6 +15,7 @@ import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 import { ThemMoiDonPage, taoThongTinDon, type ThongTinDon } from '../../../pages/them-moi-don.page';
 import { nguoiNgauNhien } from '../../../common/du-lieu';
+import { nhanSelect } from '../../../common/antd';
 import type { InputThemMoiDon } from './cai-dat';
 
 type Ghi = (ten: string, giaTri: string) => void;
@@ -161,7 +162,21 @@ export async function themMoiDon(
       'Kiểm ô "Thụ lý mới" ở khối Xử lý đơn.',
   ).toBeTruthy();
 
-  return { idDon, maDon, soThuLy };
+  /**
+   * TRẢ LUÔN BẢN ÁN ĐỀ NGHỊ (số · ngày · tòa) để các bước sau dùng.
+   *
+   * Vì sao: từ bước 27, các màn phê duyệt nhận diện đúng vụ bằng "dấu hiệu vụ" dựng từ số/ngày/tòa
+   * bản án (`banAnTuState`), mà hàm đó đọc từ CaseState do **bước 22** của luồng 45 bước sinh ra.
+   * Luồng GĐT riêng KHÔNG có bước 22 → bước 27 đỏ với 'state thiếu "soBanAnPhucTham"'.
+   *
+   * Bước này tự sinh bản án rồi nhập tay, nên chính nó là nơi biết ba giá trị đó. Tòa án ĐỌC LẠI
+   * NHÃN TRÊN FORM (không dùng chuỗi lọc đã gieo): nhãn mới là tên tòa đầy đủ mà hệ thống giữ, và
+   * đó mới là chuỗi khớp được với dòng trên các màn phê duyệt.
+   */
+  const toaDaChon = (await nhanSelect(page, page.locator('#thongTinBanAn_maToaXetXu')).catch(() => '')) || d.toaAn;
+  ghi('bản án đề nghị', `${d.soBanAn} — ${d.ngayBanAn} — ${toaDaChon}`);
+
+  return { idDon, maDon, soThuLy, soBanAn: d.soBanAn, ngayBanAn: d.ngayBanAn, toaAn: toaDaChon };
 }
 
 export async function kiemTraSauLuu(page: Page, _input: InputThemMoiDon, ghi: Ghi) {

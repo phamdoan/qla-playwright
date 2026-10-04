@@ -50,5 +50,19 @@ export const FLOW_QLD_002: DinhNghiaFlow = {
   module: 'QUAN_LY_DON',
   ten: 'Nhập data GĐT/TT: đơn đề nghị → phân công → kháng nghị → thụ lý xét xử → HĐXX → quản lý vụ xét xử (BƯỚC 2–23)',
   nguon: 'docs/stepdata/GDT-TT-bao-cao-thong-ke.txt',
-  buoc: FLOW_KDTM.buoc.filter(b => Number(b.ma.slice(0, 2)) >= BUOC_DAU),
+  buoc: FLOW_KDTM.buoc
+    .filter(b => Number(b.ma.slice(0, 2)) >= BUOC_DAU)
+    .map(b =>
+      b.ma === '24-gdt-tao-don-de-nghi'
+        ? {
+            ...b,
+            /**
+             * Bước 24 ở luồng này SINH THÊM ba khoá bản án mà trên luồng 45 bước do bước 22 tạo ra.
+             * Khai ở đây để `tools/lineage.js` thấy bước 27→45 đọc khoá đã có người sinh — không
+             * khai thì cổng kiểm lineage báo "đọc khoá chưa ai sinh".
+             */
+            ra: [...b.ra, 'soBanAnPhucTham', 'ngayBanAnPhucTham', 'toaRaBanAnPhucTham'],
+          }
+        : b,
+    ),
 };

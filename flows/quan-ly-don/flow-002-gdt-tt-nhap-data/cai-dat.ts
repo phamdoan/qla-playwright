@@ -35,6 +35,18 @@ export const CAI_DAT: BangCaiDat<InputGdtTt> = {
   /** BƯỚC 2 của đặc tả — nhập đơn trên môi trường chưa có bản án nào */
   '24-gdt-tao-don-de-nghi': async ({ page, input, ghi }) => {
     const kq = await themMoiDon(page, input as unknown as InputThemMoiDon, ghi);
-    return { gdtIdDon: kq.idDon, gdtMaDon: kq.maDon, gdtSoThuLyDon: kq.soThuLy };
+    /**
+     * Đổi tên khoá sang ĐÚNG khoá mà `banAnTuState` đọc (soBanAnPhucTham / ngayBanAnPhucTham /
+     * toaRaBanAnPhucTham) — trên luồng 45 bước chúng do bước 22 sinh ra. Nhờ vậy bước 27→45 dùng
+     * NGUYÊN thân bước của KDTM, không cần sửa gì thêm.
+     */
+    return {
+      gdtIdDon: kq.idDon,
+      gdtMaDon: kq.maDon,
+      gdtSoThuLyDon: kq.soThuLy,
+      soBanAnPhucTham: kq.soBanAn,
+      ngayBanAnPhucTham: kq.ngayBanAn,
+      toaRaBanAnPhucTham: kq.toaAn,
+    };
   },
 };
