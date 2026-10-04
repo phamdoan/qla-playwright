@@ -116,8 +116,21 @@ export const CAI_DAT: BangCaiDat<InputKdtm> = {
   '26-gdt-to-trinh-phan-cong': ({ page, ghi, can }) => gdtToTrinhPhanCong(page, ghi, can('gdtMaDon')),
   '27-gdt-cvp-trinh-pca': ({ page, dd, ghi, input, can }) =>
     gdtCvpTrinhPca(page, dd, ghi, input, can('gdtKhoaToTrinh')),
+  /**
+   * Bước 28 phải đọc `gdtToTrinhDaTrinhPca` — khoá MỚI do bước 27 sinh ra khi CVP trình tiếp, KHÔNG
+   * phải `gdtKhoaToTrinh` của bước 26.
+   *
+   * Khai báo trong `flow.ts` đã đúng (`vao: ['gdtToTrinhDaTrinhPca']`) nhưng chỗ cài đặt này truyền
+   * khoá cũ — hai bên MÂU THUẪN. `tools/lineage.js` không bắt được vì nó đối chiếu các KHAI BÁO với
+   * nhau, không đọc được tham số thật của thân bước.
+   *
+   * Trên STG lỗi này bị che: `moDeXuat` tìm theo id trước, trượt thì lùi sang tìm theo TÊN LOẠI văn
+   * bản, mà ở STG tên là "Tờ trình phân công thẩm phán" nên khớp `/Tờ trình phân công/i`. Trên
+   * pre-prod văn bản mang tên "Tờ trình khác" → cả hai đường đều trượt, và lỗi mới lộ ra
+   * (đo 04/10/2026, bước 28 đỏ "Không thấy đề xuất ... ở cả Chờ duyệt lẫn Đã duyệt").
+   */
   '28-gdt-pca-phe-duyet-to-trinh': ({ page, dd, ghi, input, can }) =>
-    gdtPcaPheDuyetToTrinh(page, dd, ghi, input, can('gdtKhoaToTrinh')),
+    gdtPcaPheDuyetToTrinh(page, dd, ghi, input, can('gdtToTrinhDaTrinhPca')),
   '29-gdt-thong-bao-phan-cong': ({ page, ghi, can }) => gdtThongBaoPhanCong(page, ghi, can('gdtMaDon')),
   '30-gdt-cvp-ky-thong-bao': ({ page, dd, ghi, input, can }) =>
     gdtCvpKyThongBao(page, dd, ghi, input, can('gdtKhoaThongBao')),

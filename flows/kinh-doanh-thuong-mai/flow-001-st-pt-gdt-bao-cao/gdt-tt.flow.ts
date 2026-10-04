@@ -171,6 +171,13 @@ type GhiChu = (nhan: string, mo: string) => void;
 type DuLieuVao = typeof INPUT;
 
 /** Người duyệt / người ký của Văn phòng HCTP (Luồng nhập data.txt · B4–B5) */
+/**
+ * Tên loại văn bản tờ trình trên màn Phê duyệt — khớp RỘNG vì tên khác nhau theo môi trường:
+ * STG "Tờ trình phân công thẩm phán", pre-prod "Tờ trình khác" (xem HctpPage.lapTamTrinhPhanCong).
+ * Đây là đường LÙI khi tìm theo id trượt, nên khớp rộng là đúng — id mới là cái chốt danh tính.
+ */
+const TEN_TO_TRINH = /Tờ trình/i;
+
 const NGUOI_DUYET = giaTri('nguoiDuyetVanBan');
 const NGUOI_KY = giaTri('nguoiKyVanBan');
 
@@ -281,7 +288,7 @@ export async function gdtCvpTrinhPca(page: Page, dd: DinhDanhCase, ghi: GhiChu, 
   const b = banAnCase(dd, input);
   const pd = new PheDuyetPage(page);
   await pd.mo();
-  const con = await moDeXuat(pd, khoaToTrinh, /Tờ trình phân công/i, dauHieu(b, input));
+  const con = await moDeXuat(pd, khoaToTrinh, TEN_TO_TRINH, dauHieu(b, input));
   if (con) {
     await pd.ykienVaKyLogic(
       'Đồng ý phân công Thẩm phán, kính trình Phó Chánh án phê duyệt.',
@@ -301,7 +308,7 @@ export async function gdtPcaPheDuyetToTrinh(page: Page, dd: DinhDanhCase, ghi: G
   const b = banAnCase(dd, input);
   const pd = new PheDuyetPage(page);
   await pd.mo();
-  const con = await moDeXuat(pd, khoaToTrinh, /Tờ trình phân công/i, dauHieu(b, input));
+  const con = await moDeXuat(pd, khoaToTrinh, TEN_TO_TRINH, dauHieu(b, input));
   if (con) {
     await pd.ykienVaPheDuyet('Đồng ý phân công Thẩm phán theo tờ trình.');
     ghi('28 PCA', 'đã phê duyệt tờ trình phân công');
