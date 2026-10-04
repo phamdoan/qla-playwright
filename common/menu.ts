@@ -13,7 +13,7 @@ const thoat = (s: string) => s.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
  * trả về cái ẩn và `toBeVisible()` chờ hết 60 s dù menu vẫn hiện bình thường. Menu thật là
  * `<aside aria-label="Menu chính">` (role `complementary`). Menu cũ là `.ant-layout-sider`.
  */
-function khungMenu(page: Page): Locator {
+export function khungMenu(page: Page): Locator {
   return page
     .locator('aside[aria-label="Menu chính"], .ant-layout-sider')
     .filter({ has: page.locator('a, [role="menuitem"]') })
