@@ -54,14 +54,22 @@ const tepDuLieu = fs
   .map(f => path.join('data', f))
   .filter(f => fs.statSync(path.join(GOC, f)).isFile() && biBoQua(f));
 
-const canCo = [
-  ...tepDuLieu,
-  ...HO_SO,
-  ...fs
-    .readdirSync(path.join(GOC, 'config'))
-    .filter(f => /\.local\.json$/.test(f))
-    .map(f => path.join('config', f)),
-];
+/**
+ * Tài khoản: khai `--moi-truong=X` thì CHỈ mang `tai-khoan.X.local.json` (+ tệp tài khoản đăng
+ * nhập, dùng chung mọi môi trường). KHÔNG mang `tai-khoan.local.json` của STG.
+ *
+ * Vì sao: cấu hình xếp lớp, lớp STG nằm DƯỚI lớp môi trường. Vai nào có ở lớp STG mà thiếu ở lớp
+ * môi trường sẽ lặng lẽ dùng CCCD của STG rồi hỏng ở SSO với "đăng nhập thất bại" — thay vì báo
+ * thẳng "Thiếu tài khoản cho vai …". Bản sao của một môi trường chỉ nên có tài khoản của chính nó,
+ * để lỗi chỉ đúng chỗ.
+ */
+const tepTaiKhoan = fs
+  .readdirSync(path.join(GOC, 'config'))
+  .filter(f => /\.local\.json$/.test(f))
+  .filter(f => !moiTruong || f === 'tai-khoan-dang-nhap.local.json' || f.includes(`.${moiTruong}.`))
+  .map(f => path.join('config', f));
+
+const canCo = [...tepDuLieu, ...HO_SO, ...tepTaiKhoan];
 
 if (chiKiem) {
   if (!fs.existsSync(DICH)) {
