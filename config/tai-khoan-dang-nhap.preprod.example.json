@@ -1,0 +1,58 @@
+{
+  "_ghiChu": [
+    "Bộ tài khoản test ĐĂNG NHẬP của môi trường PRE-PROD (https://e-qlta-uat.toaan.gov.vn).",
+    "",
+    "Đây là tài khoản TAND TỈNH BẮC NINH + Văn phòng — KHÁC HẲN bộ gốc",
+    "(tai-khoan-dang-nhap.example.json) là 23 tài khoản TANDTC. Vì thế cặp tệp .preprod.* THAY THẾ",
+    "cặp gốc khi QLA_ENV=preprod, không chồng lên (xem common/tai-khoan-dang-nhap.ts).",
+    "",
+    "Tệp này COMMIT ĐƯỢC: chỉ có tên + chức danh + chức vụ + đơn vị, KHÔNG có CCCD.",
+    "CCCD nằm ở config/tai-khoan-dang-nhap.preprod.local.json (.gitignore bỏ qua *.local.json).",
+    "Mật khẩu theo quy ước Ta@<CCCD> nên cũng không cần khai.",
+    "",
+    "PRE-PROD KHÔNG CÓ TÀI KHOẢN TOÀN QUYỀN: quyền chia theo 8 vai dưới đây. Luồng nào cần nhiều",
+    "vai thì phải đổi tài khoản giữa các bước, y như trên STG."
+  ],
+  "taiKhoan": {
+    "cvpHanhBn": {
+      "ten": "Hoàng Thị Hạnh",
+      "chucVu": "Chánh văn phòng (Thẩm tra viên) — Văn phòng",
+      "cccd": ""
+    },
+    "pcvpVanTrangBn": {
+      "ten": "Nguyễn Thị Vân Trang",
+      "chucVu": "Phó Chánh văn phòng (Thẩm tra viên) — Văn phòng",
+      "cccd": ""
+    },
+    "canBoKhanhLyBn": {
+      "ten": "Đồng Khánh Ly",
+      "chucVu": "Cán bộ (Thư ký viên) — Văn phòng",
+      "cccd": ""
+    },
+    "canBoThiLoanBn": {
+      "ten": "Hà Thị Loan",
+      "chucVu": "Cán bộ (Thư ký viên) — Văn phòng",
+      "cccd": ""
+    },
+    "pcaTrongTruongBn": {
+      "ten": "Nguyễn Trọng Trường",
+      "chucVu": "Phó Chánh án (Thẩm phán TAND bậc 2) — TAND tỉnh Bắc Ninh",
+      "cccd": ""
+    },
+    "tpGdktXuanNinhBn": {
+      "ten": "Ngô Xuân Ninh",
+      "chucVu": "Trưởng phòng — Phòng Giám đốc, kiểm tra, thanh tra và thi hành án",
+      "cccd": ""
+    },
+    "ptpGdktHongNhungBn": {
+      "ten": "Nguyễn Thị Hồng Nhung",
+      "chucVu": "Phó trưởng phòng (Thẩm tra viên) — Phòng Giám đốc, kiểm tra, thanh tra và thi hành án",
+      "cccd": ""
+    },
+    "chanhAnLeHuongBn": {
+      "ten": "Chu Lệ Hường",
+      "chucVu": "Chánh án — TAND tỉnh Bắc Ninh",
+      "cccd": ""
+    }
+  }
+}

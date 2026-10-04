@@ -26,8 +26,23 @@ interface HoSo {
 }
 
 const THU_MUC = path.resolve(__dirname, '../config');
-const FILE_MAU = 'tai-khoan-dang-nhap.example.json';
-const FILE_LOCAL = 'tai-khoan-dang-nhap.local.json';
+
+/**
+ * MỖI MÔI TRƯỜNG MỘT BỘ TÀI KHOẢN RIÊNG, không gộp.
+ *
+ * Có `tai-khoan-dang-nhap.<env>.example.json` thì cặp tệp của môi trường đó THAY THẾ cặp tệp gốc,
+ * chứ không chồng lên. Vì sao không gộp: bộ gốc là 23 tài khoản TANDTC, còn pre-prod là tài khoản
+ * TAND tỉnh Bắc Ninh — người khác, đơn vị khác, vai khác. Gộp lại thì mỗi lượt chạy đều cố đăng
+ * nhập 23 tài khoản không tồn tại ở môi trường đang chạy, và danh sách test đầy kết quả đỏ vô nghĩa.
+ *
+ * Tệp `.example.json` (COMMIT) vẫn là bộ khoá hợp lệ — gõ sai khoá ở tệp `.local.json` là báo lỗi
+ * ngay, để tài khoản đó không lặng lẽ bị bỏ qua.
+ */
+const envHienTai = process.env.QLA_ENV || 'stg';
+const coHoSoRieng = fs.existsSync(path.join(THU_MUC, `tai-khoan-dang-nhap.${envHienTai}.example.json`));
+const HAU_TO = coHoSoRieng ? `.${envHienTai}` : '';
+const FILE_MAU = `tai-khoan-dang-nhap${HAU_TO}.example.json`;
+const FILE_LOCAL = `tai-khoan-dang-nhap${HAU_TO}.local.json`;
 
 const docJson = (ten: string): HoSo => {
   const f = path.join(THU_MUC, ten);
