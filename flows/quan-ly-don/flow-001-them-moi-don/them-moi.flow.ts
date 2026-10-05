@@ -84,7 +84,7 @@ export async function themMoiDon(
       ghi('OCR', 'bóc tách xong, đã sang màn them-moi-tu-ocr');
     }
   } else {
-    await test.step('Bỏ qua OCR (Quay lại) để nhập tay', () => trang.boQuaOcr());
+    ghi('OCR', await test.step('Bỏ qua OCR (Quay lại) để nhập tay', () => trang.boQuaOcr()));
   }
 
   // ── Khối "Thông tin bản án đề nghị" ──

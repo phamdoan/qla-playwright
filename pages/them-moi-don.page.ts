@@ -402,15 +402,58 @@ export class ThemMoiDonPage {
    * FE (useOcrDonStepper.handleCancelOcr) giữ file vừa tải làm tài liệu đơn, ở lại màn /them-moi để nhập tay;
    * file được lưu vào hồ sơ số hoá sau khi "Lưu thông tin".
    */
-  async boQuaOcr() {
+  async boQuaOcr(): Promise<string> {
     const { page } = this;
     const ocr = modal(page, 'Xác nhận xử lý OCR');
-    await expect(ocr).toBeVisible({ timeout: 30_000 });
-    await nghi(page, 500, 1000);
-    await ocr.getByRole('button', { name: 'Quay lại' }).click();
-    await expect(ocr).toBeHidden({ timeout: 15_000 });
-    await expect(page, 'Bỏ qua OCR nhưng màn hình vẫn chuyển sang luồng OCR').toHaveURL(/\/quan-ly-don\/them-moi$/);
-    await expect(page.getByText('Thêm mới Đơn đề nghị GĐT/TT')).toBeVisible({ timeout: 30_000 });
+    const form = page.getByText('Thêm mới Đơn đề nghị GĐT/TT');
+    /**
+     * Dấu hiệu TỆP ĐÃ ĐÍNH KÈM: trình xem PDF của màn Thêm mới. Hai bộ chọn này thuộc riêng trình
+     * xem (ô số trang, nút phóng to) nên không trùng với thứ gì khác trên màn.
+     */
+    const xemPdf = page
+      .getByRole('textbox', { name: 'Enter a page number' })
+      .or(page.getByRole('button', { name: /Zoom document/i }));
+
+    /**
+     * CHỜ MỘT TRONG HAI: popup "Xác nhận xử lý OCR", HOẶC form đã mở kèm trình xem PDF.
+     *
+     * Vì sao: pre-prod KHÔNG hỏi OCR. Đo 05/10/2026 — sau khi bấm "Tải lên", màn vào THẲNG form
+     * "Thêm mới Đơn đề nghị GĐT/TT" với trình xem PDF đã nạp tài liệu `don-gdt` 14 trang, và popup
+     * không bao giờ hiện. Bản cũ `expect(ocr).toBeVisible({ timeout: 30_000 })` vì thế chờ hết 30 s
+     * rồi làm đỏ bước 24, dù việc tải tệp đã thành công và form đã sẵn sàng nhập.
+     *
+     * KHÔNG nuốt lỗi bằng try/catch: nuốt thì trường hợp "tải tệp hỏng" cũng đi tiếp êm rồi vỡ ở
+     * chỗ khác. Nhánh không-popup phải CHỨNG MINH tệp đã đính kèm mới được đi tiếp, và trả về mô tả
+     * để bước ghi rõ nó đã đi nhánh nào — không để hai môi trường khác nhau mà bằng chứng giống nhau.
+     */
+    await expect(
+      ocr.or(xemPdf).first(),
+      'Sau khi bấm "Tải lên": không thấy popup "Xác nhận xử lý OCR", cũng không thấy trình xem PDF ' +
+        '→ tệp đơn chưa tải lên được.',
+    ).toBeVisible({ timeout: 30_000 });
+
+    if (await ocr.isVisible().catch(() => false)) {
+      await nghi(page, 500, 1000);
+      await ocr.getByRole('button', { name: 'Quay lại' }).click();
+      await expect(ocr).toBeHidden({ timeout: 15_000 });
+      await expect(page, 'Bỏ qua OCR nhưng màn hình vẫn chuyển sang luồng OCR').toHaveURL(
+        /\/quan-ly-don\/them-moi$/,
+      );
+      await expect(form).toBeVisible({ timeout: 30_000 });
+      return 'popup OCR đã hiện → bấm "Quay lại", nhập tay';
+    }
+
+    await expect(page, 'Không có popup OCR mà màn cũng không ở /quan-ly-don/them-moi').toHaveURL(
+      /\/quan-ly-don\/them-moi$/,
+    );
+    await expect(form, 'Không có popup OCR và cũng không thấy form "Thêm mới Đơn đề nghị GĐT/TT"').toBeVisible({
+      timeout: 30_000,
+    });
+    await expect(
+      xemPdf,
+      'Không có popup OCR và KHÔNG thấy trình xem PDF → không có bằng chứng tệp đơn đã đính kèm',
+    ).toBeVisible({ timeout: 15_000 });
+    return 'môi trường KHÔNG hỏi OCR → vào thẳng form, tệp đơn đã đính kèm (trình xem PDF có tài liệu)';
   }
 
   /** "Xác nhận xử lý OCR" → "Bắt đầu OCR" → chờ "Bóc tách thành công" → "Lấy thông tin" → màn them-moi-tu-ocr */

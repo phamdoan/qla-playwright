@@ -46,7 +46,7 @@ export async function nhapDonTuBanAn(page: Page, b: BanAnSoTham, testInfo: TestI
 
   await test.step('Mở màn Thêm mới từ Danh sách đơn', () => trang.moTuDanhSachDon({ quaMenu: true }));
   await test.step('Tải tài liệu đơn', () => trang.taiLenFileDon());
-  await test.step('Bỏ qua OCR (Quay lại) để nhập tay', () => trang.boQuaOcr());
+  ghi('OCR', await test.step('Bỏ qua OCR (Quay lại) để nhập tay', () => trang.boQuaOcr()));
   await test.step('Nhập 3 ô bản án từ Excel + Cấp xét xử', () => trang.datThongTinBanAnTheoDuLieu(b));
 
   await test.step('Tra cứu bản án', () => trang.traCuuBanAn({ batBuocTimThay: true }));
