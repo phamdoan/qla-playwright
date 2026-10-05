@@ -272,6 +272,17 @@ export class PheDuyetPage {
 
     await this.mo();
     await this.datBoLoc(typeof loai === 'string' ? loai : undefined, nguoiTao);
+    /**
+     * CHỜ BẢNG DỰNG XONG TRƯỚC KHI ĐẾM.
+     *
+     * Đếm ngay sau `datBoLoc` có thể ra 0 chỉ vì bảng chưa kịp tải — rồi bỏ lọc tên một cách vô cớ.
+     * Chờ tới khi có ít nhất một dòng HOẶC ô "Không có dữ liệu" hiện ra thì con số mới có nghĩa.
+     */
+    await page
+      .locator('.ant-table-row, .ant-empty, .ant-table-placeholder')
+      .first()
+      .waitFor({ state: 'visible', timeout: 20_000 })
+      .catch(() => {});
     if ((await dongKhop().count()) === 0) {
       boLocTen = false;
       await this.mo();
