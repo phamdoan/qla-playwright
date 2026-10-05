@@ -1,6 +1,6 @@
 import { Locator, Page, expect } from '@playwright/test';
 import { choHetSpin, chonSelect, go, hienTrong, nghi, toastDaHien } from '../common/antd';
-import { moMenu } from '../common/menu';
+import { khungMenu, moMenu } from '../common/menu';
 
 /**
  * Màn "Phê duyệt đề xuất" (Công tác lãnh đạo) – qla-webapp pages/VuAn/CongTacLanhDao/PheDuyetDeXuat.
@@ -139,14 +139,35 @@ export class PheDuyetPage {
     // Đang ở sẵn màn phê duyệt (gọi mo() lần 2) thì KHÔNG đụng vào menu: bấm menu cha lúc đó làm
     // submenu đóng lại giữa chừng → "element is not visible / intercepts pointer events" rồi hết 30s
     // (lỗi B9 của K01, 29/09/2026).
-    if (await hienTrong(tabCho, 2_000)) {
+    /**
+     * CHỈ DÒ TAB KHI ĐANG Ở ĐÚNG MÀN. Đứng ở `/qla/dashboard` mà chờ tab "Chờ duyệt" 2 s rồi lại 1 s
+     * là chờ một thứ chắc chắn không có — nhìn trong trace thành "từ dashboard nhảy thẳng vào Chờ
+     * duyệt", và tốn 3 s mỗi lần mở màn. Người dùng chỉ ra 05/10/2026 khi xem trace bước 27.
+     */
+    const dangOManPheDuyet = /lanh-dao\/phe-duyet-de-xuat/.test(page.url());
+    if (dangOManPheDuyet && (await hienTrong(tabCho, 2_000))) {
       await tabCho.click();
       await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
       return;
     }
-    const con = page.locator('.ant-layout-sider, aside').first().getByRole('menuitem', { name: /^Phê duyệt đề xuất/ }).first();
+    /**
+     * BA LỖI ĐÃ SỬA Ở KHỐI NÀY (đo 05/10/2026 trên pre-prod, trace bước 27):
+     *
+     * 1. `moMenu(page, ['Công tác lãnh đạo'])` — SAI CẤP. "Công tác lãnh đạo" không phải mục gốc;
+     *    menu gốc là **"Lãnh đạo"**, dưới nó mới có "Công tác lãnh đạo" → "Phê duyệt đề xuất".
+     *    Khai thiếu cấp nên `moMenu` báo 'Không thấy menu "Công tác lãnh đạo"' và cả hai lượt thử
+     *    đều trượt, rồi mới rơi xuống `goto`.
+     * 2. `.locator('.ant-layout-sider, aside').first()` — MenuV3 có HAI thẻ `<aside>` và thẻ ĐỨNG
+     *    TRƯỚC là thẻ ẨN, nên `.first()` luôn bắt trúng cái ẩn. Dùng `khungMenu()` như mọi chỗ khác.
+     * 3. `getByRole('menuitem', …)` — MenuV3 dựng mục menu bằng thẻ `<a href>` THƯỜNG, không gắn
+     *    `role="menuitem"`. Bắt theo role thì không bao giờ thấy. Đi theo `href` như `moMenu` vẫn làm.
+     *
+     * Cả ba đều là bẫy đã ghi lại từ trước mà khối này chưa được sửa theo.
+     */
+    const con = khungMenu(page).locator('a[href*="lanh-dao/phe-duyet-de-xuat"]').first();
     for (let lan = 0; lan < 2 && !(await hienTrong(tabCho, 1_000)); lan++) {
-      await moMenu(page, ['Công tác lãnh đạo']).catch(() => {});
+      await moMenu(page, ['Lãnh đạo', 'Công tác lãnh đạo', 'Phê duyệt đề xuất']).catch(() => {});
+      if (await hienTrong(tabCho, 1_000)) break;
       if (await hienTrong(con, 3_000)) await con.click({ timeout: 10_000 }).catch(() => {});
       await choHetSpin(page);
     }
