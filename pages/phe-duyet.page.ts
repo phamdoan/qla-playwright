@@ -250,10 +250,37 @@ export class PheDuyetPage {
     const { page } = this;
     const can = dauHieu.filter(Boolean);
     const ten = loai instanceof RegExp ? loai.source : loai;
-    const dongKhop = () => page.locator('.ant-table-row').filter({ hasText: loai });
+    /**
+     * LỌC THEO TÊN LOẠI, NHƯNG BỎ LỌC KHI KHÔNG RA DÒNG NÀO.
+     *
+     * Màn "Phê duyệt đề xuất" gọi văn bản bằng TÊN KHÁC màn "Danh sách đơn": đo pre-prod 05/10/2026,
+     * màn đơn có "Yêu cầu bổ sung" còn màn duyệt ghi "Giấy yêu cầu bổ sung", và hàng "Đã duyệt" có
+     * "Quyết định phân công thẩm phán" — trong khi bước 26–28 tìm dòng chứa "Tờ trình".
+     * Không dòng nào chứa "Tờ trình" → danh sách khớp RỖNG → vòng lặp không mở dòng nào → bước đỏ
+     * với "không thấy đề xuất ở cả Chờ duyệt lẫn Đã duyệt", trông y như môi trường thiếu dữ liệu.
+     * Thực ra kịch bản ĐÃ VÀO ĐÚNG màn danh sách (ảnh trang: tab "Chờ duyệt (1)" có đúng một dòng
+     * đang chờ), chỉ là không nhận ra dòng của mình.
+     *
+     * Không đoán bảng ánh xạ tên giữa hai màn: khi lọc theo tên ra 0 dòng thì QUÉT HẾT các dòng và
+     * để `xacNhanDungVu` (đối chiếu dấu hiệu vụ TRONG CHI TIẾT) phán quyết. Chậm hơn vài giây,
+     * nhưng không bao giờ bỏ sót vì một chữ khác nhau. Bộ lọc "Người tạo đề xuất" + mốc thời gian
+     * vẫn giữ nên số dòng phải mở vẫn nhỏ.
+     */
+    let boLocTen = true;
+    const dongKhop = () =>
+      boLocTen ? page.locator('.ant-table-row').filter({ hasText: loai }) : page.locator('.ant-table-row');
 
     await this.mo();
     await this.datBoLoc(typeof loai === 'string' ? loai : undefined, nguoiTao);
+    if ((await dongKhop().count()) === 0) {
+      boLocTen = false;
+      await this.mo();
+      await this.datBoLoc(undefined, nguoiTao);
+      console.log(
+        `    · không dòng nào mang tên "${ten}" → bỏ lọc tên, quét ${await dongKhop().count()} dòng ` +
+          `theo người tạo${nguoiTao ? ` "${nguoiTao}"` : ''} + mốc thời gian`,
+      );
+    }
     /** Sang trang thứ `trang` của danh sách đang mở (trang 1 = không bấm gì) */
     const moTrang = async (trang: number) => {
       for (let i = 1; i < trang; i++) {
@@ -267,7 +294,7 @@ export class PheDuyetPage {
     };
     for (let trang = 1; trang <= SO_TRANG_DO; trang++) {
       await this.mo();
-      await this.datBoLoc(typeof loai === 'string' ? loai : undefined, nguoiTao);
+      await this.datBoLoc(boLocTen && typeof loai === 'string' ? loai : undefined, nguoiTao);
       if (!(await moTrang(trang))) break;
       const tong = Math.min(await dongKhop().count(), toiDa);
       for (let i = 0; i < tong; i++) {
@@ -279,7 +306,7 @@ export class PheDuyetPage {
           return true;
         } catch {
           await this.mo();
-          await this.datBoLoc(typeof loai === 'string' ? loai : undefined, nguoiTao);
+          await this.datBoLoc(boLocTen && typeof loai === 'string' ? loai : undefined, nguoiTao);
           if (!(await moTrang(trang))) break;
         }
       }
@@ -296,8 +323,38 @@ export class PheDuyetPage {
         if (can.some(t => khopDauHieu(chu, t))) return false;
       }
     }
+    /**
+     * BÁO LỖI PHẢI NÓI RA NÓ ĐÃ THẤY GÌ.
+     *
+     * Thông báo cũ chỉ nói "không thấy đề xuất <tên>" — đọc xong vẫn không biết là màn rỗng, hay có
+     * dòng mà tên khác, hay có dòng mà dấu hiệu không khớp. Đo pre-prod 05/10/2026: ba lượt chạy
+     * liên tiếp cùng một câu đó, trong khi màn CÓ đúng 1 dòng ở "Chờ duyệt" và 3 dòng ở "Đã duyệt".
+     * Liệt kê tên các dòng thật của cả hai tab thì một lượt chạy là đủ kết luận.
+     */
+    const tenDong = async () =>
+      [
+        ...new Set(
+          (await page.locator('.ant-table-row').allInnerTexts().catch(() => []))
+            .map(s => (s.split('\n').find(x => x.trim()) || '').replace(/\s+/g, ' ').trim())
+            .filter(Boolean),
+        ),
+      ]
+        .slice(0, 8)
+        .join(' | ') || '(không dòng nào)';
+    const dongDaDuyet = await tenDong();
+    await this.mo();
+    await page.getByRole('tab', { name: /^Chờ duyệt/ }).click().catch(() => {});
+    await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
+    await nghi(page, 800, 1200);
+    const dongChoDuyet = await tenDong();
     throw new Error(
-      `Không thấy đề xuất "${ten}" của vụ này (dấu hiệu: ${can.join(' / ') || '-'}) ở cả "Chờ duyệt" lẫn "Đã duyệt"`,
+      `Không thấy đề xuất "${ten}" của vụ này (dấu hiệu: ${can.join(' / ') || '-'}) ở cả hai tab.\n` +
+        `  · "Chờ duyệt" đang có: ${dongChoDuyet}\n` +
+        `  · "Đã duyệt" đang có: ${dongDaDuyet}\n` +
+        '  → Dòng CÓ mà tên khác "' +
+        ten +
+        '" thì đây là lệch TÊN LOẠI giữa màn Danh sách đơn và màn Phê duyệt đề xuất, ' +
+        'không phải thiếu dữ liệu.',
     );
   }
 
