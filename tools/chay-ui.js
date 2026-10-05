@@ -86,26 +86,14 @@ if (lay('so-cai')) env.QLA_SO_CAI_HAU_TO = lay('so-cai');
 if (lay('case')) env.QLA_CASE = lay('case');
 if (lay('so-case')) env.QLA_SO_CASE = lay('so-case');
 /**
- * --vu-an-thuc=<mã|1>: BẬT bộ case sinh từ 111 bản án thật (`data/vu-an-thuc/`).
+ * --vu-an-thuc=<mã>: HẸP bộ case sinh từ 111 bản án thật (`data/vu-an-thuc/`) còn vài mã.
  *
- * Vì sao phải có cờ riêng ở đây: các case `case-bacb-***` CHỈ tồn tại khi `QLA_VU_AN_THUC` được
- * bật. Chạy `--case=case-bacb-022` mà quên nó thì Playwright báo **"Total: 0 tests in 0 files"** —
- * không lỗi, không cảnh báo, chỉ là không có gì chạy. Đo 04/10/2026: tôi vướng đúng bẫy này khi
- * dựng lệnh chạy lại bước 12 của vụ HNGĐ.
- *
- * Khai `--case=case-bacb-022` mà không khai cờ thì tự suy ra mã bản án (bỏ tiền tố `case-`), để
- * không ai phải nhớ hai chỗ cho cùng một thứ.
+ * KHÔNG còn là cổng bật/tắt. Từ 05/10/2026 toàn bộ 111 case LUÔN có trong danh sách (xem
+ * `data/vu-an-thuc/sinh-case.ts`), nên `--case=case-bacb-022` tự chạy được, không cần khai thêm gì.
+ * Trước đó thiếu cờ thì Playwright báo "Total: 0 tests in 0 files" — không lỗi, không cảnh báo,
+ * chỉ là không có gì chạy.
  */
-if (lay('vu-an-thuc')) {
-  env.QLA_VU_AN_THUC = lay('vu-an-thuc');
-} else if ((env.QLA_CASE || '').includes('bacb-')) {
-  env.QLA_VU_AN_THUC = env.QLA_CASE.split(',')
-    // Case KDTM mang hậu tố `-kdtm` trong ID (`case-bacb-001-kdtm`) nhưng MÃ BẢN ÁN thì không
-    .map(s => s.trim().replace(/^case-/, '').replace(/-kdtm$/, ''))
-    .filter(s => s.startsWith('bacb-'))
-    .join(',');
-  console.log(`(tự bật QLA_VU_AN_THUC=${env.QLA_VU_AN_THUC} vì --case có case-bacb-*)`);
-}
+if (lay('vu-an-thuc')) env.QLA_VU_AN_THUC = lay('vu-an-thuc');
 if (args.includes('--bo-qua-da-xong')) env.QLA_BO_QUA_DA_XONG = '1';
 // --hien: mở trình duyệt thật để thao tác/quan sát (dùng với spec mo-tay có page.pause())
 if (args.includes('--hien')) env.QLA_MO_TAY = '1';

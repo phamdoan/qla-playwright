@@ -62,7 +62,8 @@
     "ds:do-yeu-cau": "node tools/chay-ui.js stg --cli --file=do-yeu-cau-duong-su",
     "ds:hngd:ui": "node tools/chay-ui.js stg --ghi --tiep --case=case-bacb-022 --file=flow-001-st-pt",
     "ds:hngd": "node tools/chay-ui.js stg --ghi --cli --tiep --case=case-bacb-022 --file=flow-001-st-pt",
-    "ds:lao-dong:ui": "node tools/chay-ui.js stg --ghi --tiep --case=case-bacb-030 --file=flow-001-st-pt"
+    "ds:lao-dong:ui": "node tools/chay-ui.js stg --ghi --tiep --case=case-bacb-030 --file=flow-001-st-pt",
+    "all:ui": "node tools/chay-ui.js stg --ghi"
   },
   "keywords": [],
   "author": "",

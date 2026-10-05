@@ -7,14 +7,21 @@
  * nhau), chỉ thay phần nghiệp vụ: loại đơn, quan hệ pháp luật, đương sự, nội dung yêu cầu.
  *
  * ──────────────────────────────────────────────────────────────────────────────────────────────
- * PHẢI BẬT MỚI CHẠY. Mặc định `DS_CASE` của luồng dân sự vẫn chỉ có 4 case viết tay; 81 case sinh
- * từ bộ bản án thật chỉ vào danh sách khi có biến môi trường:
+ * THẤY ĐỦ CẢ BỘ, KHÔNG CẦN BẬT GÌ. Mặc định danh sách case gồm cả 81 case sinh từ bản án thật
+ * (dân sự/HNGĐ/lao động) và 30 case KDTM, nên `--list` và Playwright UI luôn phơi ra toàn bộ.
  *
- *   QLA_VU_AN_THUC=1                    thêm TẤT CẢ case sinh được
- *   QLA_VU_AN_THUC=bacb-010,bacb-034    chỉ thêm các bản án này
+ *   (không khai gì)                     THẤY và chạy được TẤT CẢ
+ *   QLA_VU_AN_THUC=bacb-010,bacb-034    HẸP danh sách còn các bản án này
+ *   QLA_VU_AN_THUC=1 | all              như không khai — giữ lại cho các lệnh cũ
  *
- * Vì sao không bật sẵn: một case là 23 bước, ~9 phút. Bật cả bộ là hàng chục giờ chạy — đó phải là
- * quyết định của người chạy, không phải tác dụng phụ của việc thêm file dữ liệu.
+ * TRƯỚC 05/10/2026 biến này là CỔNG CHẶN: không khai thì trả về mảng rỗng. Hệ quả là mở UI ra chỉ
+ * thấy 13 case gieo tay, còn 111 case đã dựng thì vô hình — người chạy không có cách nào biết bộ
+ * này có những gì. Nay đổi: THẤY là mặc định, CHỌN CHẠY CASE NÀO là quyền của người chạy
+ * (bấm trong UI, hoặc `--case=...` ở dòng lệnh).
+ *
+ * ⚠ ĐÁNH ĐỔI, nói thẳng: một case dân sự là 23 bước (~9 phút), KDTM 45 bước. Chạy CLI mà KHÔNG
+ * khai `--case` thì giờ sẽ khởi động cả bộ — hàng chục giờ. Không còn cổng chặn nào cản việc đó,
+ * vì cổng nào cản được lượt chạy cả bộ thì cũng cản luôn việc bấm chạy một case trong UI.
  * ──────────────────────────────────────────────────────────────────────────────────────────────
  *
  * CHỈ SINH CHO LUỒNG DÂN SỰ (`flow-001-st-pt`). Luồng này nhận cả ba loại đơn "Dân sự",
@@ -101,10 +108,9 @@ export function caseTuBanAn(ba: BanAnCongBo): CaseChay<typeof INPUT_KDTM> {
  */
 export function caseVuAnThuc(): CaseChay<typeof INPUT_KDTM>[] {
   const bat = (process.env.QLA_VU_AN_THUC || '').trim();
-  if (!bat) return [];
-
   const dungLuong = DS_BAN_AN_CONG_BO.filter(b => LOAI_DON_LUONG_DAN_SU.includes(b.loaiDon));
-  if (bat === '1' || bat.toLowerCase() === 'all') return dungLuong.map(caseTuBanAn);
+  // Không khai gì = THẤY ĐỦ CẢ BỘ. Xem khối chú thích đầu tệp về việc THẤY khác với CHẠY.
+  if (!bat || bat === '1' || bat.toLowerCase() === 'all') return dungLuong.map(caseTuBanAn);
 
   const chon = bat.split(',').map(s => s.trim()).filter(Boolean);
   const laMaThat = chon.filter(id => DS_BAN_AN_CONG_BO.some(b => b.id === id));
@@ -145,11 +151,9 @@ export function caseVuAnThuc(): CaseChay<typeof INPUT_KDTM>[] {
  */
 export function caseVuAnThucKdtm(): CaseChay<typeof INPUT_KDTM>[] {
   const bat = (process.env.QLA_VU_AN_THUC || '').trim();
-  if (!bat) return [];
-
   const cua = DS_BAN_AN_CONG_BO.filter(b => b.loaiDon === 'Kinh doanh, thương mại');
   const chon =
-    bat === '1' || bat.toLowerCase() === 'all'
+    !bat || bat === '1' || bat.toLowerCase() === 'all'
       ? cua
       : bat
           .split(',')

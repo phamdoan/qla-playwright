@@ -883,7 +883,7 @@ export class ThemMoiDonPage {
   async timDonDaNhapTheoBanAn(noiDungGoiY: string): Promise<{ maDon: string; soThuLy: string } | null> {
     const { page } = this;
     await moMenu(page, ['Quản lý đơn', 'Danh sách đơn']);
-    const o = page.getByPlaceholder('Nhập bất kỳ thông tin nào (người gửi, nội dung...)');
+    const o = page.getByRole('textbox', { name: /Từ khóa tìm kiếm chung/ });
     await expect(o).toBeVisible({ timeout: 60_000 });
     await go(o, noiDungGoiY);
     await page.getByRole('button', { name: /Tìm kiếm$/ }).click();
@@ -1200,12 +1200,15 @@ export class ThemMoiDonPage {
   /**
    * Danh sách đơn → tab "Đơn của tôi" → tìm theo mã đơn → phải thấy đúng đơn và người đứng đơn.
    *
-   * VÀO BẰNG MENU, KHÔNG `page.goto`. Đo 04/10/2026 (lượt chạy đầu của ba case không-OCR): bước 02
-   * chết với `locator.scrollIntoViewIfNeeded: Timeout 30000ms` và call log ghi rõ
-   * `waiting for getByPlaceholder('Nhập bất kỳ thông tin nào …')` — tức ô tìm kiếm KHÔNG BAO GIỜ
-   * hiện. `goto` thẳng vào một route của SPA này trả về VỎ RỖNG (cùng hiện tượng đã đo ở spec dò
-   * `do-yeu-cau-duong-su`: URL đúng mà 0 bảng · 0 card). `timDonDaNhapTheoBanAn` ngay trên đây dùng
-   * `moMenu` nên vẫn chạy được — làm theo nó.
+   * Ô TÌM KIẾM TÌM THEO NHÃN, KHÔNG THEO PLACEHOLDER. Đo 04/10/2026: bước 02 chết ở
+   * `waiting for getByPlaceholder('Nhập bất kỳ thông tin nào …')` trong khi cây DOM kèm lỗi cho thấy
+   * màn Danh sách đơn ĐÃ DỰNG ĐỦ (6 tab, bộ lọc, 10 dòng / 927 bản ghi). Chuỗi đó đã bị FE chuyển
+   * thành `formItemProps.tooltip` trong `DefaultSearchFormDon.tsx`, placeholder thật giờ là
+   * "Nhập từ khóa" → locator không bao giờ khớp. Bám nhãn "Từ khóa tìm kiếm chung" (ổn định,
+   * `hctp.page.ts` vẫn dùng nhãn này) thay vì placeholder.
+   *
+   * VÀO BẰNG MENU, KHÔNG `page.goto`: `goto` thẳng vào một route của SPA này trả về VỎ RỖNG (đã đo ở
+   * spec dò `do-yeu-cau-duong-su`: URL đúng mà 0 bảng · 0 card) — làm theo `timDonDaNhapTheoBanAn`.
    *
    * Và CHỜ Ô HIỆN TRƯỚC KHI GÕ: `go()` mở đầu bằng `scrollIntoViewIfNeeded` không hạn giờ, nên ô
    * thiếu thì treo 30 s rồi báo lỗi về cú cuộn — một thông báo chỉ vào đúng dòng mã mà không nói
@@ -1218,8 +1221,8 @@ export class ThemMoiDonPage {
     await expect(tab).toBeVisible({ timeout: 60_000 });
     await tab.click();
     await nghi(page, 500, 1000);
-    const oTim = page.getByPlaceholder('Nhập bất kỳ thông tin nào (người gửi, nội dung...)');
-    await expect(oTim, 'Màn Danh sách đơn chưa dựng xong: không thấy ô tìm kiếm').toBeVisible({
+    const oTim = page.getByRole('textbox', { name: /Từ khóa tìm kiếm chung/ });
+    await expect(oTim, 'Không thấy ô "Từ khóa tìm kiếm chung" trên màn Danh sách đơn').toBeVisible({
       timeout: 60_000,
     });
     await go(oTim, maDon);
