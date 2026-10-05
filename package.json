@@ -63,7 +63,8 @@
     "ds:hngd:ui": "node tools/chay-ui.js stg --ghi --tiep --case=case-bacb-022 --file=flow-001-st-pt",
     "ds:hngd": "node tools/chay-ui.js stg --ghi --cli --tiep --case=case-bacb-022 --file=flow-001-st-pt",
     "ds:lao-dong:ui": "node tools/chay-ui.js stg --ghi --tiep --case=case-bacb-030 --file=flow-001-st-pt",
-    "all:ui": "node tools/chay-ui.js stg --ghi"
+    "all:ui": "node tools/chay-ui.js stg --ghi",
+    "don:do-chuoi-duyet": "node tools/chay-ui.js preprod --cli --file=do-chuoi-duyet-preprod"
   },
   "keywords": [],
   "author": "",
