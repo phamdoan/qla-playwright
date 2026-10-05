@@ -75,31 +75,48 @@ for (const vai of VAI) {
      * lùi về "Tờ trình khác" vì danh mục không có "Tờ trình phân công thẩm phán" — nếu vai Phòng
      * GĐKT có loại đúng thì chính vai mới là chỗ sai, không phải môi trường thiếu tính năng.
      */
-    const uuTien = ['Tờ trình phân công thẩm phán', 'Thông báo phân công TP', 'Tờ trình khác'];
-    const loaiDung = uuTien.find(t => dsLoai.some(m => m === t));
-    console.log(`\n→ loại văn bản dùng để mở popup: ${loaiDung || '(không có loại nào trong danh sách ưu tiên)'}`);
+    /**
+     * THỬ LẦN LƯỢT CHO ĐẾN KHI ĐƠN XUẤT HIỆN, không chốt một loại rồi bỏ.
+     *
+     * Lượt đo đầu (04/10/2026) chốt "Thông báo phân công TP" theo danh sách ưu tiên rồi dừng với
+     * "không thấy dòng đơn 9272" — vì lọc theo loại văn bản còn LỌC LUÔN đơn đủ điều kiện lập loại
+     * đó. Phép đo vì thế không trả lời được câu hỏi chính (popup có ô Người duyệt không), chỉ nói
+     * được là đơn không đủ điều kiện cho loại vừa chọn. Mục tiêu là MỞ ĐƯỢC POPUP, nên loại nào mở
+     * được thì dùng loại đó.
+     *
+     * `QLA_LOAI_VB` để chỉ định tay; không khai thì thử theo thứ tự ưu tiên rồi tới cả danh mục.
+     */
+    const uuTien = [
+      ...(process.env.QLA_LOAI_VB ? [process.env.QLA_LOAI_VB] : []),
+      'Tờ trình phân công thẩm phán',
+      'Tờ trình khác',
+      'Thông báo phân công TP',
+      ...dsLoai,
+    ].filter((t, i, a) => dsLoai.includes(t) && a.indexOf(t) === i);
+
+    let loaiDung = '';
+    let dong = page.locator('.ant-table-row').first();
+    for (const thu of uuTien) {
+      await oLoai.click();
+      const muc = page
+        .locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option-content')
+        .filter({ hasText: new RegExp(`^${thu.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) })
+        .first();
+      if (!(await hienTrong(muc, 8_000))) continue;
+      await muc.click();
+      await choHetSpin(page);
+      await nghi(page, 1200, 1800);
+      dong = maDon
+        ? page.locator('.ant-table-row').filter({ hasText: maDon }).first()
+        : page.locator('.ant-table-row').first();
+      if (await hienTrong(dong, 8_000)) {
+        loaiDung = thu;
+        break;
+      }
+      console.log(`   (loại "${CAT(thu, 40)}": không có đơn ${maDon || 'nào'} đủ điều kiện)`);
+    }
+    console.log(`\n→ loại văn bản mở được popup: ${loaiDung || '(KHÔNG loại nào có đơn đủ điều kiện)'}`);
     if (!loaiDung) return;
-
-    await oLoai.click();
-    const muc = page
-      .locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option-content')
-      .filter({ hasText: new RegExp(`^${loaiDung.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`) })
-      .first();
-    if (!(await hienTrong(muc, 8_000))) {
-      console.log('⚠ không chọn được loại văn bản vừa tìm ra — dừng.');
-      return;
-    }
-    await muc.click();
-    await choHetSpin(page);
-    await nghi(page, 1200, 1800);
-
-    const dong = maDon
-      ? page.locator('.ant-table-row').filter({ hasText: maDon }).first()
-      : page.locator('.ant-table-row').first();
-    if (!(await hienTrong(dong, 20_000))) {
-      console.log(`⚠ Không thấy dòng đơn ${maDon || '(dòng đầu)'} sau khi lọc loại văn bản — dừng.`);
-      return;
-    }
     await dong.locator('.ant-checkbox-input').first().check();
     await page.getByRole('button', { name: /Lưu số văn bản và in báo cáo/ }).click();
     await choHetSpin(page);

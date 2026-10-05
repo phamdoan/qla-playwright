@@ -10,8 +10,15 @@
     "CCCD nằm ở config/tai-khoan-dang-nhap.preprod.local.json (.gitignore bỏ qua *.local.json).",
     "Mật khẩu theo quy ước Ta@<CCCD> nên cũng không cần khai.",
     "",
-    "PRE-PROD KHÔNG CÓ TÀI KHOẢN TOÀN QUYỀN: quyền chia theo 8 vai dưới đây. Luồng nào cần nhiều",
-    "vai thì phải đổi tài khoản giữa các bước, y như trên STG."
+    "ĐO 05/10/2026 (tests/dang-nhap/tung-tai-khoan.spec.ts, 24/24 xanh): CẢ 8 TÀI KHOẢN ĐỀU THẤY",
+    "ĐÚNG 164 MỤC MENU — giống hệt nhau. Nghĩa là quyền CHỨC NĂNG (schema QTUD) trên pre-prod là",
+    "như nhau cho cả 8; không có tài khoản nào bị cắt menu.",
+    "",
+    "SỬA LỜI: dòng cũ ở đây viết 'PRE-PROD KHÔNG CÓ TÀI KHOẢN TOÀN QUYỀN: quyền chia theo 8 vai'.",
+    "Phép đo bác bỏ điều đó ở phần quyền chức năng. Cái KHÁC nhau giữa 8 tài khoản là quyền DỮ LIỆU",
+    "(suy từ CAN_BO.MA_CHUC_VU: Chánh án / Phó Chánh án / Chánh văn phòng / Trưởng phòng…) — nó quyết",
+    "định ai ký được văn bản nào, ai thấy đơn nào, chứ không quyết định menu. Luồng vẫn phải đổi tài",
+    "khoản giữa các bước vì lý do đó, không phải vì thiếu menu."
   ],
   "taiKhoan": {
     "cvpHanhBn": {
