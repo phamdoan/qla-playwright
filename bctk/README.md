@@ -64,6 +64,7 @@ e2e/
 │  ├─ danh-muc-80-bao-cao.ts            SINH — 81 biểu mẫu: nhóm, mã, giai đoạn, tên
 │  └─ ban-do-luong.ts                   luồng nào nuôi biểu mẫu nào + chốt "Kết quả giải quyết"
 ├─ flows/<phân hệ>/<flow>/              thân bước
+├─ flows/bao-cao-thong-ke/flow-001-lap-bao-cao/   KIỂM chức năng BCTK (case = biểu mẫu), không gieo
 ├─ data/<phân hệ>/<flow>/               cases.ts + case-NNN/input.ts
 ├─ data/vu-an-thuc/                     111 bản án thật làm hạt giống (docs/vu-an-thuc.md)
 ├─ tests/<phân hệ>/flows/<flow>.spec.ts một spec cho cả luồng, case là dữ liệu
