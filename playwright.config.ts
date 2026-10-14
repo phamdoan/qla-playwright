@@ -113,6 +113,9 @@ export default defineConfig({
         /[\\/]dang-nhap[\\/].*\.spec\.ts$/,
         // Spec "mở tay" (mở sẵn màn rồi page.pause) chạy ở project 'tai-khoan-moi' như các flow
         /mo-tay\.spec\.ts$/,
+        // UT đối soát cũng tự mở phiên theo vai → chạy ở 'tai-khoan-moi'. Không loại ở đây thì
+        // mỗi UT chạy HAI lần (chromium + tai-khoan-moi) và kéo theo cả lượt đăng nhập của 'setup'.
+        /[\\/]ut-.*\.spec\.ts$/,
       ],
       // viewport sau devices[...] để không bị ghi đè về 1280x720 (màn OCR có panel PDF bên phải, form rất hẹp)
       use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 }, storageState: AUTH_FILE },
@@ -134,6 +137,9 @@ export default defineConfig({
         /[\\/]flows[\\/].*\.spec\.ts$/,
         // Spec "mở tay" của mọi phân hệ — dùng chung phiên theo vai như các flow
         /mo-tay\.spec\.ts$/,
+        // UT đối soát (vd. tests/bao-cao-thong-ke/ut-mapping-man-hinh.spec.ts): KHÔNG nằm trong
+        // `flows/` vì không gieo dữ liệu, chỉ mở màn và kiểm — nhưng cũng tự mở phiên theo vai.
+        /[\\/]ut-.*\.spec\.ts$/,
       ],
       use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 }, storageState: AUTH_FILE_TKM },
       // KHÔNG phụ thuộc 'setup-tai-khoan-moi': khung FLOW tự mở phiên theo vai
