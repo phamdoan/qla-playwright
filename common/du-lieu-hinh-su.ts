@@ -179,7 +179,7 @@ export function docVuAnHinhSu(): VuAnHinhSu[] {
   const biCanTheoVu = docBiCan(wb);
   const tieuDe = (sh[0] || []).map(t => (t || '').trim());
   const c = {
-    ma: chiSoCot(SHEET_VU_AN, tieuDe, 'Mã vụ án'),
+    ma: chiSoCot(SHEET_VU_AN, tieuDe, 'Mãn vụ án'),
     trangThai: chiSoCot(SHEET_VU_AN, tieuDe, 'Trạng thái sơ thẩm'),
     ten: chiSoCot(SHEET_VU_AN, tieuDe, 'Tên vụ án'),
     toa: chiSoCot(SHEET_VU_AN, tieuDe, 'Tòa án'),
@@ -232,7 +232,7 @@ export function chonVuHinhSu(ds: VuAnHinhSu[]): VuAnHinhSu[] {
   return soVu > 0 ? chuaLam.slice(0, soVu) : chuaLam;
 }
 
-/** "Bộ luật hình sự 2025" → nhãn trong danh mục Năm/Bộ luật */
+/** "Bộ luật hình sự 2025" → nhãn trong danh mục Năm/Bộ luật trong file */
 export function nhanBoLuat(boLuat: string): string {
   if (/2025/.test(boLuat)) return 'Bộ luật Hình sự năm 2015 sửa đổi năm 2025';
   if (/2017/.test(boLuat)) return 'Bộ luật Hình sự năm 2015 sửa đổi năm 2017';
