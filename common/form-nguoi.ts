@@ -2,6 +2,13 @@ import { Locator, Page, expect } from '@playwright/test';
 import { chonNgay, chonNgauNhien, chonSelect, chonTheoTuKhoa, go, nghi } from './antd';
 import { NguoiGia } from './du-lieu';
 
+/** Ô "Giới tính": FE f03ddb6 (checkbox "Giới tính Khác") bọc ô vào component riêng, mất id #conNguoi_maGioiTinh */
+export const oGioiTinh = (page: Page, khung: Locator): Locator =>
+  khung
+    .locator('#conNguoi_maGioiTinh')
+    .or(khung.locator('.ant-form-item').filter({ has: page.locator('label[title="Giới tính"]') }).locator('input[role="combobox"]'))
+    .first();
+
 /**
  * Điền form người tham gia tố tụng dùng chung (qla-webapp components/FormPhapNhanConNguoi) trong Drawer
  * ("Thêm nguyên đơn…", "Thêm bị đơn…", "Thêm Bị cáo"...) rồi bấm "Lưu".
@@ -19,7 +26,7 @@ export async function dienFormNguoi(page: Page, dr: Locator, n: NguoiGia, tinh: 
     if (!daChon) await chonSelect(page, oTuCach, tuCach);
   }
   await go(dr.locator('#conNguoi_hoTen'), n.hoTen);
-  await chonSelect(page, dr.locator('#conNguoi_maGioiTinh'), n.gioiTinh);
+  await chonSelect(page, oGioiTinh(page, dr), n.gioiTinh);
   await go(dr.locator('#conNguoi_ngaySinh'), n.ngaySinh);
   await go(dr.locator('#conNguoi_soCccd'), n.cccd);
   const sdt = dr.locator('#conNguoiChiTiet_soDienThoai');
@@ -183,7 +190,7 @@ export async function dienNguoiDayDu(page: Page, dr: Locator, n: NguoiDayDu, tuC
     }
   }
   await go(dr.locator('#conNguoi_hoTen'), n.hoTen);
-  await chonSelect(page, dr.locator('#conNguoi_maGioiTinh'), n.gioiTinh);
+  await chonSelect(page, oGioiTinh(page, dr), n.gioiTinh);
   await go(dr.locator('#conNguoi_ngaySinh'), n.ngaySinh);
   await go(dr.locator('#conNguoi_soCccd'), n.cccd);
   await chonNgay(dr.locator('#conNguoi_ngayCap'), n.ngayCap);

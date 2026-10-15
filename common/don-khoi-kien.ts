@@ -7,7 +7,7 @@
 import { Locator, Page, expect } from '@playwright/test';
 import { chonNgay, chonSelect, chonSelectTheoThuTu, choHetSpin, go, hienTrong, nghi, xacNhanLuu } from './antd';
 import { giaTri } from './cau-hinh-luong';
-import { dienFormNguoi } from './form-nguoi';
+import { dienFormNguoi, oGioiTinh } from './form-nguoi';
 
 export const khungSelectCua = (o: import('@playwright/test').Locator) =>
   o.locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " ant-select ")][1]');
@@ -170,7 +170,7 @@ export async function themNguoiThamGia(
 
   // Thông tin chung
   await go(form.locator('#conNguoi_hoTen'), nguoi.hoTen);
-  await chonSelect(page, form.locator('#conNguoi_maGioiTinh'), undefined, { goDeLoc: false });
+  await chonSelect(page, oGioiTinh(page, form), undefined, { goDeLoc: false });
   // Ô ngày sinh là input chữ, nhận "dd/mm/yyyy hoặc yyyy" → Excel chỉ cho tuổi nên nhập năm sinh.
   // Nhiều dòng Excel không ghi tuổi (vd "Nguyễn Du") trong khi form bắt buộc ngày sinh → dùng tuổi
   // mặc định khai trong config (nghiepVu.tuoiMacDinhDuongSu) để giá trị vẫn là một năm sinh hợp lý.

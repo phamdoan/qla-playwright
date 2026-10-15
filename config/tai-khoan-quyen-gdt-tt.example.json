@@ -1,0 +1,15 @@
+{
+  "_ghiChu": [
+    "Bộ tài khoản test QUYỀN GĐT/TT (tests/dang-nhap/quyen-gdt-tt.spec.ts): vào danh sách, xem, mở chi tiết không bị 403.",
+    "File này được commit nên CHỈ có tên + chức vụ, cccd để trống.",
+    "Số CCCD thật khai ở config/tai-khoan-quyen-gdt-tt.local.json (cùng khoá, không commit).",
+    "Mật khẩu mặc định Ta@<CCCD>; khác thì thêm \"matKhau\" vào file local.",
+    "Vai QTUD theo danh sách user gửi 11/10/2026: cả 4 có SIEU_QUYEN, Phó Vụ trưởng thêm HCTP_TC."
+  ],
+  "taiKhoan": {
+    "vuTruongThiHa": { "ten": "Nguyễn Thị Hà", "chucVu": "Vụ trưởng – Thẩm phán bậc 3 (SIEU_QUYEN)", "cccd": "" },
+    "phoVuTruongAnhThang": { "ten": "Bùi Anh Thắng", "chucVu": "Phó Vụ trưởng – Thẩm phán bậc 3 (HCTP_TC, SIEU_QUYEN)", "cccd": "" },
+    "ttvDieuLinh": { "ten": "Lưu Vũ Diệu Linh", "chucVu": "Thẩm tra viên, trước là Thư ký viên (SIEU_QUYEN)", "cccd": "" },
+    "vanThuHongAnh": { "ten": "Nguyễn Thị Hồng Anh", "chucVu": "Văn thư, trước là Thư ký viên (SIEU_QUYEN)", "cccd": "" }
+  }
+}

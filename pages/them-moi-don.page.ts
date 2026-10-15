@@ -184,7 +184,16 @@ const TRUONG: Truong[] = [
   text('Số điện thoại', nguoiDungDon('sdt'), d => d.nguoi.sdt),
   // Địa chỉ liên lạc: Phường/Xã chỉ bật sau khi tải xong danh sách theo Tỉnh
   select('Tỉnh/Thành phố', theoId('thongTinChiTietDon_diaChiLienLac_maTinh'), d => d.tinh),
-  select('Phường/Xã', theoId('thongTinChiTietDon_diaChiLienLac_maXa'), d => d.phuongXa ?? ''),
+  {
+    ten: 'Phường/Xã',
+    o: theoId('thongTinChiTietDon_diaChiLienLac_maXa'),
+    kieu: 'select',
+    // Tỉnh có thể đã lấy theo người trong bản án (khác d.tinh) → phường giả lập không thuộc tỉnh đó: chọn mục đầu
+    dien: async (p, l, d) => {
+      const tinh = await nhanSelect(p, p.locator('#thongTinChiTietDon_diaChiLienLac_maTinh'));
+      return chonSelect(p, l, d.tinh && tinh.includes(d.tinh) ? d.phuongXa ?? '' : undefined);
+    },
+  },
   text('Địa chỉ liên hệ', theoId('thongTinChiTietDon_diaChiLienLac_diaChi'), d => d.nguoi.diaChi),
   {
     ten: 'Nội dung đơn',
@@ -449,8 +458,10 @@ export class ThemMoiDonPage {
     await expect(form, 'Không có popup OCR và cũng không thấy form "Thêm mới Đơn đề nghị GĐT/TT"').toBeVisible({
       timeout: 30_000,
     });
+    // .first(): trình xem PDF nạp đủ thì CẢ HAI phần tử cùng hiện → .or() khớp 2 → strict mode
+    // violation (đo daotao 14/10/2026), dù đó chính là trường hợp tệp đã đính kèm.
     await expect(
-      xemPdf,
+      xemPdf.first(),
       'Không có popup OCR và KHÔNG thấy trình xem PDF → không có bằng chứng tệp đơn đã đính kèm',
     ).toBeVisible({ timeout: 15_000 });
     return 'môi trường KHÔNG hỏi OCR → vào thẳng form, tệp đơn đã đính kèm (trình xem PDF có tài liệu)';
@@ -610,16 +621,9 @@ export class ThemMoiDonPage {
     return chonSelect(page, o);
   }
 
-  async datTuCachVaDonViNhan(d: ThongTinDon) {
+  /** Xử lý đơn → "Thụ lý đơn" = "Thụ lý mới" (+ Ngày thụ lý nếu ô cho nhập); trả mô tả đã làm */
+  async chonThuLyMoi(): Promise<string> {
     const { page } = this;
-    const tuCach = nguoiDungDon('loaiConNguoi')(page);
-    if ((await hienThi(tuCach)) && (await nhanSelect(page, tuCach)) !== d.tuCach) await chonSelect(page, tuCach, d.tuCach);
-    const donVi = page.locator('#thongTinChuyenDonVO_maDonViChuyenDenNoiBo');
-    if (d.donViChuyenDen && (await hienThi(donVi))) {
-      const hienTai = await nhanSelect(page, donVi);
-      if (!hienTai.toLowerCase().includes(d.donViChuyenDen.toLowerCase())) await chonSelect(page, donVi, d.donViChuyenDen);
-    }
-
     // "Thụ lý đơn" phải là "Thụ lý mới": đơn không thụ lý (TRANG_THAI_THU_LY_DON = KHONG, không có số thụ lý)
     // sẽ không hiện ở Phân công thẩm phán và bộ lọc "Tờ trình phân công thẩm phán" (DonServiceImpl: case TO_TRINH)
     const thuLy = page.locator('#thongTinChuyenDonVO_trangThaiThuLyDon');
@@ -646,6 +650,94 @@ export class ThemMoiDonPage {
       return `đã nhập Ngày thụ lý = ${ddmmyyyy(new Date())}`;
     }
     return 'ô "Thụ lý đơn" không hiện';
+  }
+
+  /**
+   * Hình thức CV chuyển đơn / CV kiến nghị: bảng "Danh sách công văn" phải có ≥1 dòng mới lưu được
+   * (themMoiDonStore: "Vui lòng thêm ít nhất một công văn trước khi lưu"). Mở "Thêm mới" → điền modal → Lưu.
+   * Đơn vị gửi trong ngành = tòa án (danh mục tòa); Loại công văn để mặc định (CV chuyển).
+   */
+  async themCongVan(cv: { so: string; ngay: string; donViGui: string | RegExp; donViTen?: string; tinh: string; trichYeu: string }): Promise<string> {
+    const { page } = this;
+    // CV kiến nghị GĐT/TT: công văn nhập TRỰC TIẾP trên form (khối "Thông tin CV", thongTinCongVan_*), không có bảng
+    const soCvTrucTiep = page.locator('#thongTinCongVan_soCongVan');
+    if (await hienThi(soCvTrucTiep)) {
+      if (!(await soCvTrucTiep.inputValue())) await go(soCvTrucTiep, cv.so);
+      const ngayCv = page.locator('#thongTinCongVan_ngayCongVan');
+      if (!(await ngayCv.inputValue())) await chonNgay(ngayCv, cv.ngay);
+      // Loại công văn (bắt buộc, không có mặc định ở khối trực tiếp): "Công văn kiến nghị"
+      const loaiCv = page.locator('#thongTinCongVan_loaiCongVan');
+      if ((await hienThi(loaiCv)) && !(await nhanSelect(page, loaiCv))) await chonTreeSelect(page, loaiCv, 'Công văn kiến nghị');
+      const maDonVi = page.locator('#thongTinCongVan_maDonVi');
+      const tenDonVi = page.locator('#thongTinCongVan_nguoiGuiDonViGui');
+      let donVi = '';
+      if (await hienThi(maDonVi)) donVi = await chonSelect(page, maDonVi, cv.donViGui);
+      else if (await hienThi(tenDonVi)) {
+        donVi = cv.donViTen || String(cv.donViGui);
+        await go(tenDonVi, donVi);
+      }
+      const oTinhCv = page.locator('#thongTinCongVan_maTinh');
+      if ((await hienThi(oTinhCv)) && !(await nhanSelect(page, oTinhCv))) {
+        await chonSelect(page, oTinhCv, cv.tinh);
+        const oXaCv = page.locator('#thongTinCongVan_maXa');
+        await expect(oXaCv).toBeEnabled({ timeout: 15_000 });
+        await chonSelect(page, oXaCv);
+      }
+      const noiDungCv = page.locator('[id^="thongTinCongVan_"][id$="trichYeu"], #thongTinCongVan_noiDung').first();
+      if ((await hienThi(noiDungCv)) && !(await noiDungCv.inputValue())) await go(noiDungCv, cv.trichYeu);
+      return `CV (nhập trực tiếp) số ${cv.so} ngày ${cv.ngay} của ${donVi}`;
+    }
+    const bang = page.locator('.ant-pro-table').filter({ hasText: 'Danh sách công văn' }).first();
+    if (!(await hienTrong(bang, 5_000))) return 'không có bảng "Danh sách công văn"';
+    if ((await bang.locator('.ant-table-row').count()) > 0) return 'đã có công văn';
+    await bang.getByRole('button', { name: /Thêm mới/ }).click();
+    const modal = page.locator('.ant-modal:visible').filter({ has: page.locator('[id$="soCongVan"]') }).last();
+    await expect(modal).toBeVisible({ timeout: 30_000 });
+    await go(modal.locator('[id$="soCongVan"]').first(), cv.so);
+    await chonNgay(modal.locator('[id$="ngayCongVan"]').first(), cv.ngay);
+    const donVi = modal.locator('[id$="maDonVi"]').first();
+    const daChonDonVi = (await hienThi(donVi)) ? await chonSelect(page, donVi, cv.donViGui) : String(cv.donViGui);
+    // Địa chỉ cơ quan gửi (bắt buộc): tỉnh của tòa gửi, phường lấy mục đầu danh sách
+    const oTinh = modal.locator('[id$="maTinh"]').first();
+    if (await hienThi(oTinh)) {
+      await chonSelect(page, oTinh, cv.tinh);
+      const oXa = modal.locator('[id$="maXa"]').first();
+      await expect(oXa).toBeEnabled({ timeout: 15_000 });
+      await chonSelect(page, oXa);
+    }
+    const trichYeu = modal.locator('[id$="trichYeu"]').first();
+    if (await hienThi(trichYeu)) await go(trichYeu, cv.trichYeu);
+    await modal.getByRole('button', { name: /^Lưu$/ }).click();
+    await expect(modal).toBeHidden({ timeout: 30_000 });
+    await expect(bang.locator('.ant-table-row').first()).toBeVisible({ timeout: 15_000 });
+    return `CV số ${cv.so} ngày ${cv.ngay} của ${daChonDonVi}`;
+  }
+
+  /** Nhóm án tử hình: tick "Án tử hình" rồi "Xin ân giảm án tử hình" (chỉ hiện khi Loại án Hình sự + nội bộ) */
+  async tickAnTuHinhXinAnGiam(): Promise<string> {
+    const { page } = this;
+    const daTick: string[] = [];
+    for (const ten of [/^Án tử hình$/, /^Xin ân giảm án tử hình$/]) {
+      const o = page.getByRole('checkbox', { name: ten }).first();
+      await expect(o, `Không thấy ô "${ten.source}"`).toBeVisible({ timeout: 15_000 });
+      if (!(await o.isChecked())) await o.check({ force: true });
+      await expect(o).toBeChecked();
+      daTick.push(ten.source.replace(/[\^$]/g, ''));
+    }
+    return daTick.join(' + ');
+  }
+
+  async datTuCachVaDonViNhan(d: ThongTinDon) {
+    const { page } = this;
+    const tuCach = nguoiDungDon('loaiConNguoi')(page);
+    if ((await hienThi(tuCach)) && (await nhanSelect(page, tuCach)) !== d.tuCach) await chonSelect(page, tuCach, d.tuCach);
+    const donVi = page.locator('#thongTinChuyenDonVO_maDonViChuyenDenNoiBo');
+    if (d.donViChuyenDen && (await hienThi(donVi))) {
+      const hienTai = await nhanSelect(page, donVi);
+      if (!hienTai.toLowerCase().includes(d.donViChuyenDen.toLowerCase())) await chonSelect(page, donVi, d.donViChuyenDen);
+    }
+
+    return this.chonThuLyMoi();
   }
 
   /**
@@ -1046,9 +1138,27 @@ export class ThemMoiDonPage {
     const input = page.locator('#thongTinBanAn_maToaXetXu');
     const khung = input.locator('xpath=ancestor::div[contains(concat(" ", normalize-space(@class), " "), " ant-select ")][1]');
     await khung.evaluate(e => e.scrollIntoView({ block: 'center' }));
-    await khung.click();
+    await khung.locator('.ant-select-selector').click();
     const dd = page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden)').filter({ has: page.locator('.ant-select-tree') }).last();
     await expect(dd).toBeVisible({ timeout: 30_000 });
+
+    /**
+     * BẤM THẲNG NÚT KHỚP CHÍNH XÁC khi nút đã hiện trong cây, KHÔNG gõ lọc.
+     *
+     * Đo daotao 14/10/2026: gõ vào ô tìm của TreeSelect này làm ô tự xoá giá trị và đóng dropdown
+     * (focus rơi về <body>), nên sau khi gõ cây luôn rỗng → báo "Danh mục tòa án không có …" dù tòa
+     * có thật (Tòa Phúc thẩm TANDTC tại Hà Nội là nút thứ 2 của cây). Chỉ gõ lọc khi nút chưa được
+     * dựng (cây ảo hoá, tòa nằm sâu trong danh sách).
+     */
+    const khopDung = dd.locator('.ant-select-tree-title').filter({
+      hasText: new RegExp(`^\\s*${tenToa.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`),
+    });
+    if (await hienTrong(khopDung.first(), 3_000)) {
+      await khopDung.first().click();
+      await nghi(page, 400, 800);
+      return (await nhanSelect(page, input)) || tenToa;
+    }
+
     await input.fill('');
     await input.pressSequentially(tenToa, { delay: 20 });
     await nghi(page, 800, 1200);
@@ -1109,7 +1219,12 @@ export class ThemMoiDonPage {
     }
     const nhan = (await muc.first().innerText()).trim();
     await muc.first().click();
-    await toastDaHien(page, 'Đã thêm người từ bản án cũ vào danh sách', 20_000, /đã có trong danh sách/);
+    // Bản FE daotao không hiện toast, chỉ điền thẳng form → chấp nhận toast HOẶC ô Họ và tên đã có giá trị
+    const oHoTen = nguoiDungDon('tenDoiTuongLienQuan')(page);
+    await Promise.any([
+      toastDaHien(page, 'Đã thêm người từ bản án cũ vào danh sách', 20_000, /đã có trong danh sách/),
+      expect(oHoTen, 'Chọn người từ bản án cũ nhưng ô Họ và tên vẫn trống').not.toHaveValue('', { timeout: 20_000 }),
+    ]);
     await nghi(page, 500, 1000);
     return nhan;
   }
@@ -1205,7 +1320,7 @@ export class ThemMoiDonPage {
    */
   async kiemTraSauLuu(): Promise<{ maDon: string; ketQua: KetQuaKiemTra }> {
     const { page } = this;
-    const tieuDe = page.getByText(/Chỉnh sửa Đơn đề nghị GĐT\/TT - Mã đơn:/).first();
+    const tieuDe = page.getByText(/Chỉnh sửa .+ - Mã đơn:/).first();
     await expect(tieuDe).toBeVisible({ timeout: 60_000 });
     await page.waitForLoadState('networkidle', { timeout: 60_000 }).catch(() => {});
     await expect(page.locator('.don-stepper-spin .ant-spin-spinning')).toHaveCount(0, { timeout: 60_000 });

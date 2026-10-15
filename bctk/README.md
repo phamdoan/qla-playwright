@@ -62,7 +62,8 @@ e2e/
 ├─ bctk/                                lớp "phục vụ báo cáo thống kê"
 │  ├─ README.md                         tệp này
 │  ├─ danh-muc-80-bao-cao.ts            SINH — 81 biểu mẫu: nhóm, mã, giai đoạn, tên
-│  └─ ban-do-luong.ts                   luồng nào nuôi biểu mẫu nào + chốt "Kết quả giải quyết"
+│  ├─ ban-do-luong.ts                   luồng nào nuôi biểu mẫu nào + chốt "Kết quả giải quyết"
+│  └─ ut/                               UT đối soát MAPPING ↔ MÀN HÌNH (xem ut/README.md)
 ├─ flows/<phân hệ>/<flow>/              thân bước
 ├─ flows/bao-cao-thong-ke/flow-001-lap-bao-cao/   KIỂM chức năng BCTK (case = biểu mẫu), không gieo
 ├─ data/<phân hệ>/<flow>/               cases.ts + case-NNN/input.ts
@@ -101,6 +102,10 @@ npm run bctk:dung-khung          # xem khung thư mục sẽ tạo cho luồng c
 npm run bctk:dung-khung -- --ghi # tạo thật
 npm run bctk:danh-muc            # sinh lại danh-muc-80-bao-cao.ts từ 80-bao-cao.tsv
 ```
+
+UT đối soát mapping ↔ màn hình (ô báo cáo cần mã biểu mẫu / danh mục / trường nào, đã có trên màn
+chưa) nằm ở **`bctk/ut/`** — công cụ `bctk:boc-mapping`, `bctk:sinh-ut`, `bctk:ut-do-phu`; chi tiết
+ở `bctk/ut/README.md`.
 
 `--cong` bắt đúng một lỗi, nhưng là lỗi hay mắc nhất: khai `trangThai: 'xong'` mà để
 `chotKetQua: null`. Đó chính là "xanh giả" ở mức bản đồ — luồng tưởng xong nhưng báo cáo vẫn trống.

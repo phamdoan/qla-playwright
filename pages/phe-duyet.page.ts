@@ -483,7 +483,11 @@ export class PheDuyetPage {
     if (capTrinhTiep && (await page.locator('#capTrinhTiep').count())) {
       await chonSelect(page, page.locator('#capTrinhTiep'), capTrinhTiep, { goDeLoc: false });
       if (await page.locator('#nguoiDeXuatTrinh').count()) {
-        await chonSelect(page, page.locator('#nguoiDeXuatTrinh'), nguoiTrinhTiep, { goDeLoc: false });
+        // Danh sách người là danh sách cuộn (daotao 15/10/2026: Nguyễn Hải Trâm ở dưới, không hiện sẵn) → không thấy thì gõ để lọc
+        await chonSelect(page, page.locator('#nguoiDeXuatTrinh'), nguoiTrinhTiep, { goDeLoc: false }).catch(async () => {
+          await page.keyboard.press('Escape');
+          await chonSelect(page, page.locator('#nguoiDeXuatTrinh'), nguoiTrinhTiep);
+        });
       }
       daTrinhTiep = true;
       moTa = `đã chọn trình tiếp: ${capTrinhTiep}${nguoiTrinhTiep ? ` (${nguoiTrinhTiep})` : ''}`;
