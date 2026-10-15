@@ -1,0 +1,86 @@
+Đăng nhập và tạo đơn
+
+b1. login vào tài khoản <CCCD:chua-khai-trong-config>
+Đọc file Data Test Kinh doanh thương mại : "Data Test KDTM _ Sơ Thẩm - Phúc Thẩm - GĐT_TT.xlsx" và sheet: "Sơ thẩm 4A"
+b2. vào màn hình Danh sách đơn /qla/quan-ly-don/don-khoi-kien-va-yeu-cau/danh-sach?tab=ALL
+b3. Click "Thêm mới đơn"
+b4. Nhập thông tin bắt buộc
+	1. Hình thức nhận đơn
+	2. Ngày làm đơn
+	3. Ngày nhận đơn
+	4. Số tiếp nhận
+	5. Người nhận đơn
+	6. Người nhận đơn Nguyễn Mậu Trường
+        7. Loại đơn chọn "Kinh doanh, thương mại"
+	8. Quan hệ pháp luật (Thống kê) chon ramdom
+        9. Click "không tiến hành đối thoại tại tòa án" rồi chọn random  "lý do không tiến hành đối thoại" dạng drop down, 
+b5. Click button "Tiếp theo"
+b6. Tại màn hình "Thêm mới đơn khởi kiện và yêu cầu". "Đương sự"
+	6.1. Click button "Thêm người tham gia", chọn "Tư cách tham gia tố tụng" là "Người khởi kiện". nhập các thông tin bắt buộc
+		- Họ và tên - Random
+		- Giới tính - Random
+		- Ngày sinh - Random ( định dạng dd:mm:yyyy hoặc yyyy (năm sinh trong khoảng 1960 - 2016))
+		- Tick vào số định danh cá nhân
+	6.2. Tại section "Thông tin chung" nhập thông tin người dùng
+	6.3. Tại thông tin "Thông tin địa chỉ" chọn "Không có thông tin"
+	6.4. "Số định danh cá nhân" chọn tick
+	6.5 Click "Lưu & Thêm mới", chờ thành công
+	6.6 Tại "Tư cách tham gia tố tụng" chọn "Cơ quan nhà nước/ Người có thẩm quyền " rồi chọn"cơ quan nhà nước" trong  "Thành phần và tư cách tham gia tố tụng" là "Người bị kiện". Tại mục "Xác định cơ quan nhà nước", mỗi vụ án bạn tạo sẽ chọn lần lượt các "Cấp cơ quan" , sau đó chọn lần lượt các drop down bắt buộc tương ứng. Bên dưới ở chỗ "Người có thẩm quyền của cơ quan nhà nước"  chọn " Chức vụ của người có thẩm quyền" hoặc nhập thủ công. 
+
+	6.7 Click "Lưu", chờ thành công
+	6.8 Tiếp tục tạo tương tự cho "Người bị kiện"
+	6.8 Click "Tiếp theo"
+b7. Tại màn hình "Thêm mới đơn khởi kiện và yêu cầu"."Yêu cầu"
+	7.1 Nhập số quyết định bị kiện , ngày quyết định, người / cơ quan ban hành QĐ, loại quyết định chọn "Hủy toàn bộ"
+      	7.2. Nhập "Nội dung yêu cầu text bất kì" , chọn người yêu cầu ở drop down => click "Thêm mới" ở bên phải
+	7.3 Nhập "Giá trị yêu cầu kê khai" gía trị trong khoảng 100000 - 100000000 + "Tài liệu/diễn giải giá trị kê khai" là text bất kì rồi click "Thêm mới"
+	7.3 Click "Tiếp theo"
+
+tiếp tục Click "Tiếp theo"
+b8 Chọn "Lưu & Thêm mới"
+================================================================================================================
+Xử lý "Chi tiết đơn"
+
+1. Chọn tab "Phân công"
+2. Click "Phân công" chọn "Phân công Thẩm phán giải quyết đơn" hiện thị pop "Quyết định phân công Thẩm phán xem xét đơn khởi kiện (Dành cho Chánh án/Phó Chánh án được phân quyền)"
+	1. Tại cột "Người ký/người phân công" chọn "Dương Văn Hải"
+	2. "Vai trò" chọn "Thẩm phán xử lý đơn"
+	3. "Tên người được phân công" Chọn một người
+	4. Click button "button" arrow-down
+	5. Click "Luu"
+	6. Click button "Lấy số" => ký logic => đóng
+
+Step3: Chuyển sang tab " Kết quả xử lý"
+  4.1. Click "Xác nhận chế độ thủ tục"
+  4.2. Click " Xác nhận nghĩa vụ" , sau đó bấm "Xác nhận tất cả" 
+  4.3.  Click "Thêm thông báo" ở phần "Thông báo tạm ứng án phá và chi phí tố tụng", click "thông báo nộp tiền tạm ứng án phí ( dành cho thẩm phán được phân công )(04-hc) . Chọn "Cơ quan thi hành án thu tiền" , "Địa chỉ cơ quan thi hành án" nhập HN 
+4.4. Click button "Lưu"
+    4.5. Click button "Lấy số"
+    4.6. CLick button "Ký logic"
+    4.7. CLick button "Đóng"
+  4.8. Click "Xác minh" ở cột "thao tác" tại "thông tin tạm ứng án phí và chi phí tố tụng"
+4.9. Sau khi pop-up mở ra, nhập "Số biên lai" random 8 chữ số, => Chọn tệp và chọn 1 file docx bất kì trong máy => click "Xác minh biên lai"
+4.10 => Click "Thụ lý vụ" => Chọn ngày thụ lý = ngày nhận đơn, số thụ lý tự random 8 kí tự bất kì
+
+    4.11. Click button "Lưu"
+    4.12. CLick button "Ký logic"
+    4.13. CLick button "Đóng"
+
+Step 5: CLick vào button mã vụ án có chứa kí tự like "VA%" ở cuối trang để chuyển sang đường link có chứa "https://qla-stg.toaan.gov.vn/qla/vu-an/dan-su/so-tham/chi-tiet?id="
+
+Step 6: Tại menu "Hồ sơ vụ án sơ thẩm" trong tab menu "hành chính" => "Quản lý án sơ thẩm"
+  6.1. CLick tab "Phân công" tại màn hình "Chi tiết vụ án"
+  6.2. CLick "Phân công" tại mục "Danh sách quyết định phân công" 
+  6.3. Click "Quyết định phân công thẩm phán giải quyết vụ án hành chính" 
+  6.4. Đợi màn hình mở ra, chọn "Vai trò" là "Thẩm phán chủ tọa" , tên "Người được phân công" là "Nguyễn Mậu Trường" 
+  6.5. Click button "button" arrow-down
+  6.6. Click button "Lưu"
+  6.7. Click button "Lấy số"
+  6.8. CLick button "Ký logic"
+  6.9. CLick button "Đóng"
+
+Step 7: Ấn vào tab "CHuẩn bị xét xử" tại màn hình "Chi tiết vụ án" 
+  7.1. Tại "Danh sách quyết định" , click vào mục có place holder "Chọn loại biểu mẫu" , khi có drop down thì chọn "QUyết định đưa vụ án ra xét xử sơ thẩm (47DS)" 
+  7.2. Click button "Thêm biểu mẫu" ngay bên cạnh . ĐỢi màn hình mở ra click button "Chọn lịch xét xử"
+  7.3. CLick vào ngày trùng với ngày ở Số thụ lý
+  7.4. Click vào checkbox "Cả ngày" , click vào button tìm kiếm bên cạnh "Ngày thủ lý"

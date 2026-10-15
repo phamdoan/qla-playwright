@@ -1,0 +1,285 @@
+KỊCH BẢN NHẬP LIỆU ĐI LUỒNG — ÁN HÌNH SỰ (hệ thống QLTA, qla-webapp)
+Quy ước: (*) = trường bắt buộc. Mọi biểu mẫu mở qua nút "Thêm biểu mẫu"/"Lập biểu mẫu" đều kết thúc bằng "Lưu" → "Lấy số" → "Ký logic" → "Đóng".
+"Ký logic" chỉ hiện khi tài khoản đang đăng nhập trùng "Người ký" đã chọn; nếu không trùng thì nút là "Trình ký" → đăng nhập tài khoản người ký → mở /file-viewer/{idVanBan}?mode=EDIT → "Ký logic". Thông báo chuẩn: "Đã cấp số thành công" / "Ký logic thành công".
+Dữ liệu test: đặt tiền tố [BCTK-TEST] ở tên vụ án, tên bị can để tìm lại và dọn. Sau mỗi bước ký, tải lại trang để kiểm tra badge trạng thái (FE không tự đổi, BE suy sau ký).
+PHẦN A. ĐĂNG NHẬP VÀ TẠO VỤ ÁN SƠ THẨM
+Nhánh A1 — Tiếp nhận hồ sơ từ Viện kiểm sát (tùy chọn)
+b1. login tại /login bằng tài khoản Thư ký Tòa án khu vực (có menu Hình sự)
+b2. vào màn hình Tiếp nhận hồ sơ /vu-an/so-tham/ho-so-tiep-nhan
+b3. Click "Tạo mới hồ sơ" (góc phải header) → màn "Tạo hồ sơ mới" /vu-an/so-tham/hinh-su/ho-so-tiep-nhan/tao-ho-so
+b4. Card "Thông tin chung", nhập thông tin bắt buộc
+1. Tên bị can (Đầu vụ) (*) — Random, tiền tố [BCTK-TEST]
+2. Tội danh bị truy tố (*) — chọn Điều 173 (Trộm cắp tài sản)
+3. Đơn vị chuyển đến — radio "Viện kiểm sát"
+4. Nơi chuyển đến (*) — chọn VKS khu vực bất kỳ
+5. Ngày giao (*) — mặc định hôm nay (không cho tương lai)
+6. Số cáo trạng (*) — Random dạng 87/CT-VKS; Ngày cáo trạng (*) — trước Ngày giao
+7. Biện pháp ngăn chặn (*) — chọn "Tạm giam"; radio "Chọn loại thời gian (BPNC)" = Ngày bắt đầu; Ngày bắt đầu — Random ≤ hôm nay; Thời hạn — 60 (ngày); Ngày kết thúc tự tính
+8. Tổng số bút lục (*) — số nguyên > 0 (VD 120)
+b5. Click "Lưu & tiếp nhận" → chờ "Tạo mới hồ sơ thành công!" → tự chuyển sang "Chi tiết hồ sơ · {mã hồ sơ}"
+b6. Card "Đối chiếu đầu mục hồ sơ bắt buộc": với 3 đầu mục (Biên bản giao nhận Cáo trạng / Bản án; Hồ sơ vụ án; Biên bản giao nhận vật chứng) bấm nút "Đủ"
+b7. Click "Biên bản giao nhận" (chỉ bật khi đã đối chiếu hết) → modal "Biên bản về việc giao, nhận hồ sơ vụ án và bản cáo trạng" → Click "Lưu" → "Đóng" (mẫu này không cấp số, không ký)
+b8. Tải lại chi tiết hồ sơ: card "Thông tin hồ sơ" hiện nút "Chuyển đến vụ án" → click để vào Chi tiết vụ án. Nếu chưa có nút → dùng nhánh A2.
+Nhánh A2 — Tạo trực tiếp bằng wizard "Thêm mới vụ án" (khuyến nghị cho tool)
+b1. login tài khoản Thư ký Tòa án khu vực
+b2. Màn Danh sách vụ án /vu-an/so-tham không còn nút "Thêm mới" → gõ thẳng URL /vu-an/so-tham/them-moi-vu-an (tiêu đề trang "Thêm mới vụ án")
+b3. Bước 1 "Bước 1: Thông tin cáo trạng", nhập thông tin bắt buộc
+1. Trường hợp thụ lý (*) — giữ mặc định "VKS truy tố lần đầu"
+2. Số cáo trạng (*) — Random ≤ 50 ký tự, VD 87/CT-VKS
+3. Ngày bản cáo trạng (*) — Random, không tương lai
+4. Số bút lục (*) — Random ≤ 50 ký tự
+5. Viện kiểm sát (*) — mặc định phần tử đầu danh mục, giữ nguyên
+b4. Click "Tiếp theo" → lưu nháp, chờ "Thêm thành công"
+b5. Bước 2 "Bước 2: Danh sách bị can"
+5.1. Click "Tạo mới" → Drawer "Thêm mới bị can". Mục "1. Thông tin bị can":
+- Đối tượng phạm tội — Cá nhân
+- Bị can đầu vụ — Có (bị can đầu tiên)
+- Trẻ vị thành niên (*) — Không (chọn Có khi cần dữ liệu người chưa thành niên — mẫu 1G/1H)
+- Tên bị can (*) — Random, tiền tố [BCTK-TEST], chỉ chữ
+- Ngày tháng năm sinh (*) — Random dd/mm/yyyy, 1960–2005
+- Số định danh cá nhân (*) — Random 12 số (hoặc tick "không có căn cước" + Lý do không có căn cước)
+- Giới tính (*) — Random Nam/Nữ
+- Quốc tịch / Dân tộc / Tôn giáo / Nghề nghiệp / Trình độ văn hóa — chọn từ danh mục (báo cáo cần Dân tộc, Nghề nghiệp, Trình độ văn hóa)
+- Đảng viên (*) — Không; Công chức, viên chức (*) — Không; Nghiện ma túy (*) — Random Có/Không
+- 5 khối địa chỉ Nơi sinh / Quê quán / Nơi đăng kí HKTT / Nơi tạm trú / Nơi ở hiện tại: Quốc gia (*) = Việt Nam + Tỉnh/Thành phố + Phường/xã
+5.2. Mục "4. Thông tin tố tụng":
+- Thời điểm phạm tội — Random (phải TRƯỚC Ngày bị khởi tố)
+- Ngày bị khởi tố — Random
+- Tình trạng của bị can/bị cáo — chọn
+- Tuổi khi phạm tội — tự suy/nhập
+- Địa bàn phạm tội — Random Thành thị/Nông thôn/Miền núi/Biên giới/Trên biển (mẫu 1X cần)
+- Tái phạm - tái phạm nguy hiểm — Không; Tiền án — 0; Tiền sự — 0
+- Nhóm tội phạm, Thủ đoạn phạm tội, Phân loại — chọn nếu có danh mục
+- Quan hệ với bị hại — chọn (mẫu 1X: chọn quan hệ thân thích vợ/chồng/cha mẹ/con)
+5.3. Mục "5. Điều luật áp dụng cho bị can": Click "+ Chọn tội danh" → modal cây điều luật (Bộ luật Hình sự 2015) → chọn Điều 173 Khoản 1 → "Đã thêm 1 tội danh"; dòng đầu tự tick "Tội danh chính"
+5.4. Click "Lưu" (hoặc "Lưu và thêm mới" để nhập bị can thứ 2) → "Lưu thành công". Bị can duy nhất tự tick "Đầu vụ"
+5.5. Mục "Biện pháp ngăn chặn" trong drawer chỉ hiện khi bị can đã lưu VÀ vụ án đã thụ lý → nhập ở Phần B Step3
+b6. Click "Tiếp theo" — chặn nếu "Bị can không được để trống" / "Vui lòng chọn bị can đầu vụ trước khi tiếp tục"
+b7. Bước 3 "Bước 3: Thông tin vụ án"
+1. Tên vụ án (*) — tự sinh "Vụ án {tên bị can đầu vụ} - {tội danh chính}", giữ nguyên
+2. Phân loại tội phạm (*) — tự tính theo tội danh nặng nhất (Điều 173 k.1 → Ít nghiêm trọng)
+3. Nội dung vụ án — Random text
+4. Bảng "Địa điểm xảy ra": Click "+ Thêm địa điểm xảy ra" → Giờ xảy ra, Ngày xảy ra (không tương lai), Địa điểm chi tiết, Quốc gia/Tỉnh/Phường → tick "Địa điểm chính" → icon "Lưu địa điểm"
+b8. Click "Tiếp theo" → "Thêm thành công"
+b9. Bước 4 "Bước 4: Danh sách người tham gia tố tụng": Click "Tạo mới" → drawer "Thêm mới thành phần tham gia tố tụng"
+- Phân loại người tham gia tố tụng (*) — Cá nhân
+- Tư cách tham gia tố tụng (*) — Bị hại
+- Panel "Thông tin con người": Họ tên Random [BCTK-TEST], Ngày sinh, Giới tính, địa chỉ
+- Click "Lưu" → "Thêm thành công!"; lặp thêm 1 người "Người bào chữa" (bản án khi ký kiểm tra đủ 7 tư cách người tham gia tố tụng)
+b10. Click "Tiếp theo" (lưu nháp)
+b11. Bước 5 "Bước 5: Danh sách vật chứng/ đồ vật/ tài liệu": Click "Tạo mới" → Tên vật chứng, đồ vật, tài liệu (*) Random; Số lượng (*) 1; Thuộc sở hữu của (*) chọn "Chưa xác định rõ hoặc Cơ quan công an trực tiếp phát hiện"; Tình trạng — chọn → "Lưu" → "Thêm vật chứng thành công!"
+b12. Click "Tiếp theo" → Bước "Hoàn thành" ("Sẵn sàng hoàn tất!"). Lỗi hiện tại: phải bấm "Tiếp theo" thêm 1 lần nữa (màn trắng) mới hiện nút "Hoàn thành"
+b13. Click "Hoàn thành" → "Đang xử lý..." → "Tạo vụ án thành công" → tự chuyển /vu-an/so-tham/chi-tiet?id={id}&tab=thong-tin-chung. Trạng thái vụ: "Chưa thụ lý"
+PHẦN B. XỬ LÝ "CHI TIẾT VỤ ÁN" SƠ THẨM (route /vu-an/so-tham/chi-tiet?id=…&tab=…)
+Step1: Tab "Thụ lý"
+1.1. Click "Thụ lý" (góc phải khối Thông tin chung của vụ án) → popup "Cấp số thụ lý vụ án"
+1.2. Thủ tục áp dụng (*) — "Thủ tục thông thường" (chọn "rút gọn" nếu cần cột thủ tục rút gọn; hệ thống báo "Đã bật xử lý rút gọn: Hệ thống sẽ mở Biểu số 16-HS")
+1.3. Ngày thụ lý (*) — chọn ngày (≥ Ngày giao) → hệ thống tự lấy "Số thụ lý" (lỗi: "Không thể lấy số thụ lý từ hệ thống")
+1.4. Trường hợp thụ lý (*) — VKS truy tố lần đầu
+1.5. Ủy thác tư pháp đi — Switch Không
+1.6. Phân loại án đặc biệt — bỏ trống; chọn "Án điểm" / "Án Ban chỉ đạo Trung ương" / "Án Ban chỉ đạo Thành ủy" khi cần dữ liệu mẫu 1R (không tick cả hai cờ Ban chỉ đạo)
+1.7. Khối "Thông tin cáo trạng": Số cáo trạng (*), Ngày bản cáo trạng (*), Số bút lục (*), Ngày giao (*), Viện kiểm sát (*) — đã điền sẵn từ wizard, bổ sung "Ngày giao"
+1.8. Click "Xác nhận thụ lý" → "Lưu thụ lý thành công". Trạng thái → "Chưa phân công thẩm phán". Header hiện "Số thụ lý - Ngày thụ lý"; nút đổi thành "Sửa thụ lý"
+1.9. Khối "Bị can/Bị cáo" và "Người tham gia tố tụng" ở tab này có nút "Tạo mới" nếu cần bổ sung
+Step2: Tab "Phân công"
+2.1. Panel "Danh sách quyết định phân công" → Dropdown "Phân công" → "Phân công Thẩm phán" → modal biểu mẫu 001 "Phân công Thẩm phán"
+- Ngày quyết định — tự động; Số quyết định — để "Lấy số" cấp
+- Người ký/người phân công (*) — chọn Chánh án/Phó Chánh án
+- Viện kiểm sát nhận — tự điền; Nơi nhận khác — bỏ trống
+- Vai trò — "Thẩm phán chủ tọa"; Tên người được phân công — chọn Thẩm phán; bấm nút mũi tên xuống để đưa vào bảng
+- Click "Lưu" → "Lấy số" → "Ký logic" (hoặc "Trình ký") → "Đóng"
+2.2. Dropdown "Phân công" → "Phân công Hội thẩm" (cùng mã 001): Vai trò "Hội thẩm nhân dân", thêm 2 người → Lưu → Lấy số → Ký logic → Đóng
+2.3. Dropdown "Phân công" → "Phân công Thư ký" → biểu mẫu 002: Vai trò "Thư ký", Tên người được phân công — 1 người → Lưu → Lấy số → Ký logic → Đóng
+2.4. Panel "Thành phần hội đồng xét xử" → Click "Thêm kiểm sát viên" → modal "Kiểm sát viên tham gia hội đồng xét xử": Chọn kiểm sát viên (*), Ngày quyết định (*), Số quyết định (*) Random, Ngày kết thúc — bỏ trống → "Lưu" → "Phân công kiểm sát viên thành công"
+2.5. Sau khi QĐ 001 (Thẩm phán chủ tọa) đã ký, trạng thái → "Đã phân công thẩm phán"; ô "Thời hạn / Gia hạn" bắt đầu đếm "Chuẩn bị xét xử: Còn N ngày"
+2.6. (Đổi người) "Thay đổi phân công" → biểu mẫu 003: Thay thế theo quyết định (*), Thay thế cho Ông/Bà, Vai trò, Tên người được phân công, Xét thấy → Lưu → Lấy số → Ký logic → Đóng
+Step3: Tab "Chuẩn bị xét xử"
+3.1. Biện pháp ngăn chặn: panel "Bị can/bị cáo" → dòng bị can, cột "Biện pháp ngăn chặn" Tag đỏ "Chưa có" (hoặc icon "Thêm biểu mẫu" cột Thao tác — chỉ hiện khi vụ đã thụ lý) → chọn "Quyết định tạm giam" (mẫu 004…008) → nhập Người ký (*), thời hạn tạm giam → Lưu → Lấy số → Ký logic → Đóng. Cột hiện Tag biện pháp + "Còn N ngày"
+- Mẫu 1S (đặt tiền): chọn "Quyết định về việc đặt tiền để bảo đảm" (ND05_DT) thay cho tạm giam
+3.2. Gia hạn CBXX (tùy chọn): khối Thông tin chung → "Gia hạn chuẩn bị xét xử" (chỉ bật khi đã thụ lý + đã phân công TP) → biểu mẫu 042: Người ký (*), Số tháng, Số ngày, Số tháng, số ngày bằng chữ, Kể từ ngày, Đến ngày → Lưu → Lấy số → Ký logic → Đóng
+3.3. Lý do quá hạn (chỉ khi ô Thời hạn báo "Quá hạn"): Click "Lý do quá hạn luật định" → Nguyên nhân (*) Khách quan/Chủ quan, Lý do chi tiết (*) → "Lưu" → "Cập nhật nguyên nhân, lý do quá hạn thành công" (mẫu 1A cột quá hạn chủ quan/khách quan)
+3.4. Panel "Quyết định tố tụng" → "Thêm biểu mẫu" (5 mã: 020 đưa ra xét xử, 030 trả hồ sơ, 033 trả hồ sơ ĐTBS, 036 tạm đình chỉ, 039 đình chỉ); panel "Văn bản tố tụng khác" → "Thêm biểu mẫu" (032, 035, 013 người bào chữa, 041 phục hồi). Luồng chính chỉ lập 020 ở Step4
+Step4: Tab "Xét xử"
+4.1. Panel "Thủ tục mở phiên toà" → Click "Mở phiên tòa" (đã có lịch thì nhãn là "Đăng ký lịch xét xử mới") → modal "Thêm lịch xét xử (mở phiên tòa)"
+- Tiêu đề lịch xét xử — tự điền "Phiên tòa sơ thẩm - {tên vụ án}"
+- Ngày xét xử (từ → đến) — Random ngày làm việc trong 30 ngày tới, KHÔNG chọn Chủ nhật; Giờ xét xử — mặc định
+- Hình thức xét xử — Trực tiếp (chọn "Trực tuyến" khi cần cột xét xử trực tuyến); Tính chất phiên tòa (*) — Xét xử công khai (chọn "Xét xử kín" cho mẫu 1X)
+- Địa điểm xét xử — chọn phòng (hoặc "Phòng xử lưu động" + Địa điểm xét xử (chi tiết) (*) — cột xét xử lưu động)
+- Chủ tọa phiên tòa, Thư ký phiên tòa — chọn theo phân công
+- Click "Tạo mới" (trùng lịch → cảnh báo, vẫn cho "Đồng ý"). Trạng thái vụ → "Đã lên lịch xét xử"
+4.2. Về tab "Chuẩn bị xét xử" → panel "Quyết định tố tụng" → "Thêm biểu mẫu" → "Quyết định đưa vụ án ra xét xử sơ thẩm" (020)
+- Người ký (*) — Thẩm phán chủ tọa; Ngày quyết định tự động; Số quyết định "Chưa được cấp số"
+- Card "Danh sách bị cáo đưa ra xét xử" — tự nạp
+- Card "Lịch xét xử" → "Chọn lịch xét xử" → chọn đúng 1 lịch vừa tạo; cột Ngày mở phiên tòa (*), Giờ mở phiên tòa (*), Xét xử công khai/ kín (*)
+- 1. Những người tiến hành tố tụng / 2. Những người tham gia tố tụng / 3. Vật chứng — tự điền/để trống
+- Click "Lưu" → "Lấy số" → "Ký logic" → "Đóng". ĐIỀU KIỆN CHẶN: bản án chỉ tạo được khi 020 ĐÃ KÝ ("Cần có quyết định đưa vụ án ra xét xử trước khi tạo bản án"). Sau ký: bị can chuyển thành bị cáo, ô "Thời hạn" đổi thành "Mở phiên toà"
+4.3. Panel "Kết quả xét xử" (tab Xét xử — nơi nhập bản án)
+4.3.1. Chọn thẻ "Bản án" → thanh "Bản án sơ thẩm" → Click "Tạo bản án" → Drawer "Thêm bản án"
+- Ngày lấy số bản án (*) — ngày tuyên án (= ngày xét xử); Số bản án — để trống (cấp số sinh); Thay mặt Hội đồng xét xử - Người ký (*) — Thẩm phán chủ tọa
+- Mục "Thành phần Hội đồng xét xử sơ thẩm": tick "Tham gia phiên tòa" cho TP, 2 HTND, TK, KSV
+- Mục "Thông tin mở phiên tòa": Thời gian mở phiên tòa (*) — tự gộp từ lịch; Tính chất phiên tòa; Hình thức xét xử; Địa điểm mở phiên tòa
+- Mục "Thông tin bị cáo": bảng "Bị cáo được xét xử trong bản án này" tick "Đưa vào bản án này"; card từng bị cáo nhập đủ: Sinh năm, Giới tính, Nghề nghiệp, Trình độ văn hóa, Dân tộc, Quốc tịch, Tôn giáo, Họ tên cha, Họ tên mẹ, Tiền án ("Không"), Tiền sự ("Không"), Nhân thân, Nơi sinh, Nơi cư trú
+- Mục "Người tham gia tố tụng": tick "Tham gia phiên tòa", Ý kiến — Random
+- Mục "Nội dung vụ án": "Lấy nội dung từ cáo trạng" hoặc nhập
+- Mục "Ý kiến của Viện kiểm sát" → bảng "Về tội danh và hình phạt": icon Sửa từng bị cáo → modal: Loại hình phạt, Hình phạt, Mức đề nghị từ/Đến; Tình tiết tăng nặng, giảm nhẹ phía VKS — PHẢI nhập (thiếu sẽ chặn trình ký)
+- Mục "Nhận định của Hội đồng xét xử": Random text
+- Mục "Quyết định" → "Về tội danh và hình phạt" → nút "Quyết định hình phạt" từng bị cáo → modal:
+· Bảng "Điều luật áp dụng": Năm bộ luật 2015, Điều luật 173, Khoản 1, tick "Tội danh chính"
+· Bảng "Hình phạt": Loại hình phạt "Hình phạt chính", Hình phạt "Tù có thời hạn", Số năm 1 / Số tháng 6; Án treo — tick khi cần dữ liệu án treo (mẫu 1I/1K; thêm thời gian thử thách); hình phạt bổ sung: thêm dòng Loại "Hình phạt bổ sung" (VD Phạt tiền, Số tiền)
+· Tình tiết tăng nặng, giảm nhẹ phía Tòa — PHẢI nhập (mẫu 1L: chọn tình tiết Điều 51, áp dụng Điều 54 nếu cần)
+· Án phí (VD 200.000 đồng) → Lưu modal
+- Bật mục "Về án phí": Người phải chịu án phí, Loại án phí (án phí HSST), Giá trị tính án phí (VNĐ) (*)
+- Bật mục "Về bồi thường thiệt hại và trách nhiệm dân sự" (nếu có bị hại): Người phải bồi thường / Người nhận bồi thường, thêm khoản: Loại thiệt hại, Số tiền yêu cầu, Số tiền chấp nhận → lưu dòng (mẫu 1T/1U/1X cột bồi thường)
+- Mục "Về xử lý vật chứng": chọn "Hình thức xử lý" từng vật chứng
+- Khối "Nơi nhận" (*): ít nhất 1 dòng
+4.3.2. Click "Lưu nháp" → "Thêm mới bản án thành công"; tự mở bản in /file-viewer/{idVanBan}. Đóng, mở lại "Chỉnh sửa dự thảo" nếu cần sửa
+4.3.3. Cụm nút cấp số: "Lấy số" → "Đã cấp số thành công" (ô Số bản án, Ngày bản án tự điền). Tab Xét xử ẩn Ký logic → Click "Trình ký" (chặn nếu thiếu tình tiết / thiếu 7 tư cách người tham gia tố tụng / "Chưa chọn bị cáo nào cho bản án này") → "Đã trình ký văn bản"
+4.3.4. Đăng nhập tài khoản Thẩm phán người ký → mở /file-viewer/{idVanBan}?mode=EDIT → "Ký logic" → "Ký logic thành công". Bị cáo chuyển "Đã xét xử tại bản án số…"; trạng thái vụ "Đã xét xử"
+4.3.5. Click "Đóng"
+Step5: Tab "Kết quả sơ thẩm"
+5.1. Panel "Hiệu lực bản án, quyết định": nếu Alert "Chưa tính được đầy đủ thời hạn kháng cáo, kháng nghị" → nhập "Ngày tống đạt bản án" cho từng người → "Lưu ngày tống đạt" → "Đã cập nhật ngày tống đạt bản án"
+5.2. Khi "Tình trạng hiệu lực bản án" = "Đã hết thời hạn — có thể xác nhận hiệu lực" (sau 15 ngày kháng cáo / 30 ngày kháng nghị, không có đơn) → dòng "Bản án hình sự sơ thẩm" → nút "Xác nhận hiệu lực pháp luật" → modal → "Xác nhận hiệu lực" → "Đã xác nhận bản án có hiệu lực pháp luật". Vụ án hoàn tất (không có KC/KN) — lên báo cáo là "đã giải quyết xong"; bản án có hiệu lực mới sang được Thi hành án (mẫu 1F)
+PHẦN C. KHÁNG CÁO, KHÁNG NGHỊ (khối trong tab "Kết quả sơ thẩm", panel "Kháng cáo, kháng nghị")
+Step1: Đơn kháng cáo
+1.1. Khối "Đơn/Biên bản kháng cáo" → Click "Thêm mới" → Drawer "Thêm mới đơn kháng cáo"
+- Ngày tiếp nhận (*) — sau ngày bản án ≤ 15 ngày (quá 15 ngày để đi nhánh kháng cáo quá hạn); Số tiếp nhận (*) Random; Hình thức tiếp nhận (*) — chọn
+- Ngày kháng cáo (*); Loại người kháng cáo (*) — "Bị cáo"; Kháng cáo đối với bị can, bị cáo (*) — chọn bị cáo; chọn người kháng cáo; Địa chỉ người kháng cáo (*); tình trạng tại phiên tòa (*) — "Có mặt tại phiên tòa"
+- Số bản án/quyết định (*) + Ngày bản án/quyết định (*) → nút tìm → "Đã xác nhận thông tin văn bản"
+- Phạm vi kháng cáo (*) — "Kháng cáo toàn bộ bản án" hoặc một phần (nhập "Tội danh bị kháng cáo một phần")
+- Yêu cầu (*) — tick yêu cầu; Nội dung kháng cáo (*) — Random
+- Click "Lưu mới" → đóng drawer; cột Trạng thái hiện "Trong hạn" / "Quá hạn"
+1.2. Dòng đơn → Click "Hợp lệ" → Popconfirm "Xác nhận đơn hợp lệ" → "Hợp lệ" → "Xác nhận đơn hợp lệ thành công"
+1.3. Dropdown "Thao tác" → "Lập biểu mẫu" → "Thông báo về việc kháng cáo" (048): Người ký (*), Loại đơn, Thông báo về việc, Tòa án xét xử sơ thẩm, Hạn ra thông báo, Thời hạn thực hiện, chọn người/cơ quan liên quan → Lưu → Lấy số → Ký logic → Đóng
+Step2: Quyết định kháng nghị (tùy chọn — cần cho cột "kháng nghị")
+2.1. Khối "Quyết định kháng nghị" → "Thêm mới" → Drawer "Thêm mới quyết định kháng nghị": Ngày tiếp nhận (*), Số tiếp nhận, Hình thức tiếp nhận (*), Đơn vị kháng nghị (*) (VKS cùng cấp), Tên người kháng nghị (*), Phạm vi kháng nghị (*), Số kháng nghị (*), Người kháng nghị tại phiên tòa (*), Ngày kháng nghị (*), Số bản án/quyết định (*) + Ngày bản án/quyết định (*) (nút tìm), Người kháng nghị (*), Người bị kháng nghị, Địa chỉ viện kiểm sát (*), Yêu cầu (*), Nội dung kháng nghị (*) → "Lưu mới" → "Hợp lệ" → lập 048 "Thông báo về việc kháng nghị"
+2.2. Trạng thái vụ → "Có KN/KC"
+Step3: Chuyển hồ sơ lên phúc thẩm
+3.1. Vào "Hồ sơ chuyển đi" /vu-an/so-tham/ho-so-chuyen-di → tab "Chưa chuyển (n)"
+3.2. Tick checkbox dòng vụ án (chỉ chọn được "Chưa chuyển"/"Từ chối tiếp nhận") → Click "Chuyển hồ sơ đi"
+3.3. Nếu chưa hết thời hạn KC/KN → Modal "Cảnh báo: chưa hết thời hạn kháng cáo, kháng nghị" → "Vẫn chuyển" → "Đã chuyển vụ án thành công". Trạng thái vụ → "Đã chuyển phúc thẩm"; dòng chuyển sang tab "Chờ tiếp nhận". Tiếp tục ở PHẦN E (tài khoản Tòa phúc thẩm)
+PHẦN D. CÁC NHÁNH RẼ SƠ THẨM (chỉ ghi bước khác luồng chính)
+D1. Đình chỉ cả vụ (mẫu 1A cột đình chỉ)
+- Sau Step2 Phân công → tab "Chuẩn bị xét xử" → panel "Quyết định tố tụng" → "Thêm biểu mẫu" → "Quyết định đình chỉ vụ án (Thẩm phán chủ tọa)" (039): Người ký (*), Căn cứ pháp lý (*), Nhập lý do đình chỉ vụ án (*), Hậu quả đình chỉ vụ án (*), bảng bị cáo tự nạp → Lưu → Lấy số → Ký logic → Đóng
+- Trạng thái → "Đình chỉ"; tab "Kết quả sơ thẩm" theo dõi hiệu lực QĐ 15 ngày. Không lập bản án
+- Đình chỉ 1 bị can: dòng bị can → "Thêm biểu mẫu" → "Quyết định đình chỉ vụ án đối với bị can" (QDDCBC_03); nếu là đầu vụ hiện cảnh báo "Cần chọn lại bị cáo đầu vụ"
+D2. Tạm đình chỉ + phục hồi (mẫu 1A cột tạm đình chỉ, phục hồi)
+- Panel "Quyết định tố tụng" → "Thêm biểu mẫu" → "Quyết định tạm đình chỉ vụ án (Thẩm phán chủ tọa)" (036): Người ký (*), Căn cứ pháp lý (*), Xét thấy (Lý do tạm đình chỉ) (*) → Lưu → Lấy số → Ký logic → Đóng → trạng thái "Đang tạm đình chỉ"
+- Phục hồi: panel "Văn bản tố tụng khác" → "Thêm biểu mẫu" → "Quyết định phục hồi vụ án" (041): Người ký (*), Phục hồi kể từ ngày, Xét thấy (lý do hủy bỏ quyết định tạm đình chỉ, đình chỉ vụ án) (*), bảng bị can phục hồi → nút "Lưu & Ban hành" → "Ký logic" → "Đóng" → QĐ 036 chuyển "Hết hiệu lực"; tiếp tục Step4
+D3. Trả hồ sơ điều tra bổ sung + thụ lý lại (mẫu 1M)
+- Panel "Quyết định tố tụng" → "Thêm biểu mẫu" → "Quyết định trả hồ sơ để điều tra bổ sung (Thẩm phán)" (033): Người ký (*), Xét thấy (lý do trả hồ sơ) (*), Những vấn đề cụ thể cần điều tra bổ sung → Lưu → Lấy số → Ký logic → Đóng → trạng thái "Đã trả hồ sơ". (Không dùng mẫu 030 "Quyết định trả hồ sơ vụ án" — không tính vào 1M)
+- Thụ lý lại: "Tiếp nhận hồ sơ" → "Tạo mới hồ sơ" → tick "Hồ sơ đã từng xử lý" → "Vụ án liên quan" (*) chọn vụ đã trả (tự điền tên bị can, tội danh, cáo trạng, BPNC) → "Lưu & tiếp nhận" → tạo vụ án MỚI như A1/A2 với Trường hợp thụ lý = "Tòa án trả hồ sơ - VKS chấp nhận ĐTBS"; bước 1 wizard hiện thêm Mã vụ án liên kết (*) + nút kính lúp, Số QĐ/ Bản án (*), Ngày QĐ/ Bản án (*); modal "Cấp số thụ lý vụ án" hiện khối "Liên kết hồ sơ trả điều tra bổ sung": nhập mã (VD VA26-001746) → "Tìm kiếm" → "Tìm kiếm vụ án liên kết thành công"
+D4. Hoãn phiên tòa (mẫu 1A cột hoãn)
+- Tab "Xét xử" → accordion lịch xét xử → "Thêm quyết định" → "Quyết định hoãn phiên tòa" (043, HĐXX): Người ký (*), Căn cứ văn bản ngày (*), Căn cứ điều (*) (chọn Điều 297), Xét thấy (*), Ngày mở phiên tòa + Giờ mở phiên tòa mới, Địa điểm tổ chức (phòng xét xử) (*) → Lưu → Lấy số → Ký logic → Đóng
+- Lịch cũ Tag "Đã hoãn", trạng thái "Đang hoãn". Sau đó "Đăng ký lịch xét xử mới" (Step4.1) rồi tiếp tục bản án (không cần 020 mới). Mẫu 044 (Chánh án) thay "Căn cứ điều/Xét thấy" bằng "Chủ tọa phiên tòa: Vắng mặt/Bị thay đổi"
+D5. Bị can là người chưa thành niên (mẫu 1G, 1H)
+- Ở drawer bị can chọn Trẻ vị thành niên (*) = Có, hoặc tick cột "Dưới 18 tuổi" trên bảng bị can; ngày sinh < 18 tuổi thì hệ thống tự bật cờ khi lưu
+- Hệ quả: bảng bị can Tag "Dưới 18 tuổi"; dropdown "Thêm biểu mẫu" có thêm "Thông báo về việc áp dụng/ không áp dụng BP xử lý chuyển hướng (01-TPNCTN)"; nếu ký 01-TPNCTN với "áp dụng" = Có thì tab "Phiên họp XLCH" xuất hiện (luồng BPXLCH — mẫu 1H); bản án card bị cáo phải khai Họ tên cha, Họ tên mẹ; hình phạt tù áp mức người chưa thành niên
+D6. Biến thể dữ liệu để lên các mẫu chuyên đề (cùng luồng chính, chỉ đổi giá trị)
+- 1R (án Ban chỉ đạo): Step1.6 chọn "Án Ban chỉ đạo Trung ương" hoặc "Thành ủy"; tội danh Điều 353–359 (tham nhũng), 360–366 (chức vụ), 188–234 (kinh tế)
+- 1T (thiệt hại, thu hồi): tội danh nhóm kinh tế/tham nhũng/chức vụ + mục bồi thường trong bản án; bản án phải xác nhận hiệu lực
+- 1U/1V (mua bán người): tội danh chính Điều 150–154; bị hại: nữ, dưới 16/18 tuổi, dân tộc thiểu số; Thông tin tố tụng: Mục đích, Thủ đoạn
+- 1X (bạo lực gia đình): Điều 134/140/185; Quan hệ với bị hại = thân thích; Địa bàn phạm tội; Tính chất phiên tòa "Xét xử kín"
+- 1N (tuyên không phạm tội): modal "Quyết định hình phạt" chọn Hình phạt "Không phạm tội"
+- 1S (đặt tiền): Step3.1 lập "Quyết định về việc đặt tiền để bảo đảm"
+- 1A1/1B1 (pháp nhân): drawer bị can chọn Đối tượng phạm tội = "Pháp nhân"; tội danh trong phạm vi Điều 76 BLHS (188, 190, 200, 217, 235…)
+- Kỳ thống kê: mỗi kịch bản chạy 2 lượt — một lượt Ngày thụ lý / Ngày quyết định trong kỳ, một lượt trước kỳ (chưa giải quyết) để có "cũ còn lại"
+Ghi chú điều kiện chặn: (1) Chưa thụ lý → ẩn "Thêm biểu mẫu" ở bảng bị can, disable "Gia hạn chuẩn bị xét xử". (2) Chưa phân công Thẩm phán chủ tọa → "Vụ án chưa được phân công Thẩm phán chủ tọa" khi tạo QĐ theo bị can. (3) Bản án cần 020 đã ký; bị cáo đang tạm đình chỉ/đình chỉ không tick được vào bản án cho tới khi có 041. (4) Văn bản chưa "Lấy số" thì không "Ký logic" được; văn bản chưa ký thì trạng thái vụ án và bị can không đổi, báo cáo không đếm.
+PHẦN E. TÒA PHÚC THẨM TIẾP NHẬN HỒ SƠ (tài khoản Tòa phúc thẩm)
+Tiền đề: Tòa ST đã chuyển hồ sơ (Phần C Step3). Ở Tòa ST, "Chuyển hồ sơ đi" bị BE chặn nếu vụ còn đơn KC/KN chưa xử lý xong, chưa có Thông báo 048 hoặc Thông báo án phí 068. Muốn thu hồi khi đang "Chờ tiếp nhận": Tòa ST bấm "Thu hồi" trên dòng → modal "Thu hồi vụ án" → "Lý do thu hồi" → "Thu hồi".
+Step1: Tiếp nhận = lập và ký Biên bản giao nhận
+1.1. login tài khoản Thư ký Tòa phúc thẩm → vào màn "Hồ sơ chuyển đến" /vu-an/phuc-tham/ho-so-chuyen-den (tab Tất cả / Đang xử lý / Đã tiếp nhận / Đã thụ lý / Từ chối nhận hồ sơ). Không có nút "Tiếp nhận" trên danh sách
+1.2. Click mã vụ án (Tag) hoặc tên vụ án → "Chi tiết hồ sơ chuyển đến" /vu-an/phuc-tham/hinh-su/ho-so-chuyen-den/chi-tiet/{id}
+1.3. Card "Đối chiếu đầu mục hồ sơ bắt buộc" (làm trước):
+1. Đầu mục "Tống đạt Bản án / Quyết định phúc thẩm": với từng người trong bảng con bấm "Đã tống đạt"
+2. Đầu mục "Thông tin Đơn kháng cáo / Quyết định kháng nghị": bấm "Đủ" (chọn "Thiếu" thì phải nhập "Lý do")
+3. Đầu mục "Danh sách tài liệu": từng tài liệu bấm "Đủ" ("Thiếu" → nhập "Thiếu bút lục (VD: 12-15, 40)"). Lưu tự động
+1.4. Click "Biên bản giao nhận" (disable khi đã có Văn bản trả lại/Biên bản) → modal "Biên bản về việc giao, nhận hồ sơ vụ án phúc thẩm"
+1. Ngày bắt đầu giao nhận (*) — hôm nay (không tương lai); Ngày kết thúc giao nhận (*); Giờ bắt đầu/Giờ kết thúc (ẩn khi tick "Cả ngày")
+2. BÊN GIAO TÀI LIỆU: Họ tên bên giao (*) — Random; Chức vụ / chức danh — VD Thư ký TAND khu vực 1; Đơn vị công tác
+3. BÊN NHẬN TÀI LIỆU: Cán bộ nhận, Chức vụ / chức danh — tự điền theo tài khoản
+4. Bảng "Hồ sơ vụ án bàn giao": dòng 1 tự điền (Số bản án, Ngày giải quyết, Cấp xét xử = Sơ thẩm, Bị cáo đầu vụ, Tội danh, Tòa án xét xử sơ thẩm, Tổng số bút lục…)
+5. Hồ sơ vụ án hình sự bao gồm (*) — tự điền, sửa được
+→ Click "Lưu" → "Đã lập biên bản giao nhận hồ sơ" (hiện ở card "Quyết định xử lý (n)")
+1.5. Card "Quyết định xử lý (n)" → icon "Chi tiết" (mắt) → popup biểu mẫu → "Lấy số" → "Ký số" → "Đóng". CHỈ SAU KHI KÝ hồ sơ mới sang "Đã tiếp nhận" và hệ thống tự tạo vụ án phúc thẩm (ngày tiếp nhận = ngày ký; không nhập tay số tiếp nhận)
+1.6. Alert "Hồ sơ đã tiếp nhận và được đưa vào danh sách Quản lý vụ án phúc thẩm…" → Click "Mở vụ án phúc thẩm để thụ lý" → /vu-an/phuc-tham/chi-tiet?id={idVuAn}&tab=thu-ly
+Step2: Từ chối tiếp nhận (nhánh)
+2.1. Click "Văn bản trả lại" → modal "Văn bản trả lại hồ sơ vụ án và yêu cầu bổ sung tài liệu, vật chứng": Ngày quyết định (*), Số quyết định (*) VD 12/2026/VBTL, Người ký (*), Nội dung trả lại (*) — chọn 1 trong 5 lý do, Yêu cầu bổ sung (*) → Click "Ban hành & trả lại" → ký như 1.5 → hồ sơ sang "Từ chối nhận hồ sơ"; Tòa ST thấy ở tab "Từ chối tiếp nhận" và chuyển lại (Phần C Step3)
+PHẦN F. XỬ LÝ "CHI TIẾT VỤ ÁN" PHÚC THẨM (route /vu-an/phuc-tham/chi-tiet?id=…)
+Tab: Thông tin chung · Thụ lý · Phân công · Chuẩn bị xét xử · Xét xử · Kết quả phúc thẩm · Tài liệu, chứng cứ · Theo dõi tống đạt · Thống kê. Vụ phát sinh từ KC/KN đối với QĐ tạm đình chỉ/đình chỉ thay 2 tab CBXX/Xét xử bằng "Thủ tục xem xét" / "Phiên họp xem xét" (xem Step6).
+Step1: Cập nhật thông tin vụ
+1.1. Header click "Cập nhật thông tin vụ"
+1.2. Panel "Thông tin cáo trạng": Trường hợp thụ lý (*), Trường hợp truy tố (*), Số cáo trạng (*), Ngày bản cáo trạng (*), Số bút lục (*), Ngày giao (*), Viện kiểm sát (*), Phân loại án đặc biệt (Án Ban chỉ đạo Trung ương / Thành ủy / Án điểm — mẫu 1R phần PT); "Xử lý theo thủ tục rút gọn" (checkbox)
+1.3. Panel "Danh sách bị cáo (n)": phúc thẩm KHÔNG thêm mới bị cáo — danh sách lấy từ vụ ST (người có KC hoặc bị KC/KN). Panel "Danh sách người tham gia tố tụng": chọn lên từ vụ ST gốc
+1.4. Click "Lưu"
+Step2: Tab "Thụ lý" (cấp số thụ lý phúc thẩm)
+2.1. Thẻ thông tin chung → Click "Thụ lý" (đã có số thì "Sửa thụ lý") → modal thụ lý
+2.2. Nhập:
+1. Ngày thụ lý (*) — chọn ngày → "Số thụ lý" tự cấp (thiếu ngày → "Vui lòng chọn ngày thụ lý")
+2. Trường hợp thụ lý (*) — mặc định "Do có kháng cáo phúc thẩm"; khác: "Do có kháng cáo và kháng nghị phúc thẩm", "Do có kháng nghị phúc thẩm", "Giám đốc thẩm hủy để xét xử lại phúc thẩm", "Tái thẩm hủy để xét xử lại" (2 mục cuối bắt buộc "Số bản án bị hủy", "Ngày tuyên án")
+3. Ủy thác tư pháp đi; Thủ tục áp dụng
+4. Khối "Bản án, quyết định sơ thẩm bị kháng cáo, kháng nghị" (tự điền từ ST): Tòa án đã xét xử sơ thẩm, Thẩm phán chủ tọa sơ thẩm, Số thụ lý sơ thẩm, Ngày thụ lý sơ thẩm, Số bản án sơ thẩm (*), Ngày bản án sơ thẩm (*), Tổng số bút lục (*), Ngày nhận hồ sơ (*), Viện kiểm sát (*)
+5. Bảng "Đơn kháng cáo, quyết định kháng nghị làm phát sinh phúc thẩm" chỉ đọc
+2.3. Click nút lưu của modal → "Lưu thụ lý thành công"; hồ sơ chuyển đến tự sang "Đã thụ lý"
+Step3: Tab "Phân công"
+3.1. Click "Thêm quyết định phân công" (dropdown) → "Phân công Thẩm phán" (001) / "Phân công Thư ký" (002) / "Phân công Phó Chánh án" (không có Hội thẩm ở PT)
+3.2. Trong biểu mẫu: bảng Vai trò (Thẩm phán chủ tọa / Thẩm phán thành viên hội đồng xét xử / Thẩm phán dự khuyết) + Tên người được phân công (chủ tọa + 2 thành viên); Viện kiểm sát nhận; Nơi nhận khác → "Lưu" → "Lấy số" → "Ký số" → "Đóng"
+3.3. Kiểm sát viên: modal Kiểm sát viên tham gia HĐXX: Chọn kiểm sát viên (*), Ngày quyết định, Số quyết định, Ngày kết thúc → lưu → "Phân công kiểm sát viên thành công"
+Step4: Tab "Chuẩn bị xét xử"
+4.1. Khối "Thời hạn chuẩn bị xét xử": 90 ngày tính từ Ngày thụ lý — chỉ theo dõi
+4.2. Panel "Bị can/bị cáo": menu thao tác trên dòng bị cáo → biểu mẫu theo bị cáo: 009/010/011/012 (tạm giam, bắt tạm giam PT), 014/015 (bắt buộc chữa bệnh), bảo lĩnh/đặt tiền/cấm đi khỏi nơi cư trú/trích xuất/thay đổi BPNC/trả tự do → mỗi văn bản "Lưu" → "Lấy số" → "Ký số" → "Đóng"
+4.3. Panel "Quyết định tố tụng" → "Thêm quyết định": 030 trả hồ sơ, 033, 036 tạm đình chỉ, 039 đình chỉ, 051/052 đình chỉ xét xử phúc thẩm, QDDCPTBC_05 / QDTDCPTBC_06 (đình chỉ / tạm đình chỉ theo bị cáo — cần đã thụ lý + đã phân công Thẩm phán chủ tọa). Nút riêng "+ Quyết định đưa vụ án ra xét xử" (021) cũng ở đây
+4.4. Panel "Văn bản tố tụng khác": 013, 016/017, 018/019, 029, 031, 032, 041…
+Step5: Tab "Xét xử"
+5.1. Panel "Thủ tục mở phiên tòa" → Click "+ Mở phiên tòa" → modal lịch xét xử: Chủ tọa phiên tòa, Thư ký phiên tòa, Người nhận thông báo, phòng xử (hoặc "Phòng xử lưu động"), ngày/giờ xét xử (không Chủ nhật), Ghi chú → lưu. Thẻ tóm tắt hiện "Số QĐ - Ngày đưa vụ án ra xét xử" và "Thời hạn mở phiên tòa" = ngày QĐ 021 + 15 ngày
+5.2. Bảng văn bản phiên tòa → "Thêm quyết định" → "Quyết định đưa vụ án ra xét xử phúc thẩm" (021): Người ký (*) Thẩm phán chủ tọa, chọn lịch xét xử → "Lưu" → "Lấy số" → "Ký số" → "Đóng". (043/044 hoãn phiên tòa, 12-HSBS tạm ngừng lập cùng chỗ)
+5.3. Khối "Kết quả xét xử": chọn thẻ "Bản án" → Click "Tạo bản án phúc thẩm" (chỉ hiện khi còn bị cáo trong phạm vi KC/KN chưa có bản án; nên lập 021 trước để "Thông tin mở phiên tòa" tự điền) → Drawer "Thêm bản án phúc thẩm" (mẫu 028)
+1. Ngày lấy số bản án; Số bản án (do "Lấy số" sinh); Thay mặt Hội đồng xét xử - Người ký (*)
+2. "Thành phần Hội đồng xét xử phúc thẩm": tick cột "Tham gia phiên tòa"
+3. "Thông tin mở phiên tòa": thời gian, tính chất, hình thức, Địa điểm (VD Phòng xử án)
+4. "Thông tin bị cáo": "Chọn từ sơ thẩm" → modal tick bị cáo (người có KC/KN không bỏ tick được) → "Lưu"; mỗi bị cáo bấm "Chỉnh sửa" khai đủ 14 trường bắt buộc: Sinh năm, Giới tính, Nghề nghiệp, Trình độ văn hóa, Dân tộc, Quốc tịch, Tôn giáo, Họ tên cha, Họ tên mẹ, Tiền án, Tiền sự, Nhân thân, Nơi sinh, Nơi cư trú
+5. "Người tham gia tố tụng"
+6. "Nội dung vụ án": Click "Lấy từ bản án sơ thẩm"; bảng "Nội dung kháng cáo, kháng nghị" tự động
+7. "Ý kiến của Viện kiểm sát": chọn 1 trong 3 thẻ (Giữ nguyên / Sửa / Hủy), khai theo tội danh — bắt buộc trước khi ký
+8. "Nhận định của Hội đồng xét xử" — Random text
+9. "Quyết định" — mục "Về kết quả giải quyết kháng cáo, kháng nghị" (*): chọn 1 trong 3 thẻ:
+- "Giữ nguyên bản án sơ thẩm" (Điều 356): không nhập thêm (mẫu 1B cột giữ nguyên; 1I/1K cột giữ nguyên án treo)
+- "Sửa bản án sơ thẩm" (Điều 357): bảng bị cáo × tội danh bấm "Giữ nguyên" / "Sửa"; "Sửa" mở popup "Kết quả tội danh": Chọn hướng (Miễn TNHS, Miễn hình phạt, Thay đổi tội danh nhẹ hơn/nặng hơn, Chuyển hình phạt khác nhẹ/nặng hơn, Giảm/Tăng hình phạt, Sửa phần bồi thường và vật chứng, Sửa phần hình phạt bổ sung/BPTP, Sửa các phần khác), Nguyên nhân (Do cấp sơ thẩm sai / Do có tình tiết mới), card "Tội danh mới" khi đổi tội danh, bảng hình phạt "Thêm hình phạt" (Loại, Hình phạt, Năm/Tháng/Ngày hoặc Số tiền, Án treo — hướng giảm/tăng phải khai hình phạt), Ghi chú → "Lưu"
+- "Hủy bản án sơ thẩm" (Điều 358, 359): Phạm vi hủy (Toàn bộ bản án / Một phần — tick "Bị cáo thuộc phạm vi hủy"), Hướng hủy (*) (Hủy… tuyên bố không có tội và đình chỉ — mẫu 1O; Hủy… và đình chỉ vụ án; Hủy… để điều tra lại — mẫu 1Q; Hủy… để xét xử sơ thẩm lại), Nguyên nhân, Viện kiểm sát nhận hồ sơ (*) (chỉ khi điều tra lại), Lý do hủy (*)
+- 4 mục "nếu có": "Về bồi thường thiệt hại và trách nhiệm dân sự", "Về xử lý vật chứng", "Về biện pháp tư pháp", "Về án phí phúc thẩm" (mức cố định 200.000 đ; "Miễn, giảm": Không / Miễn 100% / Giảm 50%)
+10. "Nơi nhận" (*)
+5.4. Footer Drawer: "Lưu nháp" → "Thêm mới bản án thành công" → "Lấy số" (điền Số/Ngày bản án) → "Ký số" (chặn "Chưa thể ký số: …" nếu thiếu kết quả chung Tòa; hướng hủy / lý do hủy / VKS nhận hồ sơ; tội danh chưa chọn Giữ nguyên/Sửa; ý kiến VKS; tình tiết tăng nặng, giảm nhẹ từng bị cáo; 7 tư cách NTT) → "Đóng". Bản án PT "Có hiệu lực kể từ ngày tuyên án" — không có bước xác nhận hiệu lực. Vụ PT → "Đã xét xử"
+Step6: Tab "Kết quả phúc thẩm" (theo dõi + quyết định HĐXX)
+6.1. Mục "Kết quả giải quyết kháng cáo, kháng nghị": bản án đã ký + khối "Chuyển hồ sơ" (xem Phần G)
+6.2. Mục "Quyết định của Hội đồng xét xử phúc thẩm": Click "Thêm mới quyết định" → "046" QĐ giải quyết KC/KN đối với QĐ tạm đình chỉ (đình chỉ) / "051", "052" QĐ đình chỉ việc xét xử phúc thẩm → "Lưu" → "Lấy số" → icon "Ký số" → "Đóng"
+6.3. Đình chỉ XXPT do rút KC/KN (mẫu 1B cột đình chỉ): việc rút ghi trên đơn của vụ ST gốc; mục "Rút kháng cáo, kháng nghị" dòng đơn "Đã rút toàn bộ/một phần" → Click "Lập thông báo rút" (049) → Lưu/Lấy số/Ký số; sau đó lập 051/052 như 6.2
+6.4. Luồng KC/KN đối với QĐ tạm đình chỉ/đình chỉ (vụ có cờ): tab "Thủ tục xem xét" → panel "Quyết định tố tụng" (051/052), "Văn bản tố tụng khác" (035); tab "Phiên họp xem xét" → panel "Quyết định giải quyết" → "Thêm quyết định" → 046 (chấp nhận/không chấp nhận), 036, 039 → Lưu/Lấy số/Ký số. Nếu 046 sửa/hủy → vụ ST gốc hiện nút "Tiếp tục xét xử"
+Step7: Kháng cáo quá hạn (nhánh, tài khoản Tòa PT)
+7.1. Tiền đề: Tòa ST duyệt đơn KC quá hạn (ngày tiếp nhận > 15 ngày sau bản án) → bản ghi ở tab "Chờ xét kháng cáo quá hạn"
+7.2. Vào "Giải quyết kháng cáo quá hạn" /vu-an/phuc-tham/giai-quyet-khang-cao-qua-han → click dòng → chi tiết
+7.3. Tab "Thông tin chung": Click "Tiếp nhận hồ sơ" → "Tiếp nhận" → "Tiếp nhận hồ sơ thành công". (Hoặc "Trả lại hồ sơ" → modal: Ngày quyết định (*), Số quyết định (*), Người ký (*), Ngày trả hồ sơ (*), Căn cứ trả lại (*), Yêu cầu bổ sung (*) → "Trả lại hồ sơ")
+7.4. Tab "Phân công": Click "Phân công" → 39-HSBS "Quyết định phân công người tiến hành tố tụng xem xét kháng cáo quá hạn" (3 Thẩm phán, Chánh án ký) → Lưu → Lấy số → Ký số → Đóng
+7.5. Tab "Mở phiên họp": khối "Thủ tục mở phiên họp" → thêm biểu mẫu 38-HSBS "Quyết định mở phiên họp xem xét kháng cáo quá hạn" → Lưu/Lấy số/Ký số; lịch phiên họp tự tạo
+7.6. Tab "Kết quả giải quyết": (hoãn nếu có: 43-HSBS biên bản thảo luận hoãn rồi 40-HSBS QĐ hoãn) → khối "Danh sách đơn và kết quả xét" → dòng đơn click "Tạo quyết định" (disable khi chưa ban hành 38-HSBS và 39-HSBS) → 47-HS "Quyết định về việc giải quyết kháng cáo quá hạn": kết quả Chấp nhận / Không chấp nhận / Đình chỉ → Lưu → Lấy số → Ký số → Đóng
+7.7. Nếu chấp nhận: Tòa ST chuyển hồ sơ lượt 2 lên PT (Phần C Step3) rồi đi Phần E, F
+PHẦN G. SAU BẢN ÁN PHÚC THẨM HỦY (trả hồ sơ về sơ thẩm / VKS)
+Step1: Tòa PT ghi nhận chuyển hồ sơ — tab "Kết quả phúc thẩm" → mục "Kết quả giải quyết kháng cáo, kháng nghị" → khối "Chuyển hồ sơ" (Nơi nhận hồ sơ, Hạn chuyển 15 ngày từ ngày tuyên, Phạm vi, Trạng thái)
+1.1. Hướng "để xét xử sơ thẩm lại": Click "Chuyển hồ sơ về Tòa án cấp sơ thẩm" (khóa khi còn bị cáo chưa có bản án PT) → "Xác nhận" → "Đã ghi nhận chuyển hồ sơ"; vụ ST gốc sang "Chờ thụ lý lại"
+1.2. Hướng "để điều tra lại": Click "Chuyển hồ sơ cho Viện kiểm sát" → "Xác nhận" → BE tự tạo hồ sơ tiếp nhận loại "Trả Viện kiểm sát điều tra lại" (mã TN26-xxxxxx, "Chờ chuyển VKS") ở màn "Tiếp nhận hồ sơ" Tòa ST
+Step2: Trả hồ sơ giấy về ST: vào "Hồ sơ chuyển đi" PT /vu-an/phuc-tham/chuyen-di (tab Chưa chuyển / Chờ tiếp nhận / Đã tiếp nhận / Đã trả lại) → tick dòng "Chưa chuyển" → Click "Trả hồ sơ về sơ thẩm" → "Đã trả hồ sơ về Tòa án cấp sơ thẩm"
+Step3: Tòa ST tiếp nhận hồ sơ trả về (tài khoản Tòa ST): màn "Vụ chuyển đến" sơ thẩm → dòng "Chờ tiếp nhận" click icon "Tiếp nhận" → modal "Tiếp nhận vụ chuyển đến": Kết quả tiếp nhận (*) Tiếp nhận, Ngày tiếp nhận (*), Số tiếp nhận (*) VD 15/TN-PT, Người tiếp nhận (*) → "Lưu" → "Tiếp nhận vụ án thành công" → tự mở chi tiết vụ ST tab Thụ lý
+Step4: Thụ lý lại (lập vụ ST mới — mẫu 1A cột thụ lý xét xử lại)
+4.1. Tab "Thụ lý" vụ ST gốc → Click "Thụ lý lại" (chỉ hiện khi "Chờ thụ lý lại") → modal "Thụ lý lại vụ án để xét xử sơ thẩm lại": tick người tham gia tố tụng mang sang → xác nhận → "Thụ lý lại vụ án thành công" → hệ thống lập vụ ST mới (mã hiện ở khối Chuyển hồ sơ PT "Đã lập vụ án sơ thẩm mới {mã}")
+4.2. Vào vụ mới → "Thụ lý" với Trường hợp thụ lý = "Thụ lý xét xử lại do phúc thẩm hủy", bắt buộc "Số bản án bị hủy", "Ngày tuyên án" → lưu → tiếp tục Phần B từ Step2
+Step5: Điều tra lại (mẫu 1Q): Tòa ST vào "Tiếp nhận hồ sơ" /vu-an/so-tham/ho-so-tiep-nhan → bản ghi "Trả Viện kiểm sát điều tra lại" → Click "Liên thông sang VKS" → "Đã chuyển VKS". Kết quả đình chỉ điều tra của CQĐT ghi nhận thủ công tại Hồ sơ đi PT (chưa có trường lưu QĐ đình chỉ điều tra — mẫu 1Q hiện không tự lên)
+PHẦN H. GIÁM ĐỐC THẨM / TÁI THẨM (menu /vu-an/gdt-tt — tài khoản TAND cấp cao / TANDTC; cấp tỉnh báo "Chức năng không áp dụng cấp tỉnh")
+Màn có sẵn nhưng chưa khảo sát chi tiết nhãn nút Lưu/Lấy số; thứ tự luồng nhận diện từ code. Cần rà lại trên môi trường DEV trước khi viết tool.
+Step1: Đơn đề nghị GĐT — "Nhận đơn thụ lý vụ án" /vu-an/gdt-tt/nhan-don-tl-vu-an/danh-sach
+1.1. Thêm đơn (loại đơn đề nghị GĐT/TT; số, ngày, Tòa ra bản án bị đề nghị; người đề nghị); lọc "Thụ lý đơn", "Giao tiểu hồ sơ"; nút "Trả đơn" (xác nhận "Xác nhận trả đơn"), "Giao THS" → /vu-an/gdt-tt/nhan-don-tl-vu-an/giao-ths (tab "Nhận THS từ VPHCTP", "Giao THS đến TTV")
+1.2. Tạo vụ án từ đơn (đơn phải chưa có mã vụ án, đã phân công Thẩm phán, đủ Số, Ngày, Tòa ra Bản án/Quyết định) → "Thêm mới vụ án thành công" (vụ giai đoạn GĐT, cùng hồ sơ vụ án gốc)
+Step2: Tờ trình / kết quả đơn — "Quản lý án" (chi tiết vụ án GĐT: tab Thông tin vụ án · Danh sách đơn · Phân công · Mượn/trả hồ sơ · Tờ trình · Kết quả giải quyết · Tài liệu vụ án · Hồ sơ lưu trữ); trình ký tờ trình tại /vu-an/gdt-tt/quan-ly-an/…/xin-y-kien-lanh-dao
+Step3: Hồ sơ kháng nghị — /vu-an/gdt-tt/ho-so-khang-nghi/danh-sach (tab "Hồ sơ kháng nghị đi" / "Hồ sơ kháng nghị đến")
+3.1. "Thêm mới Hồ sơ Kháng nghị GĐT/TT" /vu-an/gdt-tt/ho-so-khang-nghi/them-moi-den: bảng bản án liên quan (Vụ án, Giai đoạn, Số bản án, Ngày bản án, Tòa ra bản án); người liên quan ("Khiếu nại cho bị cáo", "Nội dung khiếu nại"); người quyết định kháng nghị (Chánh án TANDTC / Chánh án TAND cấp cao / Viện trưởng VKSNDTC / Viện trưởng VKSND cấp cao — mẫu 1C tách cột theo chủ thể); thủ tục Giám đốc thẩm / Tái thẩm (mẫu 1C / 1D)
+3.2. Modal "Chuyển hồ sơ kháng nghị (n hồ sơ)": Số bút lục HSKN, Ngày chuyển HSKN, Loại đơn vị chuyển đến, Đơn vị chuyển đến, Ghi chú → "Chuyển hồ sơ"
+Step4: Thụ lý GĐT + phân công HĐXX — "Quản lý vụ xét xử" /vu-an/gdt-tt/quan-ly-vu-xet-xu/danh-sach → chi tiết tab Thụ lý (form thụ lý xét xử GĐT, số thụ lý gợi ý tự động → "Cập nhật thông tin thụ lý thành công!") · Phân công (phân công Thẩm phán vụ /vu-an/gdt-tt/phan-cong-tham-phan-vu → "Xác nhận phân công"; Phân công HĐXX — bảng quyết định phân công, cần duyệt)
+Step5: Kết quả xét xử GĐT — tab "Kết quả xét xử": Ngày mở phiên tòa, Địa điểm, Ngày quyết định, Số quyết định, Người ký, Ngày phát hành, Áp dụng án lệ, Có công bố bản án, Quá hạn luật định (Không / Quá hạn chủ quan / khách quan), Kết quả GĐT,TT (*) (không chấp nhận kháng nghị / hủy để điều tra lại / hủy để xét xử lại ST hoặc PT / sửa một phần / sửa toàn bộ / đình chỉ xét xử GĐT — mẫu 1C, 1K, 1L phần GĐT), Nguyên nhân, Tòa án xét xử lại; quyết định hình phạt từng bị cáo: modal (Không thay đổi / Thay đổi: Miễn trách nhiệm hình sự, Miễn hình phạt…); Trách nhiệm dân sự, Xử lý vật chứng, Nơi nhận → lưu/ký (nhãn nút chưa xác định — xem Tab_KetQuaXetXu)
+Ghi chú lệch / chưa hoàn thiện cần biết khi viết tool: (1) màn Hồ sơ chuyển đến hình sự không có ô Số tiếp nhận — tiếp nhận = ký Biên bản giao nhận; (2) "Người ký" của Văn bản trả lại đang cố định trong mã; (3) tab Theo dõi tống đạt chưa nối API; (4) QĐ mở/hoãn phiên họp của luồng xem xét KC/KN QĐ tố tụng chưa có biểu mẫu; (5) FE phúc thẩm không chặn tạo bản án 028 khi chưa có QĐ 021, nhưng nên lập 021 trước để báo cáo đếm đúng.

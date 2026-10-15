@@ -1,0 +1,23 @@
+{
+  "linhVuc": "1-hinh-su",
+  "bieuMau": "1D",
+  "tenBieuMau": "Thống kê thụ lý và giải quyết các vụ án hình sự tái thẩm do cá nhân phạm tội",
+  "cases": [
+    {
+      "id": "1D-01",
+      "moTa": "Mới thụ lý tái thẩm - phát hiện tình tiết mới",
+      "soLuong": 1,
+      "truong": [
+        { "nhan": "Số thụ lý", "giaTri": "{{soThuLy}}" },
+        { "nhan": "Ngày thụ lý", "loai": "date", "giaTri": "{{ngay:-3}}" },
+        { "nhan": "Số quyết định kháng nghị", "giaTri": "{{soThuLy}}/QĐ-KNTT" },
+        { "nhan": "Ngày quyết định kháng nghị", "loai": "date", "giaTri": "{{ngay:-10}}" },
+        { "nhan": "Số bản án bị kháng nghị", "giaTri": "{{soThuLy}}/HS-ST" },
+        { "nhan": "Ngày bản án bị kháng nghị", "loai": "date", "giaTri": "{{ngay:-200}}" },
+        { "nhan": "Tội danh", "loai": "select", "giaTri": "Lừa đảo chiếm đoạt tài sản" },
+        { "nhan": "Họ tên bị cáo", "giaTri": "{{hoTen}}" },
+        { "nhan": "Số CCCD", "giaTri": "{{cccd}}" }
+      ]
+    }
+  ]
+}

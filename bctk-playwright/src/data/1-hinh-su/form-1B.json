@@ -1,0 +1,22 @@
+{
+  "linhVuc": "1-hinh-su",
+  "bieuMau": "1B",
+  "tenBieuMau": "Thống kê thụ lý và giải quyết các vụ án hình sự phúc thẩm do cá nhân phạm tội",
+  "cases": [
+    {
+      "id": "1B-01",
+      "moTa": "Mới thụ lý phúc thẩm - bị cáo kháng cáo",
+      "soLuong": 1,
+      "truong": [
+        { "nhan": "Số thụ lý", "giaTri": "{{soThuLy}}" },
+        { "nhan": "Ngày thụ lý", "loai": "date", "giaTri": "{{ngay:-3}}" },
+        { "nhan": "Số bản án sơ thẩm", "giaTri": "{{soThuLy}}/HS-ST" },
+        { "nhan": "Ngày bản án sơ thẩm", "loai": "date", "giaTri": "{{ngay:-40}}" },
+        { "nhan": "Tội danh", "loai": "select", "giaTri": "Cố ý gây thương tích" },
+        { "nhan": "Họ tên bị cáo", "giaTri": "{{hoTen}}" },
+        { "nhan": "Số CCCD", "giaTri": "{{cccd}}" },
+        { "nhan": "Loại kháng cáo, kháng nghị", "loai": "select", "giaTri": "Kháng cáo" }
+      ]
+    }
+  ]
+}

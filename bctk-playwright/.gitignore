@@ -1,0 +1,14 @@
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+/playwright/.auth/
+
+# Biến môi trường chứa tài khoản thật – chỉ commit .env.example
+.env
+.env.*
+!.env.example
+
+# Mã vụ án sinh ra mỗi lượt chạy – giữ cấu trúc thư mục, không commit nội dung
+output/**/*.txt

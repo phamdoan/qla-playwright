@@ -1,0 +1,45 @@
+{
+  "_ghiChu": [
+    "MẪU tài khoản môi trường PRE-PROD (https://e-qlta-uat.toaan.gov.vn).",
+    "Chép thành config/tai-khoan.preprod.local.json rồi điền CCCD + tên từng vai.",
+    "Tên có '.local.' nên .gitignore (config/*.local.json) bỏ qua — CCCD KHÔNG lên repo công khai.",
+    "",
+    "VÌ SAO TỆP RIÊNG, KHÔNG SỬA tai-khoan.local.json: tệp đó là tài khoản STAGING. Cấu hình xếp bốn",
+    "lớp (common/cau-hinh-luong.ts), lớp này ghi đè lớp STG khi QLA_ENV=preprod — hai môi trường",
+    "không lẫn tài khoản của nhau, và chuyển qua lại không phải sửa tệp nào.",
+    "",
+    "Mật khẩu mặc định Ta@<cccd>; khác thì thêm \"matKhau\" vào đúng vai đó.",
+    "CHỈ KHAI VAI NÀO CẦN — vai không khai, lúc chạy báo rõ 'Thiếu tài khoản cho vai ...', không",
+    "chạy sai âm thầm. Danh sách vai đầy đủ: config/tai-khoan.example.json."
+  ],
+  "taiKhoan": {
+    "canBo": {
+      "cccd": "",
+      "ten": ""
+    },
+    "chanhVanPhong": {
+      "cccd": "",
+      "ten": ""
+    },
+    "phoChanhAn": {
+      "cccd": "",
+      "ten": ""
+    },
+    "chanhAn": {
+      "cccd": "",
+      "ten": ""
+    },
+    "thuKyVu": {
+      "cccd": "",
+      "ten": ""
+    },
+    "vuTruong": {
+      "cccd": "",
+      "ten": ""
+    },
+    "thamTraVien": {
+      "cccd": "",
+      "ten": ""
+    }
+  }
+}

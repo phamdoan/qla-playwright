@@ -1,0 +1,21 @@
+{
+  "linhVuc": "1-hinh-su",
+  "bieuMau": "1A",
+  "tenBieuMau": "Thống kê thụ lý và giải quyết các vụ án hình sự sơ thẩm do cá nhân phạm tội",
+  "cases": [
+    {
+      "id": "1A-01",
+      "moTa": "Mới thụ lý - một bị cáo",
+      "soLuong": 1,
+      "truong": [
+        { "nhan": "Số thụ lý", "giaTri": "{{soThuLy}}" },
+        { "nhan": "Ngày thụ lý", "loai": "date", "giaTri": "{{ngay:-7}}" },
+        { "nhan": "Tội danh", "loai": "select", "giaTri": "Trộm cắp tài sản" },
+        { "nhan": "Họ tên bị cáo", "giaTri": "{{hoTen}}" },
+        { "nhan": "Số CCCD", "giaTri": "{{cccd}}" },
+        { "nhan": "Ngày sinh", "loai": "date", "giaTri": "{{ngaySinh}}" },
+        { "nhan": "Địa chỉ", "giaTri": "{{diaChi}}" }
+      ]
+    }
+  ]
+}

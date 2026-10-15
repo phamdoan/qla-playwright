@@ -1,0 +1,21 @@
+{
+  "linhVuc": "2-dan-su",
+  "bieuMau": "2A",
+  "tenBieuMau": "Thống kê thụ lý và giải quyết các vụ, việc dân sự sơ thẩm",
+  "cases": [
+    {
+      "id": "2A-01",
+      "moTa": "Mới thụ lý - tranh chấp hợp đồng vay tài sản",
+      "soLuong": 1,
+      "truong": [
+        { "nhan": "Số thụ lý", "giaTri": "{{soThuLy}}" },
+        { "nhan": "Ngày thụ lý", "loai": "date", "giaTri": "{{ngay:-5}}" },
+        { "nhan": "Quan hệ pháp luật", "loai": "select", "giaTri": "Tranh chấp hợp đồng vay tài sản" },
+        { "nhan": "Họ tên nguyên đơn", "giaTri": "{{hoTen}}" },
+        { "nhan": "CCCD nguyên đơn", "giaTri": "{{cccd}}" },
+        { "nhan": "Họ tên bị đơn", "giaTri": "{{hoTen}}" },
+        { "nhan": "CCCD bị đơn", "giaTri": "{{cccd}}" }
+      ]
+    }
+  ]
+}

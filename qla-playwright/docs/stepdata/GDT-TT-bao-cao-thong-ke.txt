@@ -1,0 +1,329 @@
+﻿BƯỚC 1: ĐĂNG NHẬP TÀI KHOẢN (NGUYỄN THỊ THU HƯỜNG)
+1. Truy cập: Mở trình duyệt, nhập liên kết [https://qla-stg.toaan.gov.vn/sso/login](https://qla-stg.toaan.gov.vn/sso/login).
+2. Màn hình Đăng nhập:
+   * Click button: “Đăng nhập với Tòa án tối cao SSO”.
+   * Input Số Căn cước công dân: <CCCD:canBo> (Tài khoản: Nguyễn Thị Thu Hường - Trưởng phòng).
+   * Input Mật khẩu: Ta@<CCCD:canBo>.
+   * Click button: “Đăng nhập”.
+BƯỚC 2: NHẬP DỮ LIỆU ĐƠN & TẠO HỒ SƠ
+1. Màn hình Danh sách đơn:
+   * Tại menu trái, click: Quản lý đơn -> Click mục: Danh sách đơn.
+   * Click button: “Thêm mới”.
+2. Popup Tải lên tài liệu:
+   * Click vào ô: “Click hoặc kéo thả tài liệu vào đây” -> Chọn file tài liệu từ máy tính.
+   * Click button: “Tải lên”.
+   * Popup Xác nhận xử lý OCR hiển thị -> Click button: “Quay lại”.
+3. Tab Thông tin bản án đề nghị:
+   * Tra cứu cột Bản án sơ thẩm gốc và cột Tòa án trong file tài liệu đính kèm để điền:
+      * Input Số bản án: Nhập số (Ví dụ: 16).
+      * Input Ngày bản án: Nhập ngày tháng năm (Ví dụ: 19/12/2024).
+      * Dropdown Cấp xét xử: Chọn Sơ thẩm (hoặc Phúc thẩm tùy ký hiệu đuôi ST/PT).
+      * Dropdown Tòa ra bản án: Chọn đúng tên tòa án lấy từ cột Tòa án.
+   * Click icon: Tìm kiếm (kính lúp) -> Hệ thống tự động điền (auto-fill) trường Loại án.
+   * Dropdown Thủ tục giải quyết: Chọn Giám đốc thẩm hoặc Tái thẩm theo yêu cầu file.
+4. Tab Thông tin đơn:
+   * Click dropdown: “Chọn người từ bản án cũ” -> Click chọn tên người hiển thị trong danh sách.
+   * Click dropdown: Tỉnh/Thành phố -> Click chọn địa phương khớp địa chỉ người đứng đơn (hoặc chọn 1 địa chỉ bất kỳ nếu không có).
+   * Click dropdown: Phường/Xã -> Chọn phường/xã tương ứng.
+5. Tab Nội dung đơn:
+   * Click button: “Gợi ý” -> Hệ thống tự sinh nội dung vào khung văn bản.
+6. Tab Xử lý đơn:
+   * Dropdown Đơn vị chuyển đến:
+      * Nếu Loại án là Hình sự: Chọn Vụ giám đốc kiểm tra về hình sự.
+      * Nếu Loại án là Dân sự: Chọn Vụ giám đốc kiểm tra về dân sự.
+   * Dropdown Thụ lý đơn: Chọn Thụ lý mới.
+7. Tab Thông tin khiếu nại:
+   * Click button: “Thêm mới”.
+   * Popup Thêm thông tin khiếu nại: Chọn người được khiếu nại có sẵn trong danh sách.
+   * Tab Nội dung khiếu nại: Nhập chuỗi ký tự: Khiếu nại cho người thân.
+   * Datepicker Ngày tòa nhận: Chọn ngày hiện tại (ngày nhập máy).
+   * Datepicker Ngày ghi trên đơn: Chọn ngày hiện tại.
+   * Datepicker Ngày trên dấu bưu điện: Chọn ngày hiện tại.
+   * Click button: “Lưu thông tin”.
+8. Hoàn tất: Click icon Mũi tên quay lại (góc trên màn hình) để trở về danh sách đơn.
+BƯỚC 3: PHÂN CÔNG THẨM PHÁN
+1. Tại menu trái, click: Quản lý đơn -> Click mục: Phân công thẩm phán.
+2. Click chọn tab: DS chưa phân công ngẫu nhiên.
+3. Click button: “Phân công ngẫu nhiên” -> Hệ thống hiển thị popup/thông báo xác nhận và tự động phân công thẩm phán cho từng đơn.
+BƯỚC 4: TẠO TỜ TRÌNH PHÂN CÔNG THẨM PHÁN
+1. Tại menu trái, click: Quản lý đơn -> Click mục: Danh sách đơn.
+2. Click chọn vào dòng Đơn đã phân công thẩm phán vừa thực hiện.
+3. Dropdown Loại văn bản: Chọn Tờ trình phân công thẩm phán.
+4. Mục Người duyệt: Chọn Nguyễn Thị Thu Hường.
+5. Mục Người ký: Chọn Nguyễn Tường Linh.
+6. Tại cột Thao tác: Click chọn “Tạo văn bản”.
+7. Click button: “Trình ký”.
+BƯỚC 5: TẠO TỜ THÔNG BÁO PHÂN CÔNG THẨM PHÁN
+1. Vẫn tại màn hình chi tiết đơn (hoặc từ Quản lý đơn -> Danh sách đơn -> Mở lại đơn vừa nhập).
+2. Dropdown Loại văn bản: Chọn Tờ thông báo phân công thẩm phán.
+3. Mục Người duyệt: Chọn Nguyễn Thị Thu Hường.
+4. Mục Người ký: Chọn Nguyễn Tường Linh.
+5. Tại cột Thao tác: Click chọn “Tạo văn bản”.
+6. Click button: “Trình ký”.
+BƯỚC 6: ĐĂNG NHẬP TÀI KHOẢN BÀ NGUYỄN TƯỜNG LINH
+1. Click vào góc avatar/tên tài khoản Nguyễn Thị Thu Hường -> Click: “Đăng xuất”.
+2. Click button: “Đăng nhập với Tòa án tối cao SSO”.
+3. Input Số CCCD: <CCCD:chanhVanPhong> (Nguyễn Tường Linh - Chánh văn phòng).
+4. Input Mật khẩu: Ta@<CCCD:chanhVanPhong>.
+5. Click button: “Đăng nhập”.
+BƯỚC 7: DUYỆT TỜ TRÌNH VÀ KÝ THÔNG BÁO PHÂN CÔNG
+1. Tại menu trái, click: Công tác lãnh đạo -> Click chọn tab: Chờ duyệt.
+2. Ký duyệt Tờ trình:
+   * Click chọn bản ghi: Tờ trình phân công thẩm phán của đơn đang xử lý.
+   * Màn hình Lãnh đạo phê duyệt ý kiến mở ra:
+      * Dropdown Cấp trình tiếp: Chọn Phó chánh án.
+      * Dropdown Người đề xuất trình: Chọn Nguyễn Hải Trâm.
+      * Click button: “Lưu và ký logic”.
+3. Ký duyệt Tờ thông báo:
+   * Tại tab Chờ duyệt, click chọn bản ghi: Tờ thông báo phân công thẩm phán.
+   * Màn hình Lãnh đạo phê duyệt ý kiến mở ra:
+      * Click button: “Ký logic”.
+BƯỚC 8: ĐĂNG NHẬP TÀI KHOẢN BÀ NGUYỄN HẢI TRÂM
+1. Click vào tên tài khoản Nguyễn Tường Linh -> Click: “Đăng xuất”.
+2. Click button: “Đăng nhập với Tòa án tối cao SSO”.
+3. Input Số CCCD: <CCCD:phoChanhAn> (Nguyễn Hải Trâm - Phó Chánh án).
+4. Input Mật khẩu: Ta@<CCCD:phoChanhAn>.
+5. Click button: “Đăng nhập”.
+BƯỚC 9: PHÊ DUYỆT ĐỀ XUẤT PHÂN CÔNG THẨM PHÁN
+1. Tại menu trái, click: Công tác lãnh đạo -> Click: Phê duyệt đề xuất -> Chọn tab: Chờ duyệt.
+2. Click chọn dòng bản ghi: Tờ trình phân công thẩm phán của đơn cần xử lý.
+3. Màn hình Lãnh đạo phê duyệt ý kiến hiển thị:
+   * Click button: “Phê duyệt”.
+BƯỚC 10: KIỂM TRA THỤ LÝ VỤ ÁN (TRƯƠNG MINH TRANG)
+1. Click vào tên tài khoản Nguyễn Hải Trâm -> Click: “Đăng xuất”.
+2. Click button: “Đăng nhập với Tòa án tối cao SSO”.
+3. Input Số CCCD: <CCCD:thuKyVu> (Trương Minh Trang - Thư ký viên Vụ hình sự).
+4. Nhập Mật khẩu tương ứng -> Click: “Đăng nhập”.
+5. Click menu: Quản lý án GĐT/TT -> Click: Nhận đơn và Thụ lý vụ án -> Click chọn tab: Đã có vụ án.
+6. Kiểm tra bản ghi vụ án tương ứng đã hiển thị tại danh sách.
+LƯU Ý (xác nhận 29/09/2026 — ĐƠN CHÍNH / ĐƠN PHỤ):
+   * Một vụ án GĐT/TT gom nhiều đơn của cùng một bản án. Danh sách "Đã có vụ án" và màn Phân công TTV
+     CHỈ hiển thị ĐƠN CHÍNH của vụ (DON.IS_DON_CHINH = 1); các đơn nhập sau là đơn phụ nên không hiện.
+     Vì vậy tìm theo mã đơn/số thụ lý của đơn vừa nhập sẽ KHÔNG thấy — phải tìm theo SỐ + NGÀY + TÒA
+     ra bản án rồi thao tác trên dòng đơn chính (cùng một vụ án nên vẫn đúng nghiệp vụ).
+     Ví dụ trên STG: vụ 958eebc1 (bản án 3 - 24/09/2026 - TAND TP Hải Phòng) có đơn chính 9870, còn đơn
+     Playwright nhập là 10234; vụ bản án 140 có đơn chính 9844, đơn nhập là 10249.
+   * Bước 3 định tuyến đơn theo LOẠI ÁN: án dân sự về Vụ Giám đốc kiểm tra về DÂN SỰ (D01.107), nên từ
+     Bước 10 trở đi phải đăng nhập tài khoản của Vụ dân sự; tài khoản Vụ hình sự không nhìn thấy các đơn đó.
+BƯỚC 11: PHÂN CÔNG THẨM TRA VIÊN (NGUYỄN THỊ BÌNH)
+1. Click vào tài khoản Trương Minh Trang -> Click: “Đăng xuất”.
+2. Click button: “Đăng nhập với Tòa án tối cao SSO”.
+3. Input Số CCCD: <CCCD:thuKyVuHoSoKhangNghi> (Nguyễn Thị Bình - Vụ trưởng Vụ Giám đốc kiểm tra về hình sự).
+4. Input Mật khẩu: Ta@<CCCD:thuKyVuHoSoKhangNghi>.
+5. Tại menu trái, click: Quản lý án GĐT/TT -> Click: Danh sách phân công TTV.
+6. Chọn tab: Chưa phân công TTV.
+7. Chọn radio/nút: “Phân công chỉ định”.
+8. Tích chọn Checkbox của đơn cần phân công:
+   * Tại cột Thẩm tra viên: Chọn Bùi Thị Thanh Loan.
+   * Tại cột Lãnh đạo: Chọn Lê Thị Thu Hiền.
+9. Click button: “Phân công”.
+10. Popup xác nhận xuất hiện -> Click button: “Đồng ý”.
+BƯỚC 12: TẠO DỰ THẢO QUYẾT ĐỊNH KHÁNG NGHỊ & TRÌNH KÝ
+1. Tại menu trái, click: Quản lý án GĐT/TT -> Click: Quản lý vụ án.
+2. Tại danh sách vụ án, click icon “Xem chi tiết vụ án” (con mắt/chi tiết).
+3. Click chọn tab: Tờ trình.
+4. Click button: “Tạo văn bản” -> Chọn: “Tạo dự thảo kết quả giải quyết”.
+5. Popup Thêm dự thảo hiển thị:
+   * Click trường Đơn liên quan: Tích chọn tất cả các đơn liên quan.
+   * Dropdown Kết quả giải quyết: Chọn Kháng nghị.
+   * Mục Thông tin quyết định:
+      * Dropdown Người ký: Chọn Nguyễn Hải Trâm.
+      * Danh sách bị cáo: Tích chọn tất cả các bị cáo hiển thị.
+   * Dropdown Thẩm quyền xét xử: Chọn Tòa án nhân dân tối cao.
+   * Nhập nội dung vào 2 trường: Nội dung vụ án và Xét thấy.
+   * Click button: “Lưu”.
+6. Tại danh sách văn bản và tờ trình: Tích chọn bản ghi dự thảo vừa tạo -> Click button: “Trình văn bản”.
+7. Màn hình Trình ký hiển thị:
+   * Dropdown Cấp trình: Chọn Phó Chánh án TANDTC.
+   * Dropdown Người được trình: Chọn Nguyễn Hải Trâm.
+   * Click button: “Xin ý kiến”.
+8. Click button: “Quay lại”.
+BƯỚC 13: PHÊ DUYỆT DỰ THẢO KHÁNG NGHỊ (NGUYỄN HẢI TRÂM)
+1. Click vào tên tài khoản Nguyễn Thị Bình -> Click: “Đăng xuất”.
+2. Click button: “Đăng nhập với Tòa án tối cao SSO”.
+3. Input Số CCCD: <CCCD:phoChanhAn> (Nguyễn Hải Trâm) / Nhập Mật khẩu: Ta@<CCCD:phoChanhAn>.
+4. Click menu: Công tác lãnh đạo -> Click: Phê duyệt đề xuất -> Chọn tab: Chờ duyệt.
+5. Click chọn bản ghi: Quyết định Kháng nghị giám đốc thẩm vừa trình -> Màn hình Lãnh đạo phê duyệt ý kiến mở ra.
+6. Tại tab Ý kiến lãnh đạo: Tích chọn checkbox: “Dự thảo Quyết định Kháng nghị giám đốc thẩm”.
+7. Click button: “Duyệt”.
+BƯỚC 14: CHUYỂN VÀ NHẬN HỒ SƠ KHÁNG NGHỊ (TRƯƠNG MINH TRANG)
+1. Click vào tên tài khoản Nguyễn Hải Trâm -> Click: “Đăng xuất”.
+2. Click button: “Đăng nhập với Tòa án tối cao SSO”.
+3. Input Số CCCD: <CCCD:thuKyVu> (Trương Minh Trang) / Nhập mật khẩu.
+4. Click menu: Quản lý án GĐT/TT -> Click mục: Hồ sơ kháng nghị.
+5. Chuyển hồ sơ đi:
+   * Click chọn tab: Hồ sơ kháng nghị đi.
+   * Tại dòng bản án có Quyết định kháng nghị, click thao tác: “Chuyển hồ sơ”.
+   * Popup Chuyển hồ sơ kháng nghị hiển thị:
+      * Input Số bút lục HSKN: Nhập số bất kỳ (ví dụ: 123).
+      * Dropdown Đơn vị chuyển đến: Chọn Toà án nhân dân tối cao.
+      * Toggle/Checkbox: Bật “Đính kèm tài liệu, hồ sơ”.
+      * Click: “Thêm mới tài liệu bất kỳ” -> Đính kèm 1 file từ máy tính.
+      * Click button: “Chuyển hồ sơ”.
+      * Popup xác nhận hiển thị -> Click button: “Đồng ý”.
+6. Nhận hồ sơ đến:
+   * Chuyển sang tab: Hồ sơ kháng nghị đến.
+   * Tìm đúng bản ghi vừa chuyển -> Tại cột thao tác, click: “Nhận hồ sơ”.
+BƯỚC 15: THỤ LÝ VỤ ÁN XÉT XỬ GĐT (NGUYỄN THỊ BÌNH)
+1. Đăng xuất tài khoản Trương Minh Trang -> Đăng nhập tài khoản Nguyễn Thị Bình (<CCCD:thuKyVuHoSoKhangNghi> / Ta@<CCCD:thuKyVuHoSoKhangNghi>).
+2. Click menu: Quản lý án GĐT/TT -> Click mục: Quản lý xét xử GĐT.
+3. Tìm bản ghi vụ án vừa nhận từ hồ sơ kháng nghị đến -> Click thao tác: “Xem chi tiết”.
+4. Click chọn tab: Thụ lý.
+5. Tại khu vực Thông tin thụ lý vụ án GĐT,TT, click button: “Thụ lý”.
+BƯỚC 16: PHÂN CÔNG THẨM PHÁN VỤ ÁN KHÁNG NGHỊ & TRÌNH KÝ
+1. Tại menu trái, click: Quản lý án GĐT/TT -> Click mục: Phân công thẩm phán.
+2. Phân công ngẫu nhiên:
+   * Chọn tab: DS chưa phân công ngẫu nhiên.
+   * Bộ lọc Hình thức phân công: Chọn Hồ sơ kháng nghị GĐT-TT; bộ lọc Số BA/QĐ: nhập số bản án của vụ -> Click button: “Tìm kiếm”.
+   * Nếu bản ghi CÓ trong danh sách: Click button: “Phân công ngẫu nhiên” -> Popup xác nhận hiển thị -> Click button: “Xác nhận”.
+   * Nếu bản ghi KHÔNG có trong danh sách (vụ đã được phân công ở lần chạy trước): bỏ qua, không bấm gì và không chờ thông báo, chuyển thẳng sang mục 3 để kiểm ở tab “Quản lý kết quả phân công”.
+   * Chỉ bấm “Phân công ngẫu nhiên” khi danh sách sau khi lọc CHỈ CÒN bản ghi của vụ đang làm: nút này xử lý toàn bộ bản ghi đang hiện, còn dòng của vụ khác thì sẽ phân công lây sang vụ đó.
+3. Kiểm chứng phân công thành công:
+   * Chuyển sang tab: Quản lý kết quả phân công.
+   * Bộ lọc Hình thức phân công: Chọn Hồ sơ kháng nghị GĐT-TT; bộ lọc Số BA/QĐ: nhập số bản án của vụ -> Click button: “Tìm kiếm”.
+   * Có bản ghi của vụ trong danh sách thì phân công đã thành công. Không lấy thông báo (toast) làm bằng chứng: thông báo có thể tắt trước khi đọc kịp.
+4. Lưu văn bản và Trình ký (vẫn ở tab Quản lý kết quả phân công):
+   * Tích chọn Checkbox của bản ghi vụ án.
+   * Click button: “Lưu số văn bản và in báo cáo”.
+   * Popup hiển thị: Chọn Người ký là Nguyễn Hải Trâm -> Click button: “Lưu văn bản”.
+   * Sau khi có thông báo lưu thành công, click button: “Lấy số” -> Click tiếp button: “Trình ký”.
+BƯỚC 17: KÝ SỐ TỜ TRÌNH PHÂN CÔNG THẨM PHÁN TỐI CAO (NGUYỄN HẢI TRÂM)
+1. Đăng xuất tài khoản Nguyễn Thị Bình -> Đăng nhập tài khoản Nguyễn Hải Trâm (<CCCD:phoChanhAn> / Ta@<CCCD:phoChanhAn>).
+2. Tại menu trái, click: Công tác lãnh đạo -> Click: Phê duyệt đề xuất -> Chọn tab: Chờ duyệt.
+3. Click vào hyperlink của bản ghi: Tờ trình phân công thẩm phán tối cao.
+4. Màn hình Ký số văn bản mở ra:
+   * Click button: “Ký logic”.
+BƯỚC 18: PHÂN CÔNG THẨM TRA VIÊN CHO HSKN (NGUYỄN THỊ BÌNH)
+1. Đăng xuất tài khoản Nguyễn Hải Trâm -> Đăng nhập tài khoản Nguyễn Thị Bình (<CCCD:thuKyVuHoSoKhangNghi> / Ta@<CCCD:thuKyVuHoSoKhangNghi>).
+2. Tại menu trái, click: Quản lý án GĐT/TT -> Click: Phân công TTV (breadcrumb: Trang chủ / Quản lý án GĐT/TT / Phân công TTV / Xem danh sách).
+3. Chọn tab: Chưa phân công TTV, lọc lấy bản ghi của vụ:
+   * Bộ lọc Hình thức phân công: Chọn Hồ sơ kháng nghị GĐT-TT.
+   * Bộ lọc Số BA/QĐ: Nhập số bản án/quyết định của vụ (ô có placeholder “Nhập dữ liệu”, key form: soBanAnQuyetDinh) -> Click button: “Tìm kiếm”.
+   * Danh sách (table.ant-table-tbody) hiển thị bản ghi của vụ.
+4. Chọn radio/chế độ: “Phân công chỉ định”.
+   * Lưu ý thứ tự: chọn “Hình thức phân công” làm bộ lọc render lại và radio quay về “Phân công ngẫu nhiên”, lúc đó bảng không có cột tick và cột Thẩm tra viên chỉ là chữ. Vì vậy phải bật “Phân công chỉ định” SAU khi lọc, rồi kiểm tra ô Số BA/QĐ còn giữ từ khoá (nếu bị xoá thì tìm kiếm lại).
+5. Trên danh sách vừa lọc, điền theo đúng thứ tự (bốn ô đều BẮT BUỘC):
+   * Click checkbox chọn tất cả ở dòng tiêu đề (input.ant-checkbox-input[aria-label="Select all"]) để mở chế độ sửa dòng; không có thì tích Checkbox của chính bản ghi cần phân công.
+   * Cột Thẩm tra viên: Chọn Bùi Thị Thanh Loan.
+   * Cột Ngày phân công TTV: Chọn ngày hiện tại. Ngày này phải >= ngày nhận hồ sơ, nếu để trống hệ thống báo “Vui lòng chọn ngày phân công cho Thẩm tra viên”.
+   * Cột Lãnh đạo: Chọn Lê Thị Thu Hiền (có trường hợp tự điền theo cấu hình TTV; nếu khác thì chọn lại). Lãnh đạo không được trùng Thẩm tra viên.
+   * Cột Ngày phân công LĐ: Chọn ngày hiện tại. Ngày này phải >= ngày nhận hồ sơ VÀ >= Ngày phân công TTV, nên phải điền sau ô Ngày phân công TTV.
+6. Click button lưu — nhãn nút đổi theo chế độ đang chọn (qla-webapp usePhanCongTTV_HoSo.tsx, toolbarActions):
+   * Chế độ “Phân công chỉ định”: nút là “Phân công TTV/LĐ (n)” với n là số bản ghi đang tích -> bấm nút này.
+   * Chế độ “Phân công ngẫu nhiên”: nút là “Phân công tự động” -> KHÔNG bấm ở bước này, đó là phân công tự động.
+   * Bản ghi đã phân công rồi: nút là “Lưu phân công”.
+7. Có popup xác nhận thì click button: “Đồng ý”. Kiểm tra thông báo “Phân công TTV/LĐ thành công” và bản ghi đã chuyển sang tab “Đã phân công TTV”.
+BƯỚC 19: TẠO DANH SÁCH VỤ XÉT XỬ VÀ TRÌNH DUYỆT LỊCH
+1. Tại menu trái, click: Danh sách vụ xét xử (hoặc nút quay lại màn hình xét xử).
+2. Tích chọn Checkbox của vụ án vừa được thụ lý, phân công Thẩm phán và phân công TTV.
+3. Click button: “Tạo danh sách vụ xét xử”.
+4. Popup Danh sách vụ xét xử đã chọn:
+   * Chọn loại: Hội đồng toàn thể.
+   * Click button: “Chọn lịch xét xử”.
+   * Click trực tiếp vào ô lịch xét xử có màu đỏ đã tạo sẵn.
+   * Click button: “Lưu” trên popup.
+5. Tại màn hình Danh sách vụ xét xử, click button: “Danh sách tham mưu”.
+6. Tại giao diện Danh sách tham mưu vụ xét xử GĐT: lọc Số BA/QĐ của vụ rồi xem cột “Trạng thái” của dòng:
+   * Trạng thái là “Đã duyệt” / “Đã trình ký” / “Chờ ký duyệt”: danh sách đã lấy số và trình ký xong ở lượt trước -> BƯỚC NÀY ĐÃ HOÀN THÀNH, không làm gì thêm. Mở chi tiết lúc này chỉ còn Đóng / Xem biểu mẫu / Hủy cấp số (không còn “Trình ký”) — không phải lỗi.
+   * Trạng thái là “Chưa trình”: làm tiếp mục 7.
+7. Click chọn Xem chi tiết vụ đã tham mưu -> màn hình mở ra Danh sách vụ xét xử đã chọn:
+   * Click button: “Lấy số”.
+   * Click button: “Trình ký”.
+8. Popup Nhập thông tin trình duyệt ký hiển thị -> Click button: “Gửi”.
+BƯỚC 20: PHÊ DUYỆT CHƯƠNG TRÌNH LÀM VIỆC (NGUYỄN HẢI TRÂM)
+1. Đăng xuất tài khoản Nguyễn Thị Bình -> Đăng nhập tài khoản Nguyễn Hải Trâm (<CCCD:phoChanhAn> / Ta@<CCCD:phoChanhAn>).
+2. Tại menu trái, click: Công tác lãnh đạo -> Click: Phê duyệt đề xuất -> Chọn tab: Chờ duyệt.
+3. Click chọn bản ghi: Chương trình làm việc vừa trình duyệt.
+4. Màn hình Ký số văn bản hiển thị:
+   * Click button: “Phê duyệt”.
+BƯỚC 21: TẠO THÔNG BÁO VÀ QUYẾT ĐỊNH PHÂN CÔNG HĐXX (NGUYỄN THỊ BÌNH)
+1. Đăng xuất tài khoản Nguyễn Hải Trâm -> Đăng nhập tài khoản Nguyễn Thị Bình (<CCCD:thuKyVuHoSoKhangNghi> / Ta@<CCCD:thuKyVuHoSoKhangNghi>).
+2. Tại menu trái, click: Quản lý án GĐT/TT -> Click mục: Phân công hội đồng xét xử.
+3. Tại dòng hội đồng vừa được duyệt Chương trình làm việc, click thao tác: “Xem chi tiết”.
+4. Tại khu vực Danh sách Quyết định/Thông báo, click button: “Thêm biểu mẫu” (chọn cả 2 biểu mẫu):
+   * Quyết định thành lập Hội đồng xét xử
+   * Thông báo VKS tham gia phiên toà
+5. Popup chi tiết biểu mẫu mở ra:
+   * Dropdown Người ký: Chọn Nguyễn Hải Trâm.
+   * Datepicker Ngày thông báo: Chọn ngày hiện tại.
+   * Tại mục Cấu hình nơi nhận:
+      * Click button: “Thêm mới nhận”.
+      * Chọn Phân loại nơi nhận và Nơi nhận chi tiết.
+      * Click thao tác: “Lưu”.
+   * Click button: “Lưu” ở phía dưới popup.
+6. Click button: “Trình ký”.
+7. Popup Nhập thông tin trình duyệt ký mở ra -> Click button: “Gửi”.
+BƯỚC 22: KÝ LOGIC QUYẾT ĐỊNH THÀNH LẬP HĐXX & THÔNG BÁO VKS (NGUYỄN HẢI TRÂM)
+1. Đăng xuất tài khoản Nguyễn Thị Bình -> Đăng nhập tài khoản Nguyễn Hải Trâm (<CCCD:phoChanhAn> / Ta@<CCCD:phoChanhAn>).
+2. Tại menu trái, click: Công tác lãnh đạo -> Click: Phê duyệt đề xuất -> Chọn tab: Chờ duyệt.
+3. Click chọn bản ghi: Quyết định thành lập Hội đồng xét xử / Thông báo VKS tham gia phiên toà vừa được trình ký.
+4. Màn hình Ký số văn bản mở ra:
+   * Click button: “Ký logic”.
+BƯỚC 23: CHUYỂN SANG MÀN HÌNH QUẢN LÝ VỤ XÉT XỬ (NGUYỄN THỊ BÌNH)
+1. Click vào tên tài khoản Nguyễn Hải Trâm -> Click: “Đăng xuất”.
+2. Click button: “Đăng nhập với Tòa án tối cao SSO”.
+3. Input Số CCCD: <CCCD:thuKyVuHoSoKhangNghi> / Mật khẩu: Ta@<CCCD:thuKyVuHoSoKhangNghi> (Vụ trưởng Nguyễn Thị Bình).
+4. Click button: “Đăng nhập”.
+5. Tại menu trái, click: Quản lý án GĐT/TT -> Click: Quản lý xét xử GĐT (/qla/vu-an/gdt-tt/quan-ly-vu-xet-xu/danh-sach).
+6. Tìm kiếm vụ: nhập “Số BA/QĐ”; nhập “Ngày BA/QĐ” (ô khoảng ngày gồm hai phần Từ ngày - Đến ngày, phải điền cả hai) -> Click button: “Tìm kiếm”.
+7. Click icon “Xem chi tiết” của bản ghi -> màn hình chi tiết mở tab: Kết quả xét xử (/qla/vu-an/gdt-tt/quan-ly-vu-xet-xu/chi-tiet?id={id}&tab=ket-qua-xet-xu).
+8. Tại tab Kết quả xét xử, khối “Kết quả giám đốc thẩm, tái thẩm”:
+   * Nguyên nhân: mỗi vụ chọn một nguyên nhân, chọn theo thủ tục giải quyết của vụ (giá trị được phép lặp giữa các vụ).
+   * Người ký: chọn người đầu tiên trong danh sách.
+   * Ngày phát hành: chọn ngày hiện tại.
+   * Quá hạn luật định: chọn mục đầu tiên trong danh sách.
+9. Khối “Kết quả xét xử chi tiết từng bị cáo”:
+   * Tích “Chọn tất cả bị cáo để áp dụng chung kết quả giải quyết” (nếu vụ có nhiều bị cáo).
+   * Kết quả giải quyết: mỗi vụ một giá trị khác nhau, không trùng lặp. Lưu ý nhãn trên màn NGẮN HƠN nhãn trong danh mục dưới đây (màn: “Không chấp nhận kháng nghị”).
+10. Click button: “Lưu”.
+   * Lưu thành công khi màn chuyển sang chế độ xem và hiện button “Chỉnh sửa thông tin vụ án”.
+   * Bước này chỉ lưu được khi đã xong BƯỚC 21 và BƯỚC 22 (Quyết định phân công HĐXX và Thông báo VKS đã ký), nếu chưa hệ thống báo: “Vui lòng cập nhật Quyết định phân công HĐXX và Thông báo VKS tham gia phiên tòa đã ký trước khi tạo Kết quả xét xử.”
+
+Danh mục Nguyên nhân (chọn đúng nhóm theo thủ tục của vụ):
+- Giám đốc thẩm:
+   * Kháng nghị không có căn cứ
+   * Do cấp xét xử sai
+   * Do có tình tiết mới
+   * Do lý do khác
+   * Thuộc trường hợp không được khởi kiện
+- Tái thẩm:
+   * Phát hiện tình tiết mới làm thay đổi bản chất
+   * Lý do khác
+   * Do kết luận bản án sai và đủ chứng cứ để kết luận lại
+- Xem xét lại quyết định của Hội đồng Thẩm phán:
+   * Do có tình tiết mới
+   * Lý do khác
+- Theo bản án/quyết định bị kháng nghị:
+   * Vi phạm nghiêm trọng thủ tục tố tụng
+   * Kết luận trong bản án không phù hợp tình tiết khách quan
+   * Áp dụng sai pháp luật nghiêm trọng
+   * Do kết luận bản án/quyết định sai
+   * Do có tình tiết mới
+Lưu ý: danh sách có nhãn trùng nhau (“Do có tình tiết mới”, “Lý do khác”) vì hệ thống tách riêng theo thủ tục; chọn mục nằm trong nhóm của vụ đang làm.
+
+Danh mục Kết quả giải quyết (24 giá trị):
+   * Không chấp nhận kháng nghị, giữ nguyên bản án, quyết định có hiệu lực pháp luật
+   * Sửa toàn bộ bản án, quyết định của Tòa án đã có hiệu lực pháp luật
+   * Sửa một phần bản án, quyết định của Tòa án đã có hiệu lực pháp luật
+   * Sửa phần bồi thường thiệt hại
+   * Sửa phần hình phạt
+   * Sửa khác
+   * Hủy bản án, quyết định có hiệu lực pháp luật để xét xử lại theo thủ tục sơ thẩm
+   * Hủy bản án, quyết định có hiệu lực pháp luật để điều tra lại theo thủ tục sơ thẩm
+   * Hủy bản án, quyết định có hiệu lực pháp luật để xét xử lại theo thủ tục phúc thẩm
+   * Hủy bản án, quyết định có hiệu lực pháp luật để điều tra lại theo thủ tục phúc thẩm
+   * Hủy bản án, quyết định có hiệu lực pháp luật và đình chỉ giải quyết vụ án
+   * Hủy bản án, quyết định phúc thẩm, giữ nguyên bản án, quyết định sơ thẩm
+   * Hủy quyết định giám đốc thẩm, giữ nguyên bản án, quyết định sơ thẩm
+   * Hủy quyết định giám đốc thẩm, giữ nguyên bản án, quyết định phúc thẩm
+   * Hủy quyết định của giám đốc thẩm, bản án quyết định phúc thẩm, giữ nguyên bản án, quyết định sơ thẩm
+   * Hủy bản án, quyết định có hiệu lực pháp luật và tuyên bố bị cáo không có tội
+   * Hủy quyết định giám đốc thẩm, tái thẩm để điều tra lại
+   * Hủy quyết định giám đốc thẩm, tái thẩm để xét xử lại theo thủ tục sơ thẩm
+   * Hủy quyết định giám đốc thẩm, tái thẩm để xét xử lại theo thủ tục phúc thẩm
+   * Nhất trí yêu cầu, kiến nghị xem xét lại quyết định của Hội đồng Thẩm phán Tòa án nhân dân tối cao
+   * Không nhất trí yêu cầu, kiến nghị xem xét lại quyết định của Hội đồng Thẩm phán Tòa án nhân dân tối cao
+   * Rút kháng nghị
+   * Giải quyết khác
+   * Quyết định đình chỉ xét xử giám đốc thẩm
+Lưu ý: danh mục chỉ có 24 giá trị nên không đủ cho 30 vụ của bộ dữ liệu 27/09/2026. Hiện chia: 21 vụ giám đốc thẩm mỗi vụ một giá trị riêng; 3 vụ tái thẩm dùng 3 giá trị riêng của tái thẩm; 6 vụ còn lại buộc trùng nhãn với nhóm giám đốc thẩm - cần nghiệp vụ quyết định (bớt vụ, bổ sung giá trị, hoặc chấp nhận trùng).

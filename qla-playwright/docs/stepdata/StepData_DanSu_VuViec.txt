@@ -1,0 +1,194 @@
+LUỒNG VỤ VIỆC DÂN SỰ: ĐƠN YÊU CẦU -> SƠ THẨM -> PHÚC THẨM
+
+Đăng nhập và tạo đơn
+
+b1. login vào tài khoản <CCCD:chua-khai-trong-config> (Tòa án cấp sơ thẩm)
+Đọc file Data Test Dân sự : "Data Test DS _ Sơ Thẩm - Phúc Thẩm - GĐT_TT.xlsx" và sheet: "Sơ thẩm"
+b2. vào màn hình Danh sách đơn /qla/quan-ly-don/don-khoi-kien-va-yeu-cau/danh-sach?tab=ALL
+b3. Click "Thêm mới đơn"
+b4. Tại bước "Thông tin đơn" nhập thông tin bắt buộc
+	Section "Thông tin tiếp nhận"
+	1. Hình thức nhận đơn - chọn "Trực tiếp"
+	2. Ngày làm đơn - Random (<= Ngày nhận đơn)
+	3. Ngày nhận đơn - mặc định ngày hiện tại
+	4. Số tiếp nhận - hệ thống tự sinh, kiểm tra có giá trị
+	5. Người nhận đơn Nguyễn Mậu Trường
+	Section "Thông tin đơn"
+	6. Loại đơn chọn "Dân sự"
+	7. Phân loại đơn chọn "Đơn yêu cầu"
+	8. Quan hệ pháp luật (Thống kê) chọn "Tuyên bố văn bản công chứng vô hiệu" (khoản 6 Điều 27 BLTTDS)
+	9. Quan hệ pháp luật chi tiết - tự điền theo mục vừa chọn, giữ nguyên
+	Section "Đặc điểm đơn"
+	10. Chọn "Không tiến hành hòa giải tại Tòa án" và nhập lý do - Random
+b5. Click button "Tiếp theo"
+b6. Tại màn hình "Thêm mới đơn khởi kiện và yêu cầu". "Đương sự"
+	6.1. Click button "Thêm người tham gia"
+	6.2. Tại "Phân loại người tham gia tố tụng" chọn "Cá nhân"
+		- chọn "Tư cách tham gia tố tụng" là "Người yêu cầu"
+		- Họ và tên - Random
+		- Giới tính - Random
+		- Ngày sinh - Random ( định dạng dd/mm/yyyy hoặc yyyy (năm sinh trong khoảng 1960 - 2006))
+		- Tick vào "Số định danh cá nhân" và nhập số định danh - Random 12 số
+		- Tại section "Thông tin chung" nhập thông tin người dùng
+		- Tại "Thông tin địa chỉ" chọn "Không có thông tin"
+		- Click "Lưu & Thêm mới", chờ thành công
+	6.3. Tại "Phân loại người tham gia tố tụng" chọn "Cá nhân" (đại diện Văn phòng/Phòng công chứng - có thể chọn "Doanh nghiệp / Tổ chức")
+		- chọn "Tư cách tham gia tố tụng" là "Người bị yêu cầu"
+		- Họ và tên - Random
+		- Giới tính - Random
+		- Ngày sinh - Random ( định dạng dd/mm/yyyy hoặc yyyy (năm sinh trong khoảng 1960 - 2006))
+		- Tick vào "Số định danh cá nhân" và nhập số định danh - Random 12 số
+		- Tại section "Thông tin chung" nhập thông tin người dùng
+		- Tại "Thông tin địa chỉ" chọn "Không có thông tin"
+		- Click "Lưu", chờ thành công
+	6.4. Kiểm tra danh sách có đủ "Người yêu cầu" và "Người bị yêu cầu", tick cột "Xác định tên vụ" cho Người yêu cầu
+	6.5. Click "Tiếp theo"
+b7. Tại màn hình "Thêm mới đơn khởi kiện và yêu cầu". "Yêu cầu"
+	Section "Danh sách yêu cầu khởi kiện / yêu cầu"
+	7.1. Nội dung yêu cầu - Random
+	7.2. Quan hệ pháp luật (Thống kê) - chọn giống b4.8
+	7.3. Người yêu cầu / khởi kiện - chọn Người yêu cầu đã nhập ở b6
+	7.4. Giá trị yêu cầu kê khai - để trống (việc dân sự không có giá ngạch)
+	7.5. Click "Thêm mới", kiểm tra yêu cầu hiển thị trong bảng
+	7.6. "Yêu cầu Tòa án giải quyết" - Random (tối đa 4000 ký tự)
+	7.7. "Nội dung đơn" - Random
+	7.8. Click "Tiếp theo"
+b8. Tại màn hình "Tài liệu đính kèm"
+	8.1. Click "Thêm tài liệu mới", chọn file có đuôi .pdf/.docx/.png - Random, Lưu
+	8.2. Click "Tiếp theo"
+b9. Tại màn hình "Thêm mới đơn khởi kiện và yêu cầu"."Hoàn thành"
+b10. Chọn "Xử lý đơn"
+================================================================================================================
+Xử lý "Chi tiết đơn"
+
+1. Chọn tab "Phân công"
+2. Click "Phân công" chọn "Phân công Thẩm phán giải quyết đơn" hiện thị pop "Quyết định phân công Thẩm phán xem xét đơn khởi kiện (Dành cho Chánh án/Phó Chánh án được phân quyền)"
+	1. Tại cột "Người ký/người phân công" chọn "Dương Văn Hải"
+	2. "Vai trò" chọn "Thẩm phán xử lý đơn"
+	3. "Tên người được phân công" Chọn một người
+	4. Click button "button" arrow-down
+	5. Click "Lưu"
+	6. Click button "Lấy số" => ký logic => đóng
+3. Chọn tab "Kết quả xử lý" (tab chỉ mở khi đơn đã phân công Thẩm phán)
+	1. Chọn "Thêm thông báo" Chọn "Yêu cầu sửa đổi, bổ sung đơn yêu cầu giải quyết việc dân sự (04-VDS)"
+	2. Chọn Lý do xử lý "Đơn yêu cầu thiếu nội dung theo quy định"
+	3. Chọn "Hạn sửa đổi, bổ sung" = "30/09/2026"
+	4. Chọn "Lưu"
+	5. Chọn "Lấy số"
+	6. Chọn "Ký logic"
+	7. Chọn "Đóng"
+	8. Tại panel "Xác định nghĩa vụ tạm ứng lệ phí theo yêu cầu" -> "Thủ tục dự kiến để tính tạm ứng" chọn "Thủ tục thông thường"
+	9. Chọn "Xác nhận chế độ thủ tục", chờ thông báo "Xác nhận chế độ thủ tục thành công"
+	10. Chọn "Xác định nghĩa vụ"
+	11. Tại pop up chọn "Người có nghĩa vụ" = Người yêu cầu cho từng yêu cầu
+	12. Chọn "Xác nhận tất cả", chờ thông báo "Xác nhận nghĩa vụ tạm ứng thành công"
+	13. Tại panel "Thông báo tạm ứng lệ phí và chi phí tố tụng" Chọn "Thêm thông báo" - Chọn "Thông báo nộp tiền tạm ứng án phí (Dành cho Thẩm phán được phân công)(29-DS)"
+	14. Chọn "Người phải nộp" - Random
+	15. Nhập số tiền - Nhập số Random
+	16. Chọn "Cơ quan thi hành án thu tiền" - Random
+	17. Chọn "Lưu" -> "Lấy số" -> "Ký logic"
+	18. Tại panel "Thông tin tạm ứng lệ phí và chi phí tố tụng" Chọn "Ghi nhận nộp phí"
+	19. Tại pop up "Xác minh biên lai" nhập
+		- "Thông báo liên quan" - chọn thông báo 29-DS vừa ký
+		- "Số tiền nộp" - bằng số tiền ở bước 15
+		- "Ngày nộp" - Random (>= ngày thông báo)
+		- "Số biên lai" - nhập số Random (tối đa 30 ký tự)
+		- "Cơ quan thu" - Random
+		- "Tệp chứng từ" - Chọn file có đuôi .png, .jpg, .pdf, ...
+	20. Chọn "Xác minh biên lai"
+	21. Chọn "Thụ lý vụ" (nút ở cuối tab; áp dụng cho cả đơn khởi kiện và đơn yêu cầu)
+	22. Tại pop up "Thụ lý vụ việc" (biểu mẫu 09-VDS Thông báo thụ lý việc dân sự) nhập thông tin, Chọn "Lấy số" -> "Xác nhận thụ lý"
+	23. Sau khi thụ lý thành công sẽ hiển thị mã vụ việc ngay tại vị trí nút thụ lý, click vào mã để hiển thị Màn hình "Chi tiết vụ việc"
+================================================================================================================
+Sơ thẩm vụ việc - màn hình "Chi tiết vụ việc" (Hồ sơ vụ việc dân sự)
+
+Step3: Chuyển sang tab "Thụ lý"
+  3.1. Kiểm tra section "Thông tin thụ lý" có Số thụ lý, Ngày thụ lý, Trường hợp thụ lý = "Thụ lý mới"
+  3.2. Tại section "Thông báo thụ lý" dòng 09-VDS: nếu chưa ký thì click icon "Ký logic"
+
+Step4: Chuyển sang tab "Phân công"
+  4.1. Click "Phân công"
+  4.2. Click "Quyết định phân công người tiến hành tố tụng (10-VDS)"
+  4.3. Chọn "Ngày quyết định" - Random (>= Ngày thụ lý)
+  4.4. Nhập "Số quyết định" = "Số thụ lý" (hoặc bấm "Lấy số")
+  4.5. Chọn "Người ký/người phân công" = Dương Văn Hải
+  4.6. Block "Danh sách người được phân công": "Vai trò" = Thẩm phán - chọn một người; thêm dòng "Vai trò" = Thư ký - chọn một người
+  4.7. Block "Nơi nhận" - "Nơi nhận khác (nếu có)" Random
+  4.8. Chọn "Lưu" -> "Lấy số" -> "Ký logic" -> "Đóng"
+
+Step5: Chuyển sang tab "Chuẩn bị giải quyết"
+  5.1. Kiểm tra section "Danh sách quyết định" (không bắt buộc lập văn bản ở bước này; nếu cần: "Chọn loại biểu mẫu" -> "Thêm biểu mẫu")
+
+Step6: Chuyển sang tab "Phiên họp giải quyết"
+  6.1. Tại section "Danh sách quyết định của phiên họp" -> "Chọn loại quyết định phiên họp" chọn "Quyết định mở phiên họp sơ thẩm giải quyết việc dân sự (15-VDS)" -> click "Thêm quyết định"
+  6.2. Nhập "Thời gian mở phiên họp" - Random (trong 15 ngày kể từ ngày ra quyết định), "Địa điểm mở phiên họp" - Random
+  6.3. Chọn "Lưu" -> "Lấy số" -> "Ký logic" -> "Đóng"
+  6.4. Tại section "Biên bản phiên họp sơ thẩm (21-VDS)" click "Lập biên bản phiên họp"
+  6.5. Nhập "Thời gian khai mạc phiên họp" = thời gian ở 15-VDS; "Thư ký lập biên bản" - chọn Thư ký đã phân công
+  6.6. Chọn "Lưu" -> "Ký logic" -> "Đóng"
+  6.7. Tại section "Kết quả giải quyết" click "Tạo quyết định giải quyết (22-VDS)"
+  6.8. Nhập "Nội dung việc dân sự (17)", "Nhận định của Tòa án (18)", "Quyết định (20)" - Random
+  6.9. Nhập "Lệ phí sơ thẩm giải quyết việc dân sự (21)" - Random; kiểm tra "Quyền kháng cáo, kháng nghị (22)" có nội dung
+  6.10. Chọn "Lưu" -> "Lấy số" -> "Ký logic" -> "Đóng"
+
+Step7: Chuyển sang tab "Quản lý việc" - Kháng cáo
+  7.1. Tại section "Danh sách kháng cáo" click "Thêm mới"
+  7.2. Tại pop up "Thêm mới đơn kháng cáo việc dân sự" nhập
+	- "Số tiếp nhận" - Random, "Ngày tiếp nhận" - Random (trong 10 ngày kể từ ngày ra 22-VDS)
+	- "Số quyết định bị kháng cáo", "Ngày ra quyết định" - theo 22-VDS ở Step6
+	- "Người kháng cáo" - chọn Người bị yêu cầu
+	- "Ngày kháng cáo" - Random (<= Ngày tiếp nhận)
+	- "Yêu cầu của người kháng cáo" - Random
+  7.3. Click "Lưu thông tin"
+  7.4. Tại dòng đơn kháng cáo click icon "Xác nhận, đưa vào hồ sơ chuyển phúc thẩm" -> "Xác nhận"
+  7.5. Tại section "Chuyển hồ sơ cho Tòa án cấp phúc thẩm" -> "Chọn văn bản chuyển hồ sơ" chọn "Công văn chuyển hồ sơ việc dân sự cho Tòa án cấp phúc thẩm" (CVCHS-VDS) -> click "Lập văn bản"
+  7.6. Nhập "Kính gửi: Tòa án nhân dân cấp phúc thẩm" - chọn Tòa phúc thẩm; "Ngày nhận được kháng cáo, kháng nghị" = Ngày tiếp nhận ở 7.2
+  7.7. Chọn "Lưu" -> "Lấy số" -> "Ký logic" -> "Đóng"
+
+Step8: Chuyển hồ sơ lên phúc thẩm
+  8.1. Vào menu "Hồ sơ vụ việc chuyển đi"
+  8.2. Chọn "Chuyển phúc thẩm", tìm theo mã vụ việc
+  8.3. Tick checkbox dòng vụ việc -> click "Gửi hồ sơ đã chọn" (hoặc nút "Gửi tới Tòa án nhận" tại dòng)
+  8.4. Tại pop up "Gửi hồ sơ lên Tòa án cấp phúc thẩm" click "Gửi", chờ thành công
+================================================================================================================
+Phúc thẩm vụ việc
+
+b1. Đăng xuất, login vào tài khoản Tòa án cấp phúc thẩm (TAND cấp tỉnh quản lý Tòa sơ thẩm ở trên)
+b2. Vào menu "Hồ sơ việc dân sự phúc thẩm chuyển đến"
+b3. Chọn tab "Chờ tiếp nhận", tìm theo mã vụ việc sơ thẩm
+b4. Tại dòng vụ việc click "Tiếp nhận"
+	1. Tại pop up "Tiếp nhận hồ sơ việc dân sự phúc thẩm chuyển đến" nhập "Ngày tiếp nhận" - Random, "Số tiếp nhận" - Random
+	2. Click "Tiếp nhận", kiểm tra hồ sơ sang tab "Đã tiếp nhận"
+b5. Tại dòng vụ việc click "Xem hồ sơ PT" => mở màn hình "Chi tiết vụ việc" phúc thẩm
+
+Step1: Tab "Kháng cáo, kháng nghị"
+  1.1. Kiểm tra đơn kháng cáo đã xác nhận ở sơ thẩm hiển thị đúng người kháng cáo, ngày kháng cáo
+
+Step2: Tab "Thụ lý"
+  2.1. Click "Thụ lý việc dân sự" => hiển thị pop up "Thụ lý việc dân sự phúc thẩm"
+  2.2. "Ngày thụ lý" - Random (>= Ngày tiếp nhận)
+  2.3. "Số thụ lý" - hệ thống tự sinh, kiểm tra có giá trị
+  2.4. "Trường hợp thụ lý" chọn "Do có kháng cáo"
+  2.5. Click "Lưu thụ lý"
+  2.6. Tại section "Thông báo thụ lý phúc thẩm" click "Lập thông báo thụ lý (09-VDS)"
+  2.7. Chọn "Lưu" -> "Lấy số" -> "Ký logic" -> "Đóng"
+
+Step3: Tab "Phân công"
+  3.1. Click "Phân công" -> "Quyết định phân công người tiến hành tố tụng (10-VDS)"
+  3.2. Chọn "Ngày quyết định" - Random; "Người ký/người phân công" = Dương Văn Hải
+  3.3. Block "Danh sách người được phân công": chọn đúng 03 Thẩm phán (01 chủ tọa phiên họp + 02 thành viên) và 01 Thư ký
+	(Hệ thống chặn lưu nếu không đủ đúng 03 Thẩm phán - khoản 1 Điều 67 BLTTDS)
+  3.4. Chọn "Lưu" -> "Lấy số" -> "Ký logic" -> "Đóng"
+
+Step4: Tab "Phiên họp phúc thẩm"
+  4.1. Tại section "Danh sách quyết định của phiên họp" -> "Chọn loại quyết định phiên họp" chọn "Quyết định mở phiên họp phúc thẩm giải quyết việc dân sự (23-VDS)" -> "Thêm quyết định"
+  4.2. Nhập "Thời gian mở phiên họp" - Random (trong 15 ngày kể từ ngày ra quyết định), "Địa điểm mở phiên họp" - Random
+  4.3. Chọn "Lưu" -> "Lấy số" -> "Ký logic" -> "Đóng"
+  4.4. Tại section "Biên bản phiên họp phúc thẩm" click "Lập biên bản phiên họp" (25-VDS-BB)
+  4.5. Nhập "Thời gian khai mạc phiên họp" = thời gian ở 23-VDS; "Thư ký phiên họp (3)" - chọn Thư ký; "Tại trụ sở Tòa án nhân dân" - giữ mặc định
+  4.6. Chọn "Lưu" -> "Ký logic" -> "Đóng"
+  4.7. Tại section "Kết quả giải quyết" click "Lập Quyết định phúc thẩm (27-VDS)"
+  4.8. "Thẩm quyền của Hội đồng phúc thẩm (Điều 375 BLTTDS)" chọn "Giữ nguyên quyết định sơ thẩm"
+  4.9. Nhập "NỘI DUNG VIỆC DÂN SỰ (15)", "NHẬN ĐỊNH CỦA TÒA ÁN (16)", "Nội dung quyết định của Hội đồng phúc thẩm (18)" - Random
+  4.10. Chọn "Lưu" -> "Lấy số" -> "Ký logic" -> "Đóng"
+  (Nhánh phụ: 4.8 chọn "Hủy quyết định sơ thẩm, chuyển giải quyết lại" -> tab "Quản lý việc" dùng "Chuyển hồ sơ về Tòa án cấp sơ thẩm giải quyết lại")

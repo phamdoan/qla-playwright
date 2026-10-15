@@ -1,0 +1,49 @@
+{
+  "_ghiChu": [
+    "Chép thành tai-khoan.local.json (không commit) rồi điền CCCD từng vai. Mật khẩu mặc định Ta@<CCCD>; khác thì thêm \"matKhau\"."
+  ],
+  "taiKhoan": {
+    "canBo": {
+      "cccd": ""
+    },
+    "chanhVanPhong": {
+      "cccd": ""
+    },
+    "phoChanhAn": {
+      "cccd": ""
+    },
+    "chanhAn": {
+      "cccd": ""
+    },
+    "thuKyVu": {
+      "cccd": ""
+    },
+    "vuTruong": {
+      "cccd": ""
+    },
+    "thuKyVuHoSoKhangNghi": {
+      "cccd": ""
+    },
+    "thamTraVien": {
+      "cccd": ""
+    },
+    "canBoDanSu": {
+      "cccd": ""
+    },
+    "chanhAnDanSu": {
+      "cccd": ""
+    },
+    "vuTruongDanSu": {
+      "cccd": ""
+    },
+    "thamTraVienDanSu": {
+      "cccd": ""
+    },
+    "chanhAnPhucThamHanhChinh": {
+      "cccd": ""
+    },
+    "thuKyVuDanSu": {
+      "cccd": ""
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "_ghiChu": [
+    "Danh sách tài khoản dùng cho test ĐĂNG NHẬP (tests/dang-nhap/dang-nhap.spec.ts).",
+    "File này được commit nên CHỈ có tên + chức vụ, cccd để trống.",
+    "Số CCCD thật khai ở config/tai-khoan-dang-nhap.local.json (cùng khoá, không commit).",
+    "Mật khẩu mặc định Ta@<CCCD>; khác thì thêm \"matKhau\" vào file local.",
+    "Dùng chung cho Tối cao: STG / DEV / PRE-PROD (e-qlta-uat) — môi trường chọn bằng QLA_HO_SO_ENV."
+  ],
+  "taiKhoan": {
+    "admin": { "ten": "Ngô Hoài Thương", "chucVu": "admin", "cccd": "" },
+
+    "hctpTramAnh": { "ten": "Phùng Trâm Anh", "chucVu": "Phòng Hành chính - Tư pháp", "cccd": "" },
+    "hctpHoaiSon": { "ten": "Phạm Hoài Sơn", "chucVu": "Phòng Hành chính - Tư pháp", "cccd": "" },
+    "hctpVanYen": { "ten": "Vũ Vân Yến", "chucVu": "Phòng Hành chính - Tư pháp", "cccd": "" },
+
+    "pcvpVanNha": { "ten": "Phạm Văn Nhạ", "chucVu": "Phó Chánh văn phòng", "cccd": "" },
+    "pcvpThuHien": { "ten": "Chu Thị Thu Hiền", "chucVu": "Phó Chánh văn phòng", "cccd": "" },
+    "cvpTuongLinh": { "ten": "Nguyễn Tường Linh", "chucVu": "Chánh văn phòng", "cccd": "" },
+    "tpHctpTrongTuan": { "ten": "Vũ Trọng Tuấn", "chucVu": "Trưởng phòng HCTP", "cccd": "" },
+    "thamPhanVanTien": { "ten": "Nguyễn Văn Tiến", "chucVu": "Thẩm phán TANDTC", "cccd": "" },
+
+    "ttvHsDieuThuy": { "ten": "Vũ Diệu Thúy", "chucVu": "Thẩm tra viên Vụ hình sự", "cccd": "" },
+    "ttvHsThuyGiang": { "ten": "Võ Thị Thùy Giang", "chucVu": "Thẩm tra viên Vụ hình sự", "cccd": "" },
+    "ttvHsXuanHien": { "ten": "Vũ Xuân Hiển", "chucVu": "Thẩm tra viên Vụ hình sự", "cccd": "" },
+    "pvtHsThuHien": { "ten": "Lê Thị Thu Hiền", "chucVu": "Phó vụ trưởng hình sự", "cccd": "" },
+    "vtHsThiBinh": { "ten": "Nguyễn Thị Bình", "chucVu": "Vụ trưởng hình sự", "cccd": "" },
+
+    "ttvDsNgocChieu": { "ten": "Hoàng Ngọc Chiệu", "chucVu": "Thẩm tra viên Vụ dân sự", "cccd": "" },
+    "ttvDsHaiAn": { "ten": "Hoàng Hải An", "chucVu": "Thẩm tra viên Vụ dân sự", "cccd": "" },
+    "ttvDsCaoThang": { "ten": "Nguyễn Cao Thắng", "chucVu": "Thẩm tra viên Vụ dân sự", "cccd": "" },
+    "pvtDsQuocHanh": { "ten": "Trần Quốc Hạnh", "chucVu": "Phó vụ trưởng dân sự", "cccd": "" },
+    "vtDsThiHa": { "ten": "Nguyễn Thị Hà", "chucVu": "Vụ trưởng dân sự", "cccd": "" },
+    "vtToChucDucAnh": { "ten": "Chu Đức Anh", "chucVu": "Vụ trưởng Tổ chức", "cccd": "" },
+
+    "chanhAnVanQuang": { "ten": "Nguyễn Văn Quảng", "chucVu": "Chánh án", "cccd": "" },
+    "pcaVanDu": { "ten": "Nguyễn Văn Du", "chucVu": "Phó chánh án", "cccd": "" },
+    "pcaQuocHung": { "ten": "Phạm Quốc Hưng", "chucVu": "Phó Chánh án", "cccd": "" }
+  }
+}
