@@ -2033,7 +2033,7 @@ async function docToaRaTuBanAn(page: Page, dong: Locator, ghi: GhiChu): Promise<
  * bằng số ghép thì hệ thống báo "Không tìm thấy bản án trong hệ thống" (đo 02/10/2026).
  */
 async function docSoBanAnTrenBieuMau(bm: Locator, ghi: GhiChu): Promise<string> {
-  const o = bm.locator('input[id$="SO_BAN_AN"], input[id$="_so"]').first();
+  const o = bm.locator('input[id$="SO_BAN_AN"], input[id$="_so"]:visible').first();
   const so = (await o.inputValue().catch(() => '')).trim();
   ghi('22 bản án PT', `số bản án trên biểu mẫu (giá trị lưu) = ${so || '(không đọc được)'}`);
   return so;

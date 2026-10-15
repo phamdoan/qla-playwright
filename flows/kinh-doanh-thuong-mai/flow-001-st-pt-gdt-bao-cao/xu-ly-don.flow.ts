@@ -68,6 +68,13 @@ async function themThongBao(page: Page, khoi: Locator, tenBieuMau: RegExp): Prom
   return bieuMauDangMo(page);
 }
 
+/** Số của văn bản mẫu `ma` (vd "26DS") đã KÝ trong lưới của khối; chưa có thì '' */
+async function soVanBanDaKy(khoi: Locator, ma: string): Promise<string> {
+  const dong = khoi.locator('tr.ant-table-row').filter({ hasText: ma }).filter({ hasText: /Đã ký/ }).first();
+  if (!(await hienTrong(dong, 3_000))) return '';
+  return (await dong.locator('td').nth(2).innerText().catch(() => '')).replace(/s+/g, '').trim();
+}
+
 // ═════════ BƯỚC 03 · Yêu cầu sửa đổi, bổ sung đơn khởi kiện (26-DS) ═════════
 export async function thongBaoSuaDoiBoSung(page: Page, input: DuLieuVao, ghi: GhiChu, rootCaseKey: string) {
   await choHetSpin(page);
@@ -76,6 +83,12 @@ export async function thongBaoSuaDoiBoSung(page: Page, input: DuLieuVao, ghi: Gh
   // Biểu mẫu 26-DS nằm ở khối "Chưa đủ điều kiện" (đổi tên thành "Đủ điều kiện thụ lý" khi đã có
   // văn bản thụ lý) — FE: KetQuaXuLyTab/index.tsx · panelDieuKienThuLy
   const khoi = khoiTheoTieuDe(page, /Chưa đủ điều kiện|Đủ điều kiện thụ lý/);
+  // Chạy lại sau khi đã ký: dùng số có sẵn, không tạo thông báo thứ hai
+  const soDaCo = await soVanBanDaKy(khoi, '26DS');
+  if (soDaCo) {
+    ghi('26-DS', `đã ký từ lượt trước, số ${soDaCo}`);
+    return { soThongBao26DS: soDaCo };
+  }
   const bm = await themThongBao(page, khoi, /26-DS/i);
 
   const oNguoiKy = bm.locator('[id$="_noiDung_MA_NGUOI_KY"]').first();
@@ -109,22 +122,25 @@ export async function thongBaoSuaDoiBoSung(page: Page, input: DuLieuVao, ghi: Gh
   // và 26-DS không nằm trong LIST_BM_DISABLE_KHI_CO_NGAY_QD). Không tự nhập số thì "Ký logic" báo
   // "Văn bản chưa cấp số, cần lấy số trước khi ký số" rồi chờ hết giờ.
   await test.step('Nhập số và ngày ban hành (biểu mẫu không cấp số tự động)', async () => {
-    const oSo = bm.locator('[id$="_so"]').first();
+    const oSo = bm.locator('[id$="_so"]:visible').first();
     if ((await oSo.isEditable().catch(() => false)) && !(await oSo.inputValue().catch(() => ''))) {
       const so = soTatDinh(rootCaseKey, 'so26DS', 6);
       await go(oSo, so);
       ghi('số 26-DS (tự nhập)', so);
     }
     const oNgay = bm.locator('[id$="_ngayQuyetDinh"]').first();
-    if ((await hienTrong(oNgay, 3_000)) && !(await oNgay.inputValue().catch(() => ''))) {
+    // Môi trường cấp số tự động (daotao) khoá ô ngày — "Lấy số" điền cả số lẫn ngày
+    if ((await hienTrong(oNgay, 3_000)) && (await oNgay.isEditable().catch(() => false)) && !(await oNgay.inputValue().catch(() => ''))) {
       await chonNgay(oNgay, ddmmyyyy(new Date()));
     }
   });
 
   await luuBieuMau(page, bm, '26-DS');
   await laySoVaKyLogic(page, bm, ghi, '26-DS');
-  const soThongBao26DS = (await bm.locator('[id$="_so"]').first().inputValue().catch(() => '')).trim();
+  let soThongBao26DS = (await bm.locator('[id$="_so"]:visible').first().inputValue().catch(() => '')).trim();
   await dongBieuMau(page, bm);
+  // Sau khi ký, ô số không còn là ô nhập (daotao) → đọc ở lưới
+  if (!soThongBao26DS) soThongBao26DS = await soVanBanDaKy(khoi, '26DS');
 
   expect(soThongBao26DS, 'Không đọc được số thông báo 26-DS sau khi Lấy số').not.toBe('');
   return { soThongBao26DS };
@@ -250,6 +266,11 @@ export async function xacMinhBienLai(page: Page, _input: DuLieuVao, ghi: GhiChu,
   }
 
   const nutXacMinh = page.getByRole('button', { name: /Xác minh$/ }).first();
+  // Bản FE mới (daotao): dòng nghĩa vụ không có link "Xác minh" → ghi nhận + xác minh trong một popup
+  if (!(await hienTrong(nutXacMinh, 5_000))) {
+    await ghiNhanNopPhi(page, ghi, soBienLai);
+    return { soBienLai };
+  }
   await nutXacMinh.scrollIntoViewIfNeeded();
   await nutXacMinh.click();
   const hop = bieuMauDangMo(page);
@@ -268,6 +289,37 @@ export async function xacMinhBienLai(page: Page, _input: DuLieuVao, ghi: GhiChu,
   await nghi(page, 1500, 2500);
   ghi('nộp phí', 'đã xác minh biên lai');
   return { soBienLai };
+}
+
+/**
+ * Bản FE mới (daotao): nút "Ghi nhận nộp phí" mở popup "Xác minh biên lai" đã điền sẵn thông báo, người nộp,
+ * số tiền, phân bổ, ngày nộp — chỉ còn số biên lai, cơ quan thu, tệp chứng từ.
+ */
+async function ghiNhanNopPhi(page: Page, ghi: GhiChu, soBienLai: string) {
+  const nut = page.getByRole('button', { name: /Ghi nhận nộp phí$/ }).first();
+  await expect(nut, 'Không thấy nút "Ghi nhận nộp phí"').toBeVisible({ timeout: 30_000 });
+  await nut.scrollIntoViewIfNeeded();
+  await nut.click();
+  const hop = page.locator('.ant-modal-content:visible').filter({ hasText: /Xác minh biên lai|Ghi nhận nộp phí/ }).last();
+  const oSo = hop.locator('#soBienLai');
+  await expect(oSo, 'Không mở được popup "Xác minh biên lai"').toBeVisible({ timeout: 30_000 });
+  await nghi(page, 1000, 1600);
+
+  await go(oSo, soBienLai);
+  const oCq = hop.locator('#coQuanThu');
+  if ((await hienTrong(oCq, 2_000)) && !(await oCq.inputValue().catch(() => ''))) {
+    await go(oCq, 'Thi hành án dân sự thành phố Hà Nội');
+  }
+  await hop.locator('input[type="file"]').first().setInputFiles(path.resolve(__dirname, '../../../data/bien-lai-tam-ung-an-phi.pdf'));
+  await nghi(page, 1000, 1600);
+
+  await hop.getByRole('button', { name: /^(Xác minh biên lai|Ghi nhận)$/ }).last().click();
+  await expect(hop, 'Popup "Xác minh biên lai" không đóng sau khi bấm xác minh').toBeHidden({ timeout: 60_000 });
+  await choHetSpin(page);
+  await expect(page.getByRole('button', { name: /Thụ lý vụ$/ }).first(), 'Đã xác minh biên lai nhưng nút "Thụ lý vụ" vẫn khoá')
+    .toBeEnabled({ timeout: 60_000 });
+  ghi('số biên lai', soBienLai);
+  ghi('nộp phí', 'đã ghi nhận nộp và xác minh biên lai');
 }
 
 // ═════════ BƯỚC 06 · Thụ lý vụ (30-DS) → sinh mã vụ án ═════════

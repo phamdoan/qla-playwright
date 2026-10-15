@@ -28,6 +28,9 @@ const MOI_TRUONG: Record<string, string> = {
   // PRE-PROD của Tối cao; cùng cách bố trí đường dẫn (/qla, /sso) như các môi trường khác —
   // xác minh: qla-webapp/.env.pre-prod:12-19, qla/k8s/pre-prod/ingress.yaml:20-23
   preprod: 'https://e-qlta-uat.toaan.gov.vn',
+  // Môi trường ĐÀO TẠO của Tối cao (kịch bản HCTP). Bản build tắt OCR (VITE_OCR_UPLOAD_DISABLED) —
+  // đo 14/10/2026: bấm "Tải lên" là vào thẳng form, không có popup "Xác nhận xử lý OCR".
+  daotao: 'https://e-qlta-daotao.toaan.gov.vn',
   local: 'http://localhost:8000',
 };
 const env = process.env.QLA_ENV || 'stg';

@@ -8,6 +8,16 @@ export const DASHBOARD_URL = () => `${ORIGIN}/qla/dashboard`;
 
 /** Chỉ tính dashboard đúng môi trường (QLA_ENV), không nhận nhầm qla-stg khi đang chạy dev */
 const LA_DASHBOARD = { test: (u: string) => u.startsWith(`${ORIGIN}/qla/dashboard`) };
+/**
+ * Đã vào app nhưng KHÔNG ở dashboard — vẫn là đăng nhập thành công.
+ *
+ * Đo STG 11/10/2026: tài khoản không có quyền màn Tổng quan bị đá `/qla/dashboard` → `/qla/exception/404`
+ * ngay sau callback SSO (phiên đã có, `session/current_user` 200). Trước đây chỉ chờ URL dashboard nên
+ * treo 60 s × 5 vòng rồi báo "không đăng nhập được" — sai chỗ: lỗi là quyền, không phải đăng nhập.
+ */
+const LA_DA_VAO_APP = {
+  test: (u: string) => u.startsWith(`${ORIGIN}/qla/`) && !/\/qla\/login\b/.test(u) && !LA_CALLBACK_LOI.test(u),
+};
 const LA_SSO_LOCAL = /\/sso\/login/;
 /**
  * Trang đăng nhập WSO2. Ngoài host SSO của STG/DEV/UAT còn nhận theo ĐƯỜNG DẪN của WSO2
@@ -39,7 +49,7 @@ export async function loginSSO(page: Page, user: string, opts: LoginOptions = {}
   await page.goto(DASHBOARD_URL());
 
   for (let lan = 1; lan <= soLanThu; lan++) {
-    await page.waitForURL(u => [LA_DASHBOARD, LA_SSO_LOCAL, LA_SSO_WSO2, LA_CALLBACK_LOI].some(r => r.test(u.href)), {
+    await page.waitForURL(u => [LA_DA_VAO_APP, LA_SSO_LOCAL, LA_SSO_WSO2, LA_CALLBACK_LOI].some(r => r.test(u.href)), {
       timeout: 60_000,
     });
     const url = page.url();
@@ -91,7 +101,7 @@ export async function loginSSO(page: Page, user: string, opts: LoginOptions = {}
     }
 
     // Chờ ổn định: nếu phiên chưa có, app sẽ đá về /sso/login → thử lại vòng sau
-    await page.waitForURL(u => LA_DASHBOARD.test(u.href) || LA_SSO_LOCAL.test(u.href) || LA_SSO_WSO2.test(u.href), {
+    await page.waitForURL(u => LA_DA_VAO_APP.test(u.href) || LA_SSO_LOCAL.test(u.href) || LA_SSO_WSO2.test(u.href), {
       timeout: 60_000,
     });
     await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => {});
@@ -99,6 +109,8 @@ export async function loginSSO(page: Page, user: string, opts: LoginOptions = {}
       await expect(page).toHaveURL(DASHBOARD_URL());
       return;
     }
+    // Vào app nhưng bị đá khỏi dashboard (vd. /qla/exception/404): người gọi tự kiểm quyền
+    if (LA_DA_VAO_APP.test(page.url())) return;
   }
   throw new Error(`Không vào được ${DASHBOARD_URL()} sau ${soLanThu} lần thử (tài khoản ${user}), URL cuối: ${page.url()}`);
 }

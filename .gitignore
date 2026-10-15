@@ -46,3 +46,6 @@ docs/Playwright nhập data GDT-TT-báo cáo thống kê.txt
 # Trạng thái CASE đang chạy (khung FLOW/CASE/STEP) – artefact của lượt chạy, không commit
 state/**
 !state/.gitkeep
+
+# Báo cáo chạy E2E (ảnh chụp có tên cán bộ thật — repo public)
+reports/

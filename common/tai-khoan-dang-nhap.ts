@@ -39,10 +39,12 @@ const THU_MUC = path.resolve(__dirname, '../config');
  * ngay, để tài khoản đó không lặng lẽ bị bỏ qua.
  */
 const envHienTai = process.env.QLA_ENV || 'stg';
-const coHoSoRieng = fs.existsSync(path.join(THU_MUC, `tai-khoan-dang-nhap.${envHienTai}.example.json`));
-const HAU_TO = coHoSoRieng ? `.${envHienTai}` : '';
-const FILE_MAU = `tai-khoan-dang-nhap${HAU_TO}.example.json`;
-const FILE_LOCAL = `tai-khoan-dang-nhap${HAU_TO}.local.json`;
+/** Cặp tệp (mẫu, local) của một bộ tài khoản; `goc` là tên tệp không đuôi, vd. 'tai-khoan-dang-nhap' */
+const tepCua = (goc: string) => {
+  const coHoSoRieng = fs.existsSync(path.join(THU_MUC, `${goc}.${envHienTai}.example.json`));
+  const hauTo = coHoSoRieng ? `.${envHienTai}` : '';
+  return { mau: `${goc}${hauTo}.example.json`, local: `${goc}${hauTo}.local.json` };
+};
 
 const docJson = (ten: string): HoSo => {
   const f = path.join(THU_MUC, ten);
@@ -54,24 +56,27 @@ const docJson = (ten: string): HoSo => {
   }
 };
 
-let boNho: TaiKhoanDangNhap[] | undefined;
+const boNho: Record<string, TaiKhoanDangNhap[]> = {};
 
 /**
  * Các tài khoản đã khai đủ CCCD. Khoá nào còn trống cccd thì bỏ qua (chưa có tài khoản ở môi
  * trường này) — không throw, để test vẫn chạy được với phần đã khai.
+ *
+ * `goc` chọn bộ tài khoản: mặc định bộ đăng nhập; 'tai-khoan-quyen-gdt-tt' là bộ kiểm quyền GĐT/TT.
  */
-export function dsTaiKhoanDangNhap(): TaiKhoanDangNhap[] {
-  if (boNho) return boNho;
-  const mau = docJson(FILE_MAU).taiKhoan || {};
-  const local = docJson(FILE_LOCAL).taiKhoan || {};
+export function dsTaiKhoanDangNhap(goc = 'tai-khoan-dang-nhap'): TaiKhoanDangNhap[] {
+  if (boNho[goc]) return boNho[goc];
+  const tep = tepCua(goc);
+  const mau = docJson(tep.mau).taiKhoan || {};
+  const local = docJson(tep.local).taiKhoan || {};
 
   // Khoá lạ ở file local = gõ sai tên khoá → báo ngay, nếu không tài khoản đó lặng lẽ không được chạy
   const laKhoa = Object.keys(local).filter((k) => !(k in mau));
   if (laKhoa.length) {
-    throw new Error(`config/${FILE_LOCAL} có khoá không khai trong ${FILE_MAU}: ${laKhoa.join(', ')}`);
+    throw new Error(`config/${tep.local} có khoá không khai trong ${tep.mau}: ${laKhoa.join(', ')}`);
   }
 
-  boNho = Object.entries(mau)
+  return (boNho[goc] = Object.entries(mau)
     .map(([ma, m]) => {
       const l = local[ma] || {};
       const cccd = l.cccd || m.cccd || '';
@@ -83,9 +88,7 @@ export function dsTaiKhoanDangNhap(): TaiKhoanDangNhap[] {
         matKhau: l.matKhau || m.matKhau || (cccd ? matKhauMacDinh(cccd) : ''),
       };
     })
-    .filter((tk) => !!tk.cccd);
-
-  return boNho;
+    .filter((tk) => !!tk.cccd));
 }
 
 /**
@@ -101,9 +104,10 @@ export function dsTaiKhoanDangNhap(): TaiKhoanDangNhap[] {
  *
  * Giờ `dsTaiKhoanDangNhap()` trả mảng rỗng, spec tự `test.skip` kèm lý do rõ ràng.
  */
-export function lyDoThieuTaiKhoanDangNhap(): string {
+export function lyDoThieuTaiKhoanDangNhap(goc = 'tai-khoan-dang-nhap'): string {
+  const tep = tepCua(goc);
   return (
-    `Chưa khai CCCD cho tài khoản nào: chép config/${FILE_MAU} thành config/${FILE_LOCAL} rồi điền "cccd" ` +
+    `Chưa khai CCCD cho tài khoản nào: chép config/${tep.mau} thành config/${tep.local} rồi điền "cccd" ` +
     `(môi trường hiện tại: ${process.env.QLA_ENV || 'stg'}).`
   );
 }
