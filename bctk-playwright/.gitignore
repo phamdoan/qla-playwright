@@ -11,4 +11,7 @@ node_modules/
 !.env.example
 
 # Mã vụ án sinh ra mỗi lượt chạy – giữ cấu trúc thư mục, không commit nội dung
-output/**/*.txt
+output/**/*.xlsx
+
+# File khóa của Excel khi đang mở
+~$*

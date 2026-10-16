@@ -22,6 +22,14 @@ export function ngay(lechNgay = 0): string {
   return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`;
 }
 
+/** Hôm nay theo dd/MM/yyyy; rơi vào Chủ nhật thì lùi sang thứ Hai (ngày xét xử phải là ngày làm việc) */
+export function ngayLamViec(): string {
+  return ngay(new Date().getDay() === 0 ? 1 : 0);
+}
+
+/** Chuỗi 8 chữ số ngẫu nhiên (số tiếp nhận, số kháng nghị…) */
+export const so8 = () => String(Math.floor(10_000_000 + Math.random() * 90_000_000));
+
 /** Năm sinh dd/MM/yyyy cho người từ `tu` đến `den` tuổi */
 export const ngaySinh = (tu = 18, den = 60) => ngay(-Math.floor((tu + Math.random() * (den - tu)) * 365));
 

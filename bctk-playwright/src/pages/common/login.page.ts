@@ -1,77 +1,78 @@
-import { Page, expect } from '@playwright/test';
-import { BasePage } from '../base.page';
-import { ORIGIN } from '../../../playwright.config';
+import { Browser, BrowserContext, Page } from '@playwright/test';
+import { BasePage, dungChu } from '../base.page';
+import { LOGIN_URL, TUY_CHON_TRINH_DUYET } from '../../../playwright.config';
 
-const LA_DASHBOARD = { test: (u: string) => u.startsWith(`${ORIGIN}/qla/dashboard`) };
-const LA_SSO_LOCAL = /\/sso\/login/;
-/** Trang WSO2: nhận theo host và đường dẫn vì pre-prod có thể dùng host SSO khác */
-const LA_SSO_WSO2 = /sso\.toaan\.gov\.vn|\/authenticationendpoint\/|\/oauth2\/authorize/;
-/** Callback OAuth2 đôi khi trả JSON lỗi invalid_request */
-const LA_CALLBACK_LOI = /\/qla\/api\/v1\/session\/oauth2\/callback/;
+/** Mật khẩu mặc định của các tài khoản test trên STG */
+export const MAT_KHAU_MAC_DINH = '123456';
 
-/** Mật khẩu mặc định của tài khoản test: Ta@<CCCD> */
-export const matKhauMacDinh = (user: string) => `Ta@${user}`;
+const LA_TRANG_LOGIN = /\/sso\/login/;
 
+/**
+ * Đăng nhập TRỰC TIẾP bằng tài khoản + mật khẩu ở trang đăng nhập của môi trường
+ * (biến URL trong .env.<hồ sơ>, vd. .env.staging → https://qla-stg.toaan.gov.vn/sso/login).
+ * Không đi qua SSO.
+ */
 export class LoginPage extends BasePage {
-  static readonly DASHBOARD_URL = () => `${ORIGIN}/qla/dashboard`;
+  static readonly LOGIN_URL = LOGIN_URL;
 
   constructor(page: Page) {
     super(page);
   }
 
-  /**
-   * Đăng nhập SSO, kết thúc ở /qla/dashboard.
-   * /qla/dashboard → /sso/login → bấm "Đăng nhập với Tòa án tối cao SSO" → WSO2 → callback → dashboard
-   */
-  async dangNhap(user: string, pass = matKhauMacDinh(user), soLanThu = 5) {
-    await this.page.goto(LoginPage.DASHBOARD_URL());
+  async dangNhap(taiKhoan: string, matKhau = MAT_KHAU_MAC_DINH) {
+    // Phiên cũ còn thì trang đăng nhập tự chuyển đi → xóa để chắc chắn vào đúng tài khoản
+    await this.page.context().clearCookies();
+    await this.page.goto(LoginPage.LOGIN_URL);
+    const oTaiKhoan = this.page.locator('#username');
+    await oTaiKhoan.waitFor({ timeout: 60_000 });
+    await oTaiKhoan.fill(taiKhoan);
+    await this.page.locator('#password').fill(matKhau);
+    await this.page.locator('button').filter({ hasText: dungChu('Đăng nhập') }).click();
 
-    for (let lan = 1; lan <= soLanThu; lan++) {
-      await this.page.waitForURL(u => [LA_DASHBOARD, LA_SSO_LOCAL, LA_SSO_WSO2, LA_CALLBACK_LOI].some(r => r.test(u.href)), {
-        timeout: 60_000,
-      });
-
-      if (LA_SSO_LOCAL.test(this.page.url())) {
-        // Cú bấm này hay treo khi SSO chập: nuốt lỗi rồi tự kiểm tra đã rời trang chưa
-        await this.page
-          .getByRole('button', { name: /Đăng nhập với Tòa án tối cao SSO/ })
-          .click({ timeout: 20_000 })
-          .catch(() => undefined);
-        const daRoiSso = await this.page
-          .waitForURL(u => !LA_SSO_LOCAL.test(u.href), { timeout: 30_000 })
-          .then(() => true)
-          .catch(() => false);
-        if (!daRoiSso) {
-          // Phiên WSO2 cũ còn trong cookie làm trang SSO quay vòng → dọn rồi thử lại
-          await this.page.context().clearCookies().catch(() => undefined);
-          await this.page.goto(LoginPage.DASHBOARD_URL()).catch(() => undefined);
-          continue;
-        }
-      }
-
-      if (LA_SSO_WSO2.test(this.page.url())) {
-        await this.page.locator('#usernameUserInput').fill(user);
-        await this.page.locator('#password').fill(pass);
-        await this.page.locator('#password').press('Enter');
-        await this.page.waitForURL(u => !LA_SSO_WSO2.test(u.href) || /authFailure=true/.test(u.href), { timeout: 60_000 });
-        if (/authFailure=true/.test(this.page.url())) {
-          throw new Error(`Đăng nhập SSO thất bại cho tài khoản ${user} (sai tài khoản/mật khẩu?)`);
-        }
-      }
-
-      if (LA_CALLBACK_LOI.test(this.page.url())) {
-        await this.page.goto(LoginPage.DASHBOARD_URL());
-      }
-
-      await this.page.waitForURL(u => LA_DASHBOARD.test(u.href) || LA_SSO_LOCAL.test(u.href) || LA_SSO_WSO2.test(u.href), {
-        timeout: 60_000,
-      });
-      await this.choTaiXong();
-      if (LA_DASHBOARD.test(this.page.url())) {
-        await expect(this.page).toHaveURL(LoginPage.DASHBOARD_URL());
-        return;
-      }
+    const vaoDuoc = await this.page
+      .waitForURL(u => /\/qla\//.test(u.pathname), { timeout: 60_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (!vaoDuoc) {
+      const loi = await this.page.locator('.ant-message-notice, .ant-form-item-explain-error, [class*=error]').allInnerTexts();
+      throw new Error(`Đăng nhập thất bại với tài khoản ${taiKhoan}: ${loi.join(' | ') || 'vẫn ở trang đăng nhập'}`);
     }
-    throw new Error(`Không vào được dashboard sau ${soLanThu} lần thử (tài khoản ${user}), URL cuối: ${this.page.url()}`);
+    await this.choTaiXong(2000);
+  }
+}
+
+/**
+ * Một tài khoản đang làm việc trong luồng: browser context riêng (tương đương một profile trình duyệt),
+ * tự đăng nhập lại khi phiên hết hạn (STG đá về /sso/login sau một lúc không thao tác).
+ */
+export class PhienDangNhap {
+  private constructor(
+    readonly context: BrowserContext,
+    readonly page: Page,
+    readonly taiKhoan: string,
+    private readonly matKhau: string,
+  ) {}
+
+  static async mo(browser: Browser, taiKhoan: string, matKhau = MAT_KHAU_MAC_DINH): Promise<PhienDangNhap> {
+    const context = await browser.newContext(TUY_CHON_TRINH_DUYET);
+    context.setDefaultTimeout(30_000);
+    const page = await context.newPage();
+    await new LoginPage(page).dangNhap(taiKhoan, matKhau);
+    return new PhienDangNhap(context, page, taiKhoan, matKhau);
+  }
+
+  /** Vào một URL (tương đối theo baseURL hoặc đầy đủ), phiên hết hạn thì đăng nhập lại rồi vào lại */
+  async vao(url: string) {
+    await this.page.goto(url);
+    await this.page.waitForLoadState('domcontentloaded');
+    await this.page.waitForTimeout(1500);
+    if (LA_TRANG_LOGIN.test(this.page.url())) {
+      await new LoginPage(this.page).dangNhap(this.taiKhoan, this.matKhau);
+      await this.page.goto(url);
+    }
+  }
+
+  async dong() {
+    await this.context.close().catch(() => undefined);
   }
 }

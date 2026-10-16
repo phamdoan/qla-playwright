@@ -17,7 +17,7 @@ test.describe(`[${data.bieuMau}] ${data.tenBieuMau}`, () => {
         const maVuAn = await form.taoVuAn(sinhTruong(c.truong));
         expect(maVuAn).toBeTruthy();
 
-        luuMaVuAn(data.linhVuc, data.bieuMau, c.id, maVuAn);
+        await luuMaVuAn(data.linhVuc, data.bieuMau, c.id, maVuAn);
         test.info().annotations.push({ type: 'Mã vụ án', description: maVuAn });
       });
     }
