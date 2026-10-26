@@ -51,7 +51,7 @@ export const TUY_CHON_TRINH_DUYET = {
 };
 
 /** Spec chạy luồng nhiều tài khoản: tự đăng nhập từng tài khoản, không dùng phiên của auth.setup */
-const SPEC_LUONG = /[\\/]form-1B[\\/].*\.spec\.ts$/;
+const SPEC_LUONG = /[\\/]form-(1A1|1B|2A|10A)[\\/].*\.spec\.ts$/;
 
 export default defineConfig({
   testDir: './src/tests',

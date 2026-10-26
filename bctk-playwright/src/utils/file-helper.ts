@@ -8,7 +8,7 @@ export const OUTPUT_DIR = path.join(ROOT, 'output');
 export const DATA_DIR = path.join(ROOT, 'src/data');
 
 /** Lĩnh vực = tên thư mục cấp 1, dùng chung cho pages / tests / data / output */
-export type LinhVuc = '1-hinh-su' | '2-dan-su';
+export type LinhVuc = '1-hinh-su' | '2-dan-su' | '10-hoa-giai';
 
 export interface CaseData {
   id: string;

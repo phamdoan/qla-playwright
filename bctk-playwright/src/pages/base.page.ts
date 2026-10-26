@@ -28,7 +28,7 @@ export const chuaChu = (s: string) => new RegExp(thoatRegex(s), 'i');
  *   · Dropdown cũ còn trong DOM khi đang ẩn dần → neo dropdown theo `aria-controls` của chính ô select.
  */
 export abstract class BasePage {
-  constructor(protected readonly page: Page) {}
+  constructor(readonly page: Page) {}
 
   /** Đường dẫn tương đối so với baseURL (…/qla/) hoặc URL đầy đủ */
   async goto(duongDan: string) {
@@ -81,12 +81,12 @@ export abstract class BasePage {
   }
 
   /** Nút theo chữ hiển thị chính xác (tên trợ năng có lẫn nhãn icon nên không dùng getByRole) */
-  protected nut(khung: Khung, ten: string | RegExp): Locator {
+  nut(khung: Khung, ten: string | RegExp): Locator {
     return khung.locator('button').filter({ hasText: typeof ten === 'string' ? dungChu(ten) : ten }).first();
   }
 
   /** Modal / drawer đang mở có chứa chữ `tieuDe` */
-  protected popup(tieuDe: string | RegExp): Locator {
+  popup(tieuDe: string | RegExp): Locator {
     return this.page
       .locator('.ant-modal-wrap:visible .ant-modal, .ant-drawer-open .ant-drawer-content')
       .filter({ hasText: tieuDe })
@@ -129,7 +129,7 @@ export abstract class BasePage {
   }
 
   /** Dòng trong bảng có chứa tất cả `chu` (chờ tối đa 30s) */
-  protected async dong(khung: Khung, ...chu: (string | RegExp)[]): Promise<Locator> {
+  async dong(khung: Khung, ...chu: (string | RegExp)[]): Promise<Locator> {
     let d = khung.locator('.ant-table-tbody tr.ant-table-row');
     for (const c of chu) d = d.filter({ hasText: c });
     await d.first().waitFor({ timeout: 30_000 });
@@ -146,7 +146,7 @@ export abstract class BasePage {
   }
 
   /** Chữ ở ô thuộc cột có tiêu đề `tenCot` của dòng `dong` (bảng antd) */
-  protected async docCot(dong: Locator, tenCot: string): Promise<string> {
+  async docCot(dong: Locator, tenCot: string): Promise<string> {
     const bang = dong.locator('xpath=ancestor::div[contains(@class,"ant-table-wrapper")][1]');
     const tieuDe = (await bang.locator('.ant-table-thead th').allInnerTexts()).map(t => t.replace(/\s+/g, ' ').trim());
     const cot = tieuDe.findIndex(t => t === tenCot);
@@ -181,7 +181,7 @@ export abstract class BasePage {
   // ───────────── Ô nhập trong form antd ─────────────
 
   /** `.ant-form-item` có nhãn bắt đầu bằng `nhan` (chuỗi) hoặc khớp `nhan` (RegExp) */
-  protected oTheoNhan(nhan: Nhan, khung: Khung = this.page): Locator {
+  oTheoNhan(nhan: Nhan, khung: Khung = this.page): Locator {
     const mau = typeof nhan === 'string' ? new RegExp(`^\\s*${thoatRegex(nhan)}`) : nhan;
     return khung.locator('.ant-form-item').filter({ has: this.page.locator('.ant-form-item-label', { hasText: mau }) }).first();
   }
@@ -207,16 +207,20 @@ export abstract class BasePage {
     const { dd, input } = await this.moDropdown(item);
     const cacMuc = dd.locator('.ant-select-item-option:not(.ant-select-item-option-disabled)');
     let muc: Locator;
-    if (giaTri instanceof RegExp) {
-      muc = cacMuc.filter({ hasText: giaTri }).first();
-    } else if (giaTri) {
-      // readonly="" là chuỗi rỗng → so với null, không dùng truthy
-      if ((await input.getAttribute('readonly')) === null) await input.fill(giaTri).catch(() => undefined);
-      const dung = cacMuc.filter({ hasText: dungChu(giaTri) }).first();
-      muc = (await dung.count()) ? dung : cacMuc.filter({ hasText: giaTri }).first();
-    } else {
+    const ngauNhien = giaTri === undefined;
+    if (ngauNhien) {
+      // Ngẫu nhiên: lấy TÊN một mục đang hiện rồi bấm đúng mục đó; cuối hàm đọc lại ô để chắc đã nhận
       await this.page.waitForTimeout(500);
-      muc = cacMuc.nth(Math.floor(Math.random() * (await cacMuc.count())));
+      const ten = (await cacMuc.allInnerTexts()).map(s => s.replace(/\s+/g, ' ').trim()).filter(Boolean);
+      giaTri = ten[Math.floor(Math.random() * ten.length)];
+      muc = cacMuc.filter({ hasText: dungChu(giaTri) }).first();
+    } else if (giaTri instanceof RegExp) {
+      muc = cacMuc.filter({ hasText: giaTri }).first();
+    } else {
+      // readonly="" là chuỗi rỗng → so với null, không dùng truthy
+      if ((await input.getAttribute('readonly')) === null) await input.fill(giaTri!).catch(() => undefined);
+      const dung = cacMuc.filter({ hasText: dungChu(giaTri!) }).first();
+      muc = (await dung.count()) ? dung : cacMuc.filter({ hasText: giaTri! }).first();
     }
     await this.page.waitForTimeout(400);
     const chu = (await muc.innerText()).replace(/\s+/g, ' ').trim();
@@ -230,6 +234,11 @@ export abstract class BasePage {
     // Select nhiều lựa chọn vẫn mở sau khi chọn → bấm lại ô để đóng
     if (!daDong) await item.locator('.ant-select-selector').first().click().catch(() => undefined);
     await this.page.waitForTimeout(300);
+
+    // Chọn ngẫu nhiên mà ô vẫn trống (danh sách ảo dài, mục nằm ngoài vùng nhìn) → gõ tên để lọc rồi chọn lại
+    if (ngauNhien && !(await item.locator('.ant-select-selection-item').count())) {
+      return this.chonTrong(item, chu);
+    }
     return chu;
   }
 
@@ -351,3 +360,9 @@ export abstract class BasePage {
     await this.choThongBao(noiDung);
   }
 }
+
+/**
+ * Bộ thao tác màn hình dùng trực tiếp trong các file bước (pages/<lĩnh vực>/form-<mã>/buoc/*.ts):
+ *   const m = new ManHinh(page);  await m.moMenu(…);  await m.nut(m.page, 'Lưu').click();
+ */
+export class ManHinh extends BasePage {}

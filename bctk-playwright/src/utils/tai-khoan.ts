@@ -1,6 +1,6 @@
 import path from 'path';
 import { DATA_DIR } from './file-helper';
-import { docBangExcel } from './excel-helper';
+import { docBangExcel, docBangExcelSync } from './excel-helper';
 
 export interface TaiKhoan {
   toaAn: string;
@@ -13,6 +13,13 @@ export const FILE_TAI_KHOAN = path.join(DATA_DIR, 'Tai-khoan', 'Taikhoan.xlsx');
 
 /** So khớp tên tòa / tên người không phân biệt hoa thường và khoảng trắng */
 export const chuanHoa = (s = '') => s.normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim();
+
+/** Như `docTaiKhoan` nhưng đồng bộ (dùng khi khai báo test lúc nạp file spec) */
+export function docTaiKhoanSync(file = FILE_TAI_KHOAN): TaiKhoan[] {
+  return docBangExcelSync(file)
+    .map(d => ({ toaAn: d['Tòa án'] ?? '', taiKhoan: d['Tài khoản'] ?? '', ten: d['Tên'] || undefined }))
+    .filter(t => t.taiKhoan);
+}
 
 /** Đọc src/data/Tai-khoan/Taikhoan.xlsx (cột: Tòa án | Tài khoản | Tên) */
 export async function docTaiKhoan(file = FILE_TAI_KHOAN): Promise<TaiKhoan[]> {

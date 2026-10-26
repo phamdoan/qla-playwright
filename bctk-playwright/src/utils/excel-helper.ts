@@ -3,13 +3,33 @@ import fs from 'fs';
 import zlib from 'zlib';
 
 /**
- * Ghi nối các dòng vào sheet đầu của file .xlsx. File chưa có (hoặc sheet trống) thì tạo kèm dòng tiêu đề
- * in đậm, cố định dòng tiêu đề và bật lọc. Độ rộng cột tự giãn theo nội dung.
+ * Ghi nối các dòng vào sheet đầu của file .xlsx — LUÔN ghi vào chính file này, không tạo file khác.
+ * File chưa có (hoặc sheet trống) thì tạo kèm dòng tiêu đề in đậm, cố định dòng tiêu đề và bật lọc.
  *
- * File đang mở trong Excel thì Windows khóa (EBUSY) → ghi sang bản sao cạnh đó để không mất kết quả.
- * @returns đường dẫn file thực sự đã ghi
+ * File đang mở trong Excel thì Windows khóa (EBUSY) → chờ, cứ 5s thử lại (tối đa ~2 phút), mỗi lần đọc lại
+ * file để không đè phần người dùng vừa sửa; hết giờ vẫn khóa thì báo lỗi (kèm nội dung dòng chưa ghi).
  */
 export async function ghiDongExcel(file: string, tieuDe: string[], cacDong: (string | number)[][]): Promise<string> {
+  const SO_LAN = 24;
+  for (let lan = 1; ; lan++) {
+    try {
+      await ghiDongExcelMotLan(file, tieuDe, cacDong);
+      return file;
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== 'EBUSY') throw e;
+      if (lan >= SO_LAN) {
+        throw new Error(
+          `${file} đang mở trong Excel nên không ghi được kết quả (đã chờ ~2 phút). Đóng file rồi chạy lại bước này.\n` +
+            `Dòng chưa ghi: ${cacDong.map(d => d.join(' | ')).join(' || ')}`,
+        );
+      }
+      if (lan === 1) console.warn(`⚠ ${file} đang mở trong Excel — đóng file để ghi kết quả (đang chờ…)`);
+      await new Promise(r => setTimeout(r, 5_000));
+    }
+  }
+}
+
+async function ghiDongExcelMotLan(file: string, tieuDe: string[], cacDong: (string | number)[][]) {
   const wb = new ExcelJS.Workbook();
   if (fs.existsSync(file)) await wb.xlsx.readFile(file);
   const sheet = wb.worksheets[0] ?? wb.addWorksheet('Vụ án');
@@ -21,8 +41,27 @@ export async function ghiDongExcel(file: string, tieuDe: string[], cacDong: (str
     dau.alignment = { vertical: 'middle' };
     sheet.views = [{ state: 'frozen', ySplit: 1 }];
     sheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: tieuDe.length } };
+    for (const d of cacDong) sheet.addRow(d);
+  } else {
+    // File đã có: ghi THEO TÊN CỘT (file cũ có thể khác thứ tự/thừa cột); cột mới chưa có thì thêm vào cuối
+    const dauFile: string[] = [];
+    sheet.getRow(1).eachCell({ includeEmpty: true }, (o, cot) => (dauFile[cot] = String(o.value ?? '').trim()));
+    for (const ten of tieuDe) {
+      if (!dauFile.includes(ten)) {
+        const cot = dauFile.length || 1;
+        dauFile[cot] = ten;
+        const o = sheet.getRow(1).getCell(cot);
+        o.value = ten;
+        o.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+        o.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF8B1A1A' } };
+      }
+    }
+    for (const d of cacDong) {
+      const dong: (string | number)[] = [];
+      tieuDe.forEach((ten, i) => (dong[dauFile.indexOf(ten) - 1] = d[i]));
+      sheet.addRow(Array.from(dong, v => v ?? ''));
+    }
   }
-  for (const d of cacDong) sheet.addRow(d);
 
   sheet.columns.forEach(cot => {
     let rong = 10;
@@ -30,16 +69,7 @@ export async function ghiDongExcel(file: string, tieuDe: string[], cacDong: (str
     cot.width = Math.min(rong, 60);
   });
 
-  try {
-    await wb.xlsx.writeFile(file);
-    return file;
-  } catch (e) {
-    if ((e as NodeJS.ErrnoException).code !== 'EBUSY') throw e;
-    const banSao = file.replace(/\.xlsx$/, ` (ban-sao-${Date.now()}).xlsx`);
-    await wb.xlsx.writeFile(banSao);
-    console.warn(`⚠ ${file} đang mở trong Excel nên không ghi được — đã ghi sang ${banSao}`);
-    return banSao;
-  }
+  await wb.xlsx.writeFile(file);
 }
 
 /**

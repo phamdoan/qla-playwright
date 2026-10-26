@@ -15,11 +15,19 @@
     "form:1B": "playwright test --project=luong src/tests/1-hinh-su/form-1B",
     "form:1C": "playwright test src/tests/1-hinh-su/form-1C",
     "form:1D": "playwright test src/tests/1-hinh-su/form-1D",
-    "form:2A": "playwright test src/tests/2-dan-su/form-2A",
+    "form:2A": "playwright test --project=luong src/tests/2-dan-su/form-2A",
+    "form:2A:headed": "playwright test --project=luong src/tests/2-dan-su/form-2A --headed",
+    "form:2A:ui": "playwright test --ui --project=luong src/tests/2-dan-su/form-2A",
     "report": "playwright show-report",
     "typecheck": "tsc --noEmit",
+    "form:1A1": "playwright test --project=luong src/tests/1-hinh-su/form-1A1",
+    "form:1A1:headed": "playwright test --project=luong src/tests/1-hinh-su/form-1A1 --headed",
+    "form:1A1:ui": "playwright test --ui --project=luong src/tests/1-hinh-su/form-1A1",
     "form:1B:headed": "playwright test --project=luong src/tests/1-hinh-su/form-1B --headed",
-    "form:1B:ui": "playwright test --ui --project=luong src/tests/1-hinh-su/form-1B"
+    "form:1B:ui": "playwright test --ui --project=luong src/tests/1-hinh-su/form-1B",
+    "form:10A": "playwright test --project=luong src/tests/10-hoa-giai/form-10A",
+    "form:10A:headed": "playwright test --project=luong src/tests/10-hoa-giai/form-10A --headed",
+    "form:10A:ui": "playwright test --ui --project=luong src/tests/10-hoa-giai/form-10A"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.0",

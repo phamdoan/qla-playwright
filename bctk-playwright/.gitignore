@@ -16,3 +16,6 @@ output/**/*.xlsx
 
 # File khóa của Excel khi đang mở
 ~$*
+
+# Trạng thái giữa các bước của luồng (state/<lĩnh vực>/form-<mã>/<mã vụ án>.json)
+state/

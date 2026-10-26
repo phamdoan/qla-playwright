@@ -1,25 +1,11 @@
-import { test, expect } from '@playwright/test';
-import { CreateCase2APage } from '../../../pages/2-dan-su/form-2A/create-case-2A.page';
-import { docData, luuMaVuAn } from '../../../utils/file-helper';
-import { sinhTruong } from '../../../utils/fake-data';
+import { test } from '@playwright/test';
+import { chayBuoc, tenBuoc } from '../../../pages/common/buoc';
+import { LUONG_2A } from '../../../pages/2-dan-su/form-2A/create-case-2A.page';
 
-const data = docData('2-dan-su', '2A');
-
-test.describe(`[${data.bieuMau}] ${data.tenBieuMau}`, () => {
-  for (const c of data.cases) {
-    const soLuong = Number(process.env.BCTK_SO_LUONG) || c.soLuong || 1;
-
-    for (let i = 1; i <= soLuong; i++) {
-      test(`${c.id} - ${c.moTa} (#${i}/${soLuong})`, async ({ page }) => {
-        const form = new CreateCase2APage(page);
-        await form.mo();
-
-        const maVuAn = await form.taoVuAn(sinhTruong(c.truong));
-        expect(maVuAn).toBeTruthy();
-
-        await luuMaVuAn(data.linhVuc, data.bieuMau, c.id, maVuAn);
-        test.info().annotations.push({ type: 'Mã vụ án', description: maVuAn });
-      });
-    }
-  }
-});
+// Form 2A (không có file đầu vào) — các bước nằm ở src/pages/2-dan-su/form-2A/buoc/.
+// Trên UI mỗi bước là một nhóm, mỗi ô đơn (Đơn 01, Đơn 02…) một test; số ô = "Số đơn tạo mỗi lần chạy" trong form-2A.xlsx.
+for (const buoc of LUONG_2A.cacBuoc) {
+  test.describe(tenBuoc(buoc), () => {
+    for (const vuAn of LUONG_2A.dsVuAn) test(vuAn.maVuAn, ({ browser }) => chayBuoc(LUONG_2A, buoc, vuAn, browser));
+  });
+}
