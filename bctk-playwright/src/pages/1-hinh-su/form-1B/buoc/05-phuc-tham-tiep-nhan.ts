@@ -1,13 +1,13 @@
 import { expect } from '@playwright/test';
 import { Buoc } from '../../../common/buoc';
 import { ManHinh, chuaChu, dungChu } from '../../../base.page';
-import { TrangThai1B, VuAnNguon, cauHinh1B } from '../cau-hinh-1B';
+import { TEP_MAU_1B, TrangThai1B, VuAnNguon } from '../cau-hinh-1B';
 import { moVuAnPhucThamTheoTen } from './chung';
 
 /**
- * BƯỚC 05 · Tòa phúc thẩm · Tiếp nhận hồ sơ (hướng dẫn 4.1–4.3)
+ * BƯỚC 05 · Tòa phúc thẩm · Tiếp nhận hồ sơ (hướng dẫn bước 5)
  *
- *  1. Vụ việc › Hình sự › Quản lý án phúc thẩm › Hồ sơ tiếp nhận → tìm theo tên vụ án → mở hồ sơ
+ *  1. Vụ việc › Quản lý án phúc thẩm › Hồ sơ tiếp nhận → tìm theo tên vụ án → mở hồ sơ
  *  2. "Đối chiếu đầu mục hồ sơ bắt buộc" → bấm mọi nút "Đủ" chưa xanh
  *  3. "Biên bản giao nhận" → chọn họ tên bên giao → "Lưu" → "Đã lưu biên bản giao nhận" → "Đóng"
  *  4. Mục Tài liệu: chọn tệp → loại "Vụ chuyển - Biên bản giao nhận" → "Thêm mới"
@@ -16,12 +16,14 @@ import { moVuAnPhucThamTheoTen } from './chung';
 export const buoc05: Buoc<VuAnNguon, TrangThai1B> = {
   so: 5,
   ten: 'Tòa phúc thẩm · Tiếp nhận hồ sơ',
-  huongDan: '4.1–4.3',
+  huongDan: '5',
   chay: async ({ moPhien, tkToa, can }) => {
-    const m = new ManHinh((await moPhien(tkToa(can('toaPhucTham', 4)))).page);
+    const phien = await moPhien(tkToa(can('toaPhucTham', 4)));
+    const m = new ManHinh(phien.page);
     const tenVuAn = can('tenVuAn', 1);
 
-    await m.moMenu('Vụ việc', 'Hình sự', 'Quản lý án phúc thẩm', 'Hồ sơ tiếp nhận');
+    // Vụ việc › Quản lý án phúc thẩm › Hồ sơ tiếp nhận (vào thẳng link)
+    await phien.vao('vu-an/phuc-tham/ho-so-chuyen-den');
     // Ô tìm ở đây không phân biệt hoa thường, nhận một phần tên
     await m.timKiem('Tìm kiếm…', tenVuAn);
     const hoSo = await m.dong(m.page, chuaChu(tenVuAn));
@@ -69,9 +71,11 @@ export const buoc05: Buoc<VuAnNguon, TrangThai1B> = {
         .filter({ has: m.page.locator('button').filter({ hasText: dungChu('Chọn tệp') }) })
         .last();
       await khung.scrollIntoViewIfNeeded();
-      await m.choBang(khung);
-      if (!(await khung.locator('.ant-table-row').filter({ hasText: 'Vụ chuyển - Biên bản giao nhận' }).count())) {
-        await khung.locator('input[type=file]').first().setInputFiles(cauHinh1B.fileDinhKem);
+      // Bảng tệp đã thêm nằm NGOÀI khung tab "Tải file" (ngay dưới), dòng trống ghi "Chưa có tệp đính kèm nào"
+      const bangTep = m.page.locator('.ant-table-wrapper').filter({ hasText: 'Tên tệp' }).filter({ hasText: 'Loại tài liệu' }).last();
+      await bangTep.locator('tbody tr').first().waitFor({ timeout: 30_000 });
+      if (!(await bangTep.locator('tbody tr').filter({ hasText: 'Vụ chuyển - Biên bản giao nhận' }).count())) {
+        await khung.locator('input[type=file]').first().setInputFiles(TEP_MAU_1B);
         await m.chonTrong(khung, 'Vụ chuyển - Biên bản giao nhận');
         await m.nut(khung, 'Thêm mới').click();
         await m.choThongBao(/Đã lưu tài liệu/);

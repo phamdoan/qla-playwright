@@ -3,18 +3,19 @@ import { Buoc } from '../../../common/buoc';
 import { ManHinh } from '../../../base.page';
 import { TrangThai1B, VuAnNguon } from '../cau-hinh-1B';
 import { ngay } from '../../../../utils/fake-data';
+import { dungSo } from './chung';
 
 /**
- * BƯỚC 06 · Tòa phúc thẩm · Thụ lý (hướng dẫn 4.3)
+ * BƯỚC 06 · Tòa phúc thẩm · Thụ lý (hướng dẫn bước 6)
  *
  *  1. Mở vụ án phúc thẩm → tab "Thụ lý" → nút "Thụ lý"
- *  2. Popup "Cấp số thụ lý vụ án": ngày thụ lý = hôm nay → "Xác nhận thụ lý"
+ *  2. Popup "Cấp số thụ lý vụ án": "Dùng số" · ngày thụ lý = hôm nay (lý do thụ lý để mặc định) → "Xác nhận thụ lý"
  *  3. Đọc mã vụ án phúc thẩm, số thụ lý, ngày thụ lý ở đầu trang
  */
 export const buoc06: Buoc<VuAnNguon, TrangThai1B> = {
   so: 6,
   ten: 'Tòa phúc thẩm · Thụ lý',
-  huongDan: '4.3',
+  huongDan: '6',
   chay: async ({ moPhien, tkToa, can }) => {
     const phien = await moPhien(tkToa(can('toaPhucTham', 4)));
     await phien.vao(can('urlVuAn', 5));
@@ -33,6 +34,7 @@ export const buoc06: Buoc<VuAnNguon, TrangThai1B> = {
       const popup = m.popup('Cấp số thụ lý vụ án');
       await popup.waitFor({ timeout: 30_000 });
       await m.choTaiXong();
+      await dungSo(m, popup);
       await m.ngay(popup, 'Ngày thụ lý', ngay(0));
       await m.nut(popup, 'Xác nhận thụ lý').click();
       await m.choThongBao(/Lưu thụ lý thành công/);

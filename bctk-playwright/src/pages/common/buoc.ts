@@ -17,9 +17,10 @@ import { TrangThaiChung, docTrangThai, ghiTrangThai, xoaTrangThai } from '../../
  *
  * File spec chỉ việc gọi luồng (test() phải nằm trong file spec thì UI mới hiện đúng):
  *
- *   for (const buoc of LUONG.cacBuoc)
- *     test.describe(tenBuoc(buoc), () => {
- *       for (const vuAn of LUONG.dsVuAn) test(vuAn.maVuAn, ({ browser }) => chayBuoc(LUONG, buoc, vuAn, browser));
+ *   // lần lượt từng vụ: hết các bước của vụ này mới sang vụ tiếp theo
+ *   for (const vuAn of LUONG.dsVuAn)
+ *     test.describe(vuAn.maVuAn, () => {
+ *       for (const buoc of LUONG.cacBuoc) test(tenBuoc(buoc), ({ browser }) => chayBuoc(LUONG, buoc, vuAn, browser));
  *     });
  */
 

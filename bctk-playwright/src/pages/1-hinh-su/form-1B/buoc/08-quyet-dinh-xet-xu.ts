@@ -1,41 +1,48 @@
 import { expect } from '@playwright/test';
 import { Buoc } from '../../../common/buoc';
 import { ManHinh } from '../../../base.page';
-import { TrangThai1B, VuAnNguon, cauHinh1B } from '../cau-hinh-1B';
-import { ngayLamViec } from '../../../../utils/fake-data';
-import { batDauBang, trinhKy } from './chung';
+import { TrangThai1B, VuAnNguon } from '../cau-hinh-1B';
+import { ngay, ngayLamViec } from '../../../../utils/fake-data';
+import { batDauBang, dungSo, kyLogicVaDong } from './chung';
 
 /**
- * BƯỚC 09 · Tòa phúc thẩm · Quyết định đưa vụ án ra xét xử, trình ký (hướng dẫn 5.3)
+ * BƯỚC 08 · Tòa phúc thẩm · Quyết định đưa vụ án ra xét xử, ký logic (hướng dẫn bước 8)
  *
  *  1. Mở vụ án phúc thẩm → tab "Chuẩn bị xét xử" › "Quyết định tố tụng" › "Quyết định đưa vụ án ra xét xử"
- *  2. Người ký = chủ tọa (ô này chỉ liệt kê thẩm phán Tòa phúc thẩm — người dùng chốt 16/10/2026)
+ *  2. "Dùng số" · ngày quyết định = hôm nay · Người ký = người của tài khoản tòa phúc thẩm (vd. Nguyễn Xuân Kỳ)
+ *     để ký logic ngay trên biểu mẫu
  *  3. "Chọn lịch xét xử" → ngày hôm nay (Chủ nhật → thứ Hai) → form "Thêm lịch xét xử": "Cả ngày",
  *     "Xét xử công khai", địa điểm ngẫu nhiên (+ địa điểm chi tiết nếu là phòng xử lưu động) → "Tạo mới"
  *     (trùng lịch vẫn đồng ý)
- *  4. "Lưu" → "Trình ký" → "Gửi"
+ *  4. "Lưu" → "Ký logic" → "Đóng"
  */
-export const buoc09: Buoc<VuAnNguon, TrangThai1B> = {
-  so: 9,
-  ten: 'Tòa phúc thẩm · Quyết định đưa vụ án ra xét xử, trình ký',
-  huongDan: '5.3',
+export const buoc08: Buoc<VuAnNguon, TrangThai1B> = {
+  so: 8,
+  ten: 'Tòa phúc thẩm · Quyết định đưa vụ án ra xét xử, ký logic',
+  huongDan: '8',
   chay: async ({ moPhien, tkToa, can }) => {
-    const phien = await moPhien(tkToa(can('toaPhucTham', 4)));
+    const tk = tkToa(can('toaPhucTham', 4));
+    const phien = await moPhien(tk);
     await phien.vao(can('urlVuAn', 5));
     const m = new ManHinh(phien.page);
     await m.moTab('chuan-bi-xet-xu');
 
-    // Lượt trước đã lập quyết định → đọc người ký từ bảng "Quyết định tố tụng"
+    // Lượt trước đã lập quyết định → đọc số từ bảng "Quyết định tố tụng"
     const muc = await m.moMuc('Quyết định tố tụng');
     await m.choBang(muc);
     const daCo = muc.locator('.ant-table-row').filter({ hasText: 'Quyết định đưa vụ án ra xét xử' }).first();
-    if (await daCo.count()) return { nguoiKyQuyetDinh: await m.docCot(daCo, 'Người ký') };
+    if (await daCo.count()) return { soQuyetDinhXetXu: await m.docCot(daCo, 'Số').catch(() => '') };
 
     await m.nut(m.page, 'Quyết định đưa vụ án ra xét xử').click();
     const bm = m.popup('Quyết định đưa vụ án ra xét xử phúc thẩm');
     await bm.waitFor({ timeout: 30_000 });
     await m.choTaiXong();
-    await m.chon(bm, 'Người ký/người phân công', batDauBang(can('chuToa', 7)));
+    await dungSo(m, bm);
+    const oNgayQD = m.oTheoNhan('Ngày quyết định', bm);
+    if (!(await oNgayQD.locator('input').first().inputValue().catch(() => ''))) await m.ngay(bm, 'Ngày quyết định', ngay(0));
+    // Người ký = chủ tài khoản đang đăng nhập → bấm "Ký logic" ngay trên biểu mẫu được
+    if (!tk.ten) throw new Error(`Taikhoan.xlsx: tài khoản ${tk.taiKhoan} (${tk.toaAn}) thiếu cột "Tên" — cần để chọn người ký`);
+    await m.chon(bm, 'Người ký/người phân công', batDauBang(tk.ten));
 
     // Chọn lịch xét xử (lịch tháng): bấm ô ngày → form "Thêm lịch xét xử (mở phiên tòa)"
     await m.nut(bm, 'Chọn lịch xét xử').click();
@@ -58,7 +65,7 @@ export const buoc09: Buoc<VuAnNguon, TrangThai1B> = {
       await m.chon(formLich, 'Tính chất phiên tòa', /công khai/i);
       await m.chon(formLich, 'Địa điểm xét xử');
       const chiTiet = m.oTheoNhan('Địa điểm xét xử (chi tiết)', formLich);
-      if (await chiTiet.isVisible().catch(() => false)) await chiTiet.locator('input').fill(cauHinh1B.diaDiemXetXuChiTiet);
+      if (await chiTiet.isVisible().catch(() => false)) await chiTiet.locator('input').fill('Phòng xử án lưu động');
       // "Tạo mới" chính là nút lưu của form lịch
       await m.nut(formLich, 'Tạo mới').click();
       await m.dongYTatCaXacNhan();
@@ -71,7 +78,9 @@ export const buoc09: Buoc<VuAnNguon, TrangThai1B> = {
     ).toBeVisible({ timeout: 30_000 });
 
     await m.nut(bm, 'Lưu').click();
-    await m.choThongBao(/Lưu quyết định thành công/);
-    return { nguoiKyQuyetDinh: await trinhKy(m, bm) };
+    await m.choThongBao(/Lưu quyết định thành công|thành công/i);
+    const soQuyetDinhXetXu = (await m.oTheoNhan('Số', bm).locator('input').first().inputValue().catch(() => '')) || '';
+    await kyLogicVaDong(m, bm);
+    return { soQuyetDinhXetXu };
   },
 };
