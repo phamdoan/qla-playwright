@@ -1,33 +1,36 @@
 import { expect } from '@playwright/test';
 import { Buoc } from '../../../common/buoc';
-import { TrangThai1A1, VuNguon } from '../cau-hinh-1A1';
+import { TrangThai1A1, VuNguon, dsBaoChua, dsPhapNhan } from '../cau-hinh-1A1';
 import { hoTen, ngay } from '../../../../utils/fake-data';
 import { moVuAn, ngauNhien, ngayNtg, ngaySinh, oNtg, soNgauNhien } from './chung';
 
 /**
- * BƯỚC 04 · Thêm người tham gia tố tụng: Người bào chữa cho pháp nhân vừa tạo (hướng dẫn bước 4)
+ * BƯỚC 04 · Thêm người tham gia tố tụng: MỘT Người bào chữa cho một pháp nhân bất kỳ (hướng dẫn bước 4)
  *
  *  1. Mở lại chi tiết vụ án (BẮT BUỘC tải lại: pháp nhân vừa thêm ở bước 03 chỉ hiện trong ô "Bào chữa cho"
  *     sau khi tải lại trang) → tab "Thụ lý" → mục "Người tham gia tố tụng" → "Thêm mới"
  *  2. Cá nhân · Tư cách tham gia tố tụng "Người bào chữa" → "+ Thêm tư cách"
- *     → Vai trò người bào chữa: Tư cách (ngẫu nhiên) · Bào chữa cho = pháp nhân bước 03
+ *     → Vai trò người bào chữa: Tư cách (ngẫu nhiên) · Bào chữa cho = một pháp nhân ngẫu nhiên trong số bước 03 đã thêm
  *  3. Họ và tên, Ngày sinh, Số định danh, Ngày cấp, Nơi cấp, Giới tính — ngẫu nhiên
  *     (ô ngày ghi "mm/dd/yyyy" nhưng chỉ nhận dd/mm/yyyy)
  *  4. Thông tin địa chỉ, khối đầu tiên: số nhà · Thành phố Hà Nội · xã/phường ngẫu nhiên
  *  5. "Thêm vào danh sách" → "Đã lưu người tham gia tố tụng" → "Đóng"
+ *
+ * Vụ có bao nhiêu pháp nhân cũng chỉ thêm một người bào chữa.
  */
 export const buoc04: Buoc<VuNguon, TrangThai1A1> = {
   so: 4,
-  ten: 'Thêm người bào chữa cho pháp nhân thương mại',
+  ten: 'Thêm một người bào chữa cho một pháp nhân thương mại bất kỳ',
   huongDan: '4',
   chay: async ({ vuAn, tt, moPhien, tkToa, can }) => {
-    const tenPhapNhan = can('tenPhapNhan', 3);
+    const cacPhapNhan = dsPhapNhan(tt);
+    if (!cacPhapNhan.length) throw new Error('Chưa có pháp nhân nào — chạy lại Bước 03 trước');
     const m = await moVuAn(await moPhien(tkToa(vuAn.toaAn)), can('urlVuAn', 2));
     await m.moTab('thu-ly');
     const muc = await m.moMuc('Người tham gia tố tụng');
-    // Bảng HTML thường (không phải bảng antd)
-    const dongBC = muc.locator('tbody tr').filter({ hasText: 'Người bào chữa' }).filter({ hasText: tenPhapNhan });
-    if (await dongBC.count()) return;
+    // Lượt trước đã thêm người bào chữa → không thêm nữa (bảng HTML thường, không phải bảng antd)
+    if (await muc.locator('tbody tr').filter({ hasText: 'Người bào chữa' }).count()) return { dsBaoChua: dsBaoChua(tt) };
+    const tenPhapNhan = ngauNhien(cacPhapNhan).ten;
 
     await m.nut(muc, 'Thêm mới').click();
     const d = m.popup('Thêm người tham gia tố tụng');
@@ -60,9 +63,10 @@ export const buoc04: Buoc<VuNguon, TrangThai1A1> = {
     // ── Thông tin cá nhân ──
     const nguoiBaoChua = hoTen();
     await oNtg(d, 'Họ và tên', 'input[placeholder="Họ và tên"]').fill(nguoiBaoChua);
-    await ngayNtg(oNtg(d, 'Ngày tháng năm sinh', 'input[placeholder="mm/dd/yyyy"]'), ngaySinh());
+    // Ô ngày: không lọc theo placeholder (Ngày sinh đã đổi sang "dd/mm/yyyy hoặc yyyy" → lọc cũ trúng ô Ngày cấp, ngày sinh bỏ trống)
+    await ngayNtg(oNtg(d, 'Ngày tháng năm sinh', 'input'), ngaySinh());
     await oNtg(d, 'Số định danh cá nhân', 'input[placeholder="Nhập dữ liệu"]').fill('0' + soNgauNhien(11));
-    await ngayNtg(oNtg(d, 'Ngày cấp', 'input[placeholder="mm/dd/yyyy"]'), ngay(-(365 + Math.floor(Math.random() * 1500))));
+    await ngayNtg(oNtg(d, 'Ngày cấp', 'input'), ngay(-(365 + Math.floor(Math.random() * 1500))));
     await oNtg(d, 'Nơi cấp', 'input[placeholder="Nơi cấp"]').fill('Cục Cảnh sát QLHC về TTXH');
     await oNtg(d, 'Giới tính', 'select').selectOption(ngauNhien(['NAM', 'NU']));
 
@@ -80,6 +84,6 @@ export const buoc04: Buoc<VuNguon, TrangThai1A1> = {
     await m.nut(d, 'Đóng').click();
     await d.waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => undefined);
     await expect(muc.locator('tbody tr').filter({ hasText: nguoiBaoChua }).first(), 'Người bào chữa chưa vào bảng').toBeVisible({ timeout: 15_000 });
-    return { nguoiBaoChua, tuCachBaoChua };
+    return { dsBaoChua: [{ ten: nguoiBaoChua, tuCach: tuCachBaoChua, phapNhan: tenPhapNhan }] };
   },
 };

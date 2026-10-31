@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { Locator, expect, test } from '@playwright/test';
 import { Buoc } from '../../../common/buoc';
 import { DonNguon, TrangThai10A } from '../cau-hinh-10A';
 import { hoaGiai, moChiTietDon } from './chung';
@@ -23,8 +23,10 @@ export const buoc03: Buoc<DonNguon, TrangThai10A> = {
     // Bảng thông báo (cột "Số TB, ngày TB") đã có thông báo 01-HG ở lượt trước → đọc lại số
     const bangTB = main.locator('.ant-table-wrapper').filter({ hasText: 'Số TB, ngày TB' }).first();
     await m.choBang(bangTB);
+    // Cột "Số TB, ngày TB": dòng đầu là số (có lúc chỉ là số trần, vd. 435839, không có đuôi /TB-…)
+    const soTB = async (dong: Locator) => (await m.docCot(dong, 'Số TB, ngày TB')).trim().split(/\s+/)[0];
     const daCo = bangTB.locator('.ant-table-row').filter({ hasText: hoaGiai('Thông báo về quyền lựa chọn hòa giải') }).first();
-    if (await daCo.count()) return { soThongBao01HG: (await daCo.innerText()).match(/\S+\/TB-\S+/)?.[0] };
+    if (await daCo.count()) return { soThongBao01HG: await soTB(daCo) };
 
     // Màn có nhiều nút "Biểu mẫu hòa giải"; nút đầu thuộc mục "Thông báo về quyền lựa chọn hòa giải"
     await main.locator('button').filter({ hasText: hoaGiai('Biểu mẫu hòa giải') }).first().click();
@@ -54,6 +56,6 @@ export const buoc03: Buoc<DonNguon, TrangThai10A> = {
 
     const dong = bangTB.locator('.ant-table-row').filter({ hasText: hoaGiai('Thông báo về quyền lựa chọn hòa giải') }).first();
     await dong.waitFor({ timeout: 30_000 });
-    return { soThongBao01HG: (await dong.innerText()).match(/\S+\/TB-\S+/)?.[0] };
+    return { soThongBao01HG: await soTB(dong) };
   },
 };

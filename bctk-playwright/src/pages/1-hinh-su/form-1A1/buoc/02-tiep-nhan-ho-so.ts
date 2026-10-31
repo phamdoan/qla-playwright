@@ -6,6 +6,7 @@ import { TrangThai1A1, VuNguon } from '../cau-hinh-1A1';
 import { DATA_DIR } from '../../../../utils/file-helper';
 import { hoTen } from '../../../../utils/fake-data';
 import { ORIGIN } from '../../../../../playwright.config';
+import { batUrl, moVuAn } from './chung';
 
 const TAI_LIEU = path.join(DATA_DIR, 'files', 'tai-lieu-mau.pdf');
 
@@ -79,14 +80,28 @@ export const buoc02: Buoc<VuNguon, TrangThai1A1> = {
       await expect(dongTep, 'Tài liệu chưa vào bảng').toBeVisible({ timeout: 15_000 });
     }
 
-    // 4. Chuyển đến vụ án
-    await nutChuyen.scrollIntoViewIfNeeded();
-    await nutChuyen.click();
-    await m.page.waitForURL(/so-tham\/chi-tiet\?id=/, { timeout: 60_000 });
-    await m.page.locator('[role=tab][id$="-tab-thu-ly"]').waitFor({ timeout: 60_000 });
-    await m.choTaiXong(1500);
-    const id = new URL(m.page.url()).searchParams.get('id');
+    // Bước 01 có lúc đọc mã hồ sơ khi trang chưa vẽ xong (mã trống) → đọc lại ở đây
+    let maHoSo = tt.maHoSo;
+    if (!maHoSo) maHoSo = (await main.innerText()).match(/TN\d{2}-\d+/)?.[0] ?? '';
+
+    // 4. Chuyển đến vụ án — app có lúc mở chi tiết vụ án rồi đẩy tiếp sang trang 404 (Vụ 02, 29/10):
+    //    bắt URL thoáng qua (có id) rồi vào lại qua Dashboard. Không bắt được thì mở lại hồ sơ, bấm lại (tối đa 3 lần).
+    let urlDen: string | null = null;
+    for (let lan = 1; lan <= 3 && !urlDen; lan++) {
+      // Lưu biên bản / thêm tài liệu xong, nút "Chuyển đến vụ án" có lúc hiện rất chậm (>30s, Vụ 01 30/10) → chờ 30s, chưa có thì mở lại hồ sơ
+      const coNut = lan === 1 && (await nutChuyen.waitFor({ timeout: 30_000 }).then(() => true).catch(() => false));
+      if (!coNut) {
+        await phien.vao(can('urlHoSo', 1));
+        await nutChuyen.waitFor({ timeout: 60_000 });
+        await m.choTaiXong(1500);
+      }
+      await nutChuyen.scrollIntoViewIfNeeded();
+      urlDen = await batUrl(m.page, /so-tham\/chi-tiet\?id=/, () => nutChuyen.click());
+    }
+    if (!urlDen) throw new Error(`Bấm "Chuyển đến vụ án" 3 lần vẫn không sang chi tiết vụ án (đang ở ${m.page.url()})`);
+    const urlVuAn = `${ORIGIN}/qla/vu-an/so-tham/chi-tiet?id=${new URL(urlDen).searchParams.get('id')}`;
+    await moVuAn(phien, urlVuAn);
     const maVuAnHeThong = (await main.innerText()).match(/VA\d{2}-\d+/)?.[0] ?? '';
-    return { urlVuAn: `${ORIGIN}/qla/vu-an/so-tham/chi-tiet?id=${id}`, maVuAnHeThong };
+    return { urlVuAn, maVuAnHeThong, maHoSo };
   },
 };

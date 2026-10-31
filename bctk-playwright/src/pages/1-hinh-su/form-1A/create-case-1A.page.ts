@@ -1,35 +1,27 @@
-import { Page, expect } from '@playwright/test';
-import { BasePage, TruongForm } from '../../base.page';
+import { Luong } from '../../common/buoc';
+import { TrangThai1A, VuNguon, cauHinh1A, danhSachVu1A } from './cau-hinh-1A';
+import { docTaiKhoanSync } from '../../../utils/tai-khoan';
+import { buoc01 } from './buoc/01-tao-ho-so';
+import { buoc02 } from './buoc/02-tiep-nhan-ho-so';
+import { buoc03 } from './buoc/03-them-bi-can-ca-nhan';
+import { buoc04 } from './buoc/04-them-nguoi-bao-chua';
+import { buoc05 } from './buoc/05-thu-ly';
+import { buoc06 } from './buoc/06-phan-cong-tham-phan';
+import { buoc07 } from './buoc/07-phan-cong-hoi-tham';
+import { buoc08 } from './buoc/08-quyet-dinh-xet-xu';
+import { buoc09 } from './buoc/09-tao-ban-an';
 
 /**
- * Biểu mẫu 1A — Thống kê thụ lý và giải quyết các vụ án hình sự sơ thẩm do cá nhân phạm tội.
- * Tạo vụ án hình sự sơ thẩm (thụ lý) để có số liệu lên báo cáo 1A.
+ * Biểu mẫu 1A — vụ án hình sự sơ thẩm, bị can là cá nhân, theo file hướng dẫn
+ * src/step/1-hinh-su/form-1A/HD 1A.docx.
+ *
+ * Mỗi bước một file trong ./buoc/, chứa đầy đủ thao tác màn hình của bước đó (dùng chung ở ./buoc/chung.ts).
+ * Giao diện đổi → chỉ sửa trong ./buoc/. Thêm/bớt/đổi thứ tự bước: sửa danh sách `cacBuoc`.
  */
-export class CreateCase1APage extends BasePage {
-  // TODO: xác nhận lại đường dẫn màn thêm mới vụ án HS sơ thẩm trên môi trường đang chạy
-  static readonly DUONG_DAN = 'hinh-su/so-tham/vu-an/them-moi';
-
-  constructor(page: Page) {
-    super(page);
-  }
-
-  async mo() {
-    await this.goto(CreateCase1APage.DUONG_DAN);
-    await expect(this.page.locator('form').first()).toBeVisible();
-  }
-
-  /** Điền form, lưu và trả về mã vụ án hệ thống sinh ra */
-  async taoVuAn(truong: TruongForm[]): Promise<string> {
-    await this.dienForm(truong);
-    await this.bamNut(/^Lưu$/);
-    await this.choThongBaoThanhCong();
-    await this.choTaiXong();
-    return this.layMaVuAn();
-  }
-
-  async layMaVuAn(): Promise<string> {
-    const ma = await this.docGiaTri('Mã vụ án');
-    if (!ma) throw new Error('Đã lưu nhưng không đọc được "Mã vụ án" trên màn hình');
-    return ma;
-  }
-}
+export const LUONG_1A: Luong<VuNguon, TrangThai1A> = {
+  linhVuc: cauHinh1A.linhVuc,
+  bieuMau: cauHinh1A.bieuMau,
+  dsVuAn: danhSachVu1A(cauHinh1A),
+  dsTaiKhoan: docTaiKhoanSync(),
+  cacBuoc: [buoc01, buoc02, buoc03, buoc04, buoc05, buoc06, buoc07, buoc08, buoc09],
+};

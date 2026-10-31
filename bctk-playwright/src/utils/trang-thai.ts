@@ -13,6 +13,10 @@ const ROOT = path.resolve(__dirname, '../..');
 export interface TrangThaiChung {
   /** Số thứ tự bước lớn nhất đã chạy xong */
   buocXong?: number;
+  /** Bước lặp nhiều lượt: số lượt đã xong theo số bước, vd. { "3": 2 } */
+  lanXong?: Record<number, number>;
+  /** Thời điểm bắt đầu vụ này — cùng tên ô ("Đơn 01") để phân biệt các vụ nối tiếp nhau trong sheet "Tiến độ" */
+  batDau?: string;
   /** Thời điểm ghi gần nhất */
   capNhat?: string;
 }

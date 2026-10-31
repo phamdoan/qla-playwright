@@ -15,6 +15,21 @@ if (!fs.existsSync(FILE_HO_SO)) throw new Error(`Thiếu file ${FILE_HO_SO} cho 
 dotenv.config({ path: FILE_HO_SO, override: true, quiet: true });
 dotenv.config({ path: path.resolve(__dirname, '.env'), quiet: true });
 
+/**
+ * Mốc thời gian của LẦN CHẠY này → tên file output (output/<lĩnh vực>/output-ma-vu-an-form-<mã>_<ngày>_<giờ>.xlsx).
+ * Đặt ở tiến trình chính mỗi lần nạp config (trên UI: mỗi lần bấm chạy); worker (có TEST_WORKER_INDEX) giữ mốc kế thừa
+ * từ tiến trình chính → mọi test của cùng một lần chạy ghi chung một file.
+ */
+if (!process.env.TEST_WORKER_INDEX) {
+  process.env.BCTK_LAN_CHAY = new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' }).replace(' ', '_').replace(/:/g, '-');
+  // Thư mục kết quả theo form đang chạy (vd. test-results/form-1A1): Playwright XÓA thư mục kết quả lúc bắt đầu chạy →
+  // hai lệnh chạy song song chung một thư mục xóa trace, ảnh của nhau, lỗi lưu trace (ENOENT) làm phiên không đóng được,
+  // phiên rò tích lại làm máy chậm hẳn (1A1 29/10: chạy cùng 5A, 6A). Không chỉ rõ form (UI, chạy cả bộ) → "chung".
+  const cacForm = [...new Set(process.argv.join(' ').match(/form-[0-9A-Z]+/gi) ?? [])];
+  process.env.BCTK_THU_MUC_KQ = cacForm.length ? cacForm.join('+') : 'chung';
+}
+const THU_MUC_KQ = process.env.BCTK_THU_MUC_KQ ?? 'chung';
+
 if (!process.env.URL) throw new Error(`Thiếu biến URL (link trang đăng nhập) trong ${FILE_HO_SO}`);
 /** Link trang đăng nhập của môi trường, vd. https://qla-stg.toaan.gov.vn/sso/login */
 export const LOGIN_URL = process.env.URL.trim();
@@ -51,7 +66,7 @@ export const TUY_CHON_TRINH_DUYET = {
 };
 
 /** Spec chạy luồng nhiều tài khoản: tự đăng nhập từng tài khoản, không dùng phiên của auth.setup */
-const SPEC_LUONG = /[\\/]form-(1A1|1B|2A|10A)[\\/].*\.spec\.ts$/;
+const SPEC_LUONG = /[\\/]form-(1A|1A1|1B|1D1|2A|2C|2D|3A|5A|5B|5C|5D|6A|6B|6C|6D|10A|10B|10C|10E|10G|10H|10I|10K)[\\/].*\.spec\.ts$/;
 
 export default defineConfig({
   testDir: './src/tests',
@@ -60,9 +75,11 @@ export default defineConfig({
   workers: 1,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
-  timeout: 300_000,
+  // STG chậm: một bước có thể phải qua Dashboard vào lại link vài lần (mỗi lần ~30s) → 5 phút không đủ
+  timeout: 600_000,
   expect: { timeout: 10_000 },
-  reporter: [['html', { open: 'never' }], ['line']],
+  outputDir: `test-results/${THU_MUC_KQ}`,
+  reporter: [['html', { open: 'never', outputFolder: `playwright-report/${THU_MUC_KQ}` }], ['line']],
   use: {
     ...TUY_CHON_TRINH_DUYET,
     actionTimeout: 30_000,
@@ -76,7 +93,9 @@ export default defineConfig({
     {
       name: 'luong',
       testMatch: SPEC_LUONG,
-      use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 } },
+      // Không quay video: mỗi phiên tài khoản đều bị quay, đóng phiên phải chờ ghi xong video → máy bận (nhiều lượt song song)
+      // thì đóng phiên treo tới hết giờ, test sau hỏng "Target … closed" (6C 30/10). Trace (có ảnh từng thao tác) đã đủ để dò lỗi.
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1920, height: 1080 }, video: 'off' },
     },
     {
       name: 'chromium',

@@ -3,7 +3,7 @@ import { Buoc } from '../../../common/buoc';
 import { ManHinh, dungChu } from '../../../base.page';
 import { TrangThai1A1, VuNguon } from '../cau-hinh-1A1';
 import { hoTen, ngay, so8 } from '../../../../utils/fake-data';
-import { ngauNhien, soNgauNhien } from './chung';
+import { batUrl, ngauNhien, soNgauNhien } from './chung';
 
 /** Các điều BLHS 2015 mà pháp nhân thương mại có thể bị truy cứu (Điều 76), đều có khoản 1 */
 const DIEU_PHAP_NHAN = [188, 189, 190, 191, 192, 193, 194, 195, 196, 200, 203, 209, 210, 211, 213, 216, 217, 225, 226, 227, 232, 234, 235, 237, 238, 239, 242, 243, 244, 245, 246, 300, 324];
@@ -69,11 +69,20 @@ export const buoc01: Buoc<VuNguon, TrangThai1A1> = {
     await m.chon(main, 'Biện pháp ngăn chặn', 'Không xác định');
     await m.nhap(main, 'Tổng số bút lục', soNgauNhien(3));
 
-    await m.nut(main, 'Lưu & tiếp nhận').click();
-    await m.choThongBao(/Tạo mới hồ sơ thành công/);
-    await m.page.waitForURL(/ho-so-tiep-nhan\/chi-tiet\//, { timeout: 60_000 });
+    // Lưu xong app chuyển sang chi tiết hồ sơ; có lúc đẩy tiếp sang 404 → vẫn giữ link hồ sơ (có id) và vào lại,
+    // không để hồ sơ đã tạo mà state không có link (lần sau tạo trùng)
+    const urlHoSo = await batUrl(m.page, /ho-so-tiep-nhan\/chi-tiet\//, async () => {
+      await m.nut(main, 'Lưu & tiếp nhận').click();
+      await m.choThongBao(/Tạo mới hồ sơ thành công/);
+    });
+    if (!urlHoSo) {
+      throw new Error(`Đã báo tạo hồ sơ thành công nhưng không sang chi tiết hồ sơ (đang ở ${m.page.url()}) — xem danh sách Hồ sơ tiếp nhận (bị can "${tenBiCanHoSo}") trước khi chạy lại để tránh tạo trùng`);
+    }
+    if (m.page.url() !== urlHoSo) await phien.vao(urlHoSo);
     await m.choTaiXong(1500);
+    // Mã hồ sơ vẽ sau khung trang — chờ một lúc; không thấy thì bước 02 đọc lại
+    await expect(main).toContainText(/TN\d{2}-\d+/, { timeout: 15_000 }).catch(() => undefined);
     const maHoSo = (await main.innerText()).match(/TN\d{2}-\d+/)?.[0] ?? '';
-    return { urlHoSo: m.page.url(), maHoSo, tenBiCanHoSo, toiDanh };
+    return { urlHoSo, maHoSo, tenBiCanHoSo, toiDanh };
   },
 };

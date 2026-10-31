@@ -1,25 +1,11 @@
-import { test, expect } from '@playwright/test';
-import { CreateCase1APage } from '../../../pages/1-hinh-su/form-1A/create-case-1A.page';
-import { docData, luuMaVuAn } from '../../../utils/file-helper';
-import { sinhTruong } from '../../../utils/fake-data';
+import { test } from '@playwright/test';
+import { chayBuoc, tenBuoc } from '../../../pages/common/buoc';
+import { LUONG_1A } from '../../../pages/1-hinh-su/form-1A/create-case-1A.page';
 
-const data = docData('1-hinh-su', '1A');
-
-test.describe(`[${data.bieuMau}] ${data.tenBieuMau}`, () => {
-  for (const c of data.cases) {
-    const soLuong = Number(process.env.BCTK_SO_LUONG) || c.soLuong || 1;
-
-    for (let i = 1; i <= soLuong; i++) {
-      test(`${c.id} - ${c.moTa} (#${i}/${soLuong})`, async ({ page }) => {
-        const form = new CreateCase1APage(page);
-        await form.mo();
-
-        const maVuAn = await form.taoVuAn(sinhTruong(c.truong));
-        expect(maVuAn).toBeTruthy();
-
-        await luuMaVuAn(data.linhVuc, data.bieuMau, c.id, maVuAn);
-        test.info().annotations.push({ type: 'Mã vụ án', description: maVuAn });
-      });
-    }
-  }
-});
+// Form 1A (không có file đầu vào) — các bước nằm ở src/pages/1-hinh-su/form-1A/buoc/.
+// Trên UI mỗi bước là một nhóm, mỗi ô vụ án (Vụ 01, Vụ 02…) một test; số ô = BCTK_SO_DON_1A (.env.staging) hoặc "Số vụ tạo mỗi lần chạy" trong data-form-1A.xlsx.
+for (const buoc of LUONG_1A.cacBuoc) {
+  test.describe(tenBuoc(buoc), () => {
+    for (const vuAn of LUONG_1A.dsVuAn) test(vuAn.maVuAn, ({ browser }) => chayBuoc(LUONG_1A, buoc, vuAn, browser));
+  });
+}

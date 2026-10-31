@@ -8,12 +8,13 @@ import zlib from 'zlib';
  *
  * File đang mở trong Excel thì Windows khóa (EBUSY) → chờ, cứ 5s thử lại (tối đa ~2 phút), mỗi lần đọc lại
  * file để không đè phần người dùng vừa sửa; hết giờ vẫn khóa thì báo lỗi (kèm nội dung dòng chưa ghi).
+ * @param cotKhoa tên cột khóa (vd. "Mã vụ án"): đã có dòng cùng giá trị thì ghi đè dòng đó thay vì thêm dòng mới
  */
-export async function ghiDongExcel(file: string, tieuDe: string[], cacDong: (string | number)[][]): Promise<string> {
+export async function ghiDongExcel(file: string, tieuDe: string[], cacDong: (string | number)[][], cotKhoa?: string): Promise<string> {
   const SO_LAN = 24;
   for (let lan = 1; ; lan++) {
     try {
-      await ghiDongExcelMotLan(file, tieuDe, cacDong);
+      await ghiDongExcelMotLan(file, tieuDe, cacDong, cotKhoa);
       return file;
     } catch (e) {
       if ((e as NodeJS.ErrnoException).code !== 'EBUSY') throw e;
@@ -29,7 +30,7 @@ export async function ghiDongExcel(file: string, tieuDe: string[], cacDong: (str
   }
 }
 
-async function ghiDongExcelMotLan(file: string, tieuDe: string[], cacDong: (string | number)[][]) {
+async function ghiDongExcelMotLan(file: string, tieuDe: string[], cacDong: (string | number)[][], cotKhoa?: string) {
   const wb = new ExcelJS.Workbook();
   if (fs.existsSync(file)) await wb.xlsx.readFile(file);
   const sheet = wb.worksheets[0] ?? wb.addWorksheet('Vụ án');
@@ -57,6 +58,18 @@ async function ghiDongExcelMotLan(file: string, tieuDe: string[], cacDong: (stri
       }
     }
     for (const d of cacDong) {
+      // Có cột khóa và đã có dòng cùng giá trị khóa → ghi đè dòng đó (theo tên cột), không thêm dòng mới
+      const iKhoa = cotKhoa ? tieuDe.indexOf(cotKhoa) : -1;
+      if (iKhoa >= 0) {
+        const cot = dauFile.indexOf(cotKhoa!);
+        const can = String(d[iKhoa] ?? '').trim();
+        let r = 2;
+        while (r <= sheet.rowCount && String(sheet.getRow(r).getCell(cot).value ?? '').trim() !== can) r++;
+        if (r <= sheet.rowCount && can) {
+          tieuDe.forEach((ten, i) => (sheet.getRow(r).getCell(dauFile.indexOf(ten)).value = d[i] ?? ''));
+          continue;
+        }
+      }
       const dong: (string | number)[] = [];
       tieuDe.forEach((ten, i) => (dong[dauFile.indexOf(ten) - 1] = d[i]));
       sheet.addRow(Array.from(dong, v => v ?? ''));
@@ -69,6 +82,62 @@ async function ghiDongExcelMotLan(file: string, tieuDe: string[], cacDong: (stri
     cot.width = Math.min(rong, 60);
   });
 
+  await wb.xlsx.writeFile(file);
+}
+
+/**
+ * Ghi một dòng vào sheet `tenSheet`: dòng có `soCotKhoa` cột đầu trùng với `dong` thì ghi đè, chưa có thì thêm.
+ * Sheet đầu của file (sheet kết quả mà `ghiDongExcel` ghi nối) giữ nguyên vị trí — file mới thì tạo sẵn nó trống.
+ * Không làm hỏng lượt chạy: file đang mở trong Excel thì thử lại ~30s rồi bỏ qua, chỉ cảnh báo → trả về false.
+ */
+export async function ghiDongTheoKhoa(
+  file: string,
+  tenSheet: string,
+  tieuDe: string[],
+  dong: (string | number)[],
+  soCotKhoa = 1,
+): Promise<boolean> {
+  for (let lan = 1; ; lan++) {
+    try {
+      await ghiDongTheoKhoaMotLan(file, tenSheet, tieuDe, dong, soCotKhoa);
+      return true;
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code !== 'EBUSY') throw e;
+      if (lan >= 6) {
+        console.warn(`⚠ ${file} đang mở trong Excel — chưa ghi được sheet "${tenSheet}": ${dong.join(' | ')}`);
+        return false;
+      }
+      await new Promise(r => setTimeout(r, 5_000));
+    }
+  }
+}
+
+async function ghiDongTheoKhoaMotLan(file: string, tenSheet: string, tieuDe: string[], dong: (string | number)[], soCotKhoa: number) {
+  const wb = new ExcelJS.Workbook();
+  if (fs.existsSync(file)) await wb.xlsx.readFile(file);
+  if (!wb.worksheets.length) wb.addWorksheet('Vụ án');
+  let sheet = wb.getWorksheet(tenSheet);
+  if (!sheet) {
+    sheet = wb.addWorksheet(tenSheet);
+    sheet.views = [{ state: 'frozen', ySplit: 1 }];
+    sheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: tieuDe.length } };
+  }
+  const dau = sheet.getRow(1);
+  dau.values = tieuDe;
+  dau.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+  dau.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF8B1A1A' } };
+
+  const khoa = (vals: unknown[]) => vals.slice(0, soCotKhoa).map(v => String(v ?? '').trim()).join('\u0000');
+  const can = khoa(dong);
+  let r = 2;
+  while (r <= sheet.rowCount && khoa(Array.from({ length: soCotKhoa }, (_, i) => sheet!.getRow(r).getCell(i + 1).value)) !== can) r++;
+  sheet.getRow(r).values = dong;
+
+  sheet.columns.forEach(cot => {
+    let rong = 10;
+    cot.eachCell?.({ includeEmpty: false }, o => (rong = Math.max(rong, String(o.value ?? '').length + 2)));
+    cot.width = Math.min(rong, 60);
+  });
   await wb.xlsx.writeFile(file);
 }
 

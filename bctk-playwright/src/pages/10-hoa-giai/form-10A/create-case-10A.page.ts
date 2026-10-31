@@ -5,6 +5,10 @@ import { buoc01 } from './buoc/01-them-don';
 import { buoc02 } from './buoc/02-phan-cong-hoa-giai';
 import { buoc03 } from './buoc/03-thong-bao-01-hg';
 import { buoc04 } from './buoc/04-ghi-nhan-ket-qua';
+import { buoc05 } from './buoc/05-chi-dinh-hoa-giai-vien';
+import { buoc06 } from './buoc/06-thong-bao-07-hg';
+import { buoc07 } from './buoc/07-ghi-nhan-ket-qua-hoa-giai';
+import { buoc08 } from './buoc/08-quyet-dinh-cong-nhan';
 
 /**
  * Biểu mẫu 10A — tranh chấp dân sự được hòa giải tại Tòa án, theo file hướng dẫn
@@ -18,5 +22,5 @@ export const LUONG_10A: Luong<DonNguon, TrangThai10A> = {
   bieuMau: cauHinh10A.bieuMau,
   dsVuAn: danhSachDon10A(cauHinh10A),
   dsTaiKhoan: docTaiKhoanSync(),
-  cacBuoc: [buoc01, buoc02, buoc03, buoc04],
+  cacBuoc: [buoc01, buoc02, buoc03, buoc04, buoc05, buoc06, buoc07, buoc08],
 };

@@ -1,0 +1,90 @@
+import path from 'path';
+import { DATA_DIR, LinhVuc } from '../../../utils/file-helper';
+import { docBangExcelSync } from '../../../utils/excel-helper';
+import { TaiKhoan } from '../../../utils/tai-khoan';
+import { TrangThaiChung } from '../../../utils/trang-thai';
+import { VuAnLuong } from '../../common/buoc';
+
+/**
+ * Phần dùng chung của luồng 5C — vụ án lao động GIÁM ĐỐC THẨM (hồ sơ kháng nghị đến Vụ GĐKT về kinh doanh thương mại, phá sản, lao động, gia đình & người chưa thành niên),
+ * theo src/step/5-lao-dong/form-5C/HD 5C.docx. Đầu vào: src/data/5-lao-dong/data-form-5C.xlsx (mỗi dòng một bản án bị kháng nghị).
+ * Các bước nằm ở ./buoc/, ghép thành luồng ở create-case-5C.page.ts.
+ */
+
+export const LINH_VUC_5C: LinhVuc = '5-lao-dong';
+export const BIEU_MAU_5C = '5C';
+
+/** Vụ trưởng Vụ GĐKT về kinh doanh thương mại, phá sản, lao động, gia đình & người chưa thành niên — người làm hồ sơ, phân công, tham mưu (BCTK_TK_VU_TRUONG_5C ghi đè) */
+export const TK_VU_TRUONG: TaiKhoan = { toaAn: 'Vụ GĐKT về KINH DOANH THƯƠNG MẠI, PHÁ SẢN, LAO ĐỘNG, GIA ĐÌNH & NGƯỜI CHƯA THÀNH NIÊN', taiKhoan: process.env.BCTK_TK_VU_TRUONG_5C || '036077002085', ten: 'Trần Ngọc Thành' };
+/** Lãnh đạo TANDTC — người ký tờ trình, phê duyệt chương trình làm việc, ký quyết định (BCTK_TK_LANH_DAO_5C ghi đè) */
+export const TK_LANH_DAO: TaiKhoan = { toaAn: 'Lãnh đạo & Văn phòng TANDTC', taiKhoan: process.env.BCTK_TK_LANH_DAO_5C || '001175010767', ten: 'Nguyễn Hải Trâm' };
+/** Thẩm tra viên, lãnh đạo phân công ở bước 03 (theo hướng dẫn) */
+export const THAM_TRA_VIEN = 'Cao Phương Ly';
+export const LANH_DAO_TTV = 'Phùng Hải Hiệp';
+/** Loại án của hồ sơ — bộ lọc "Loại án" ở các danh sách GĐT của Vụ KDTM-LĐ mặc định là "Kinh doanh thương mại" */
+export const LOAI_AN = 'Lao động';
+
+/** File đầu vào (BCTK_FILE_5C ghi đè — đường dẫn đầy đủ hoặc tính từ src/data) */
+export const FILE_VU_AN_5C = process.env.BCTK_FILE_5C
+  ? path.resolve(DATA_DIR, process.env.BCTK_FILE_5C)
+  : path.join(DATA_DIR, LINH_VUC_5C, 'data-form-5C.xlsx');
+
+/** Một dòng của data-form-5C.xlsx: Số bản án | Ngày bản án | Tòa ra quyết định | Cấp xét xử | Người kháng nghị */
+export interface BanAn5C extends VuAnLuong {
+  soBanAn: string;
+  /** dd/mm/yyyy */
+  ngayBanAn: string;
+  toaAn: string;
+  /** "Sơ thẩm" | "Phúc thẩm" */
+  capXetXu: string;
+  nguoiKhangNghi: string;
+}
+
+/** Dữ liệu các bước để lại, lưu ở state/5-lao-dong/form-5C/<mã>.json */
+export interface TrangThai5C extends TrangThaiChung {
+  /** Số quyết định kháng nghị (ngẫu nhiên, dùng để tìm lại hồ sơ ở các màn sau) */
+  soKhangNghi?: string;
+  ngayKhangNghi?: string;
+  quanHePhapLuat?: string;
+  thamPhan?: string;
+  soToTrinh?: string;
+  /** Tờ trình phân công đã trình ký (tờ trình vẫn hiện "Dự thảo" tới khi lãnh đạo ký) */
+  daTrinhKyToTrinh?: boolean;
+  /** Thẩm phán khác của hội đồng 5 người, nối " ; " */
+  thanhVienHDXX?: string;
+  /** Thời gian – phòng xét xử đã chọn, vd. "29/10/2026 05:00:00 – Phòng xét xử 102" */
+  lichXetXu?: string;
+  /** Danh sách vụ xét xử (chương trình làm việc) đã lấy số, trình ký */
+  daTrinhKyChuongTrinh?: boolean;
+  soChuongTrinh?: string;
+  /** Link chi tiết hội đồng xét xử (…/chi-tiet-hdxx/<id>) */
+  urlHoiDong?: string;
+  /** Số quyết định thành lập (phân công) HĐXX, vd. "444/QĐ-TANDTC" */
+  soQDHoiDong?: string;
+  /** Số công văn mời Viện kiểm sát, vd. "70/TANDTC-VP" */
+  soCongVanVKS?: string;
+  /** Bước 08 đã ký quyết định HĐXX (còn công văn VKS) */
+  daKyQDHoiDong?: boolean;
+}
+
+/** Đọc các bản án trong file đầu vào; mã (tên file state) = "BA <số> ngày <dd-mm-yyyy>" */
+export function docBanAn5C(): BanAn5C[] {
+  return docBangExcelSync(FILE_VU_AN_5C)
+    .filter(d => d['Số bản án'])
+    .map((d, i) => {
+      const bat = (cot: string) => {
+        if (!d[cot]) throw new Error(`${FILE_VU_AN_5C}: dòng ${i + 2} thiếu cột "${cot}"`);
+        return d[cot].trim();
+      };
+      const soBanAn = bat('Số bản án');
+      const ngayBanAn = bat('Ngày bản án');
+      return {
+        maVuAn: `BA ${soBanAn} ngày ${ngayBanAn.replace(/\//g, '-')}`,
+        soBanAn,
+        ngayBanAn,
+        toaAn: bat('Tòa ra quyết định'),
+        capXetXu: d['Cấp xét xử']?.trim() || 'Sơ thẩm',
+        nguoiKhangNghi: bat('Người kháng nghị'),
+      };
+    });
+}

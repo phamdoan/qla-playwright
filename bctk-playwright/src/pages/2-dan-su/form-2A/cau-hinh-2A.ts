@@ -5,20 +5,20 @@ import { TrangThaiChung } from '../../../utils/trang-thai';
 import { VuAnLuong } from '../../common/buoc';
 
 /**
- * Phần dùng chung của luồng 2A: cấu hình (form-2A.xlsx) và kiểu dữ liệu các bước để lại cho nhau.
+ * Phần dùng chung của luồng 2A: cấu hình (data-form-2A.xlsx) và kiểu dữ liệu các bước để lại cho nhau.
  * Form này KHÔNG có file đầu vào — mọi dữ liệu (đương sự, quan hệ pháp luật, yêu cầu, người được phân công…) sinh ngẫu nhiên.
  * Luồng: đơn khởi kiện → xử lý đơn → thụ lý thành vụ án dân sự sơ thẩm → phân công người tiến hành tố tụng.
  * Các bước nằm ở ./buoc/, ghép thành luồng ở create-case-2A.page.ts.
  */
 
-/** Cấu hình luồng 2A (src/data/2-dan-su/form-2A.xlsx, sheet "Cấu hình") */
+/** Cấu hình luồng 2A (src/data/2-dan-su/data-form-2A.xlsx, sheet "Cấu hình") */
 export interface CauHinh2A {
   linhVuc: LinhVuc;
   bieuMau: string;
   tenBieuMau: string;
   /** Tòa tạo đơn — chọn tài khoản theo cột "Tòa án" của Taikhoan.xlsx */
   toaAn: string;
-  /** Số đơn tạo mỗi lần chạy (BCTK_SO_DON_2A trong .env ghi đè) */
+  /** Số đơn tạo mỗi lần chạy (BCTK_SO_DON_2A trong .env.staging ghi đè; trống thì BCTK_SO_DON chung) */
   soDon: number;
 }
 
@@ -58,10 +58,14 @@ export interface TrangThai2A extends TrangThaiChung {
   /** Hai hội thẩm nhân dân, nối bằng " ; " */
   hoiTham?: string;
   soQDHoiTham?: string;
+  soQDXetXu?: string;
+  /** Ngày mở phiên tòa (dd/mm/yyyy) */
+  ngayXetXu?: string;
+  soBanAn?: string;
 }
 
 export function docCauHinh2A(): CauHinh2A {
-  const file = path.join(DATA_DIR, '2-dan-su', 'form-2A.xlsx');
+  const file = path.join(DATA_DIR, '2-dan-su', 'data-form-2A.xlsx');
   const ch = docKhoaGiaTriSync(file, 'Cấu hình');
   const bat = (khoa: string) => {
     if (!ch[khoa]) throw new Error(`${file}: sheet "Cấu hình" thiếu giá trị "${khoa}"`);
@@ -72,7 +76,7 @@ export function docCauHinh2A(): CauHinh2A {
     bieuMau: bat('Biểu mẫu'),
     tenBieuMau: bat('Tên biểu mẫu'),
     toaAn: bat('Tòa án'),
-    soDon: Math.max(1, Number(process.env.BCTK_SO_DON_2A) || Number(ch['Số đơn tạo mỗi lần chạy']) || 1),
+    soDon: Math.max(1, Number(process.env.BCTK_SO_DON_2A) || Number(process.env.BCTK_SO_DON) || Number(ch['Số đơn tạo mỗi lần chạy']) || 1),
   };
 }
 

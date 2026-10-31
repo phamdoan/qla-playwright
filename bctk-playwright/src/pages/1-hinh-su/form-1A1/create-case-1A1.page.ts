@@ -8,6 +8,8 @@ import { buoc04 } from './buoc/04-them-nguoi-bao-chua';
 import { buoc05 } from './buoc/05-thu-ly';
 import { buoc06 } from './buoc/06-phan-cong-tham-phan';
 import { buoc07 } from './buoc/07-phan-cong-hoi-tham';
+import { buoc08 } from './buoc/08-quyet-dinh-xet-xu';
+import { buoc09 } from './buoc/09-tao-ban-an';
 
 /**
  * Biểu mẫu 1A1 — vụ án hình sự sơ thẩm, bị can là pháp nhân thương mại, theo file hướng dẫn
@@ -21,5 +23,5 @@ export const LUONG_1A1: Luong<VuNguon, TrangThai1A1> = {
   bieuMau: cauHinh1A1.bieuMau,
   dsVuAn: danhSachVu1A1(cauHinh1A1),
   dsTaiKhoan: docTaiKhoanSync(),
-  cacBuoc: [buoc01, buoc02, buoc03, buoc04, buoc05, buoc06, buoc07],
+  cacBuoc: [buoc01, buoc02, buoc03, buoc04, buoc05, buoc06, buoc07, buoc08, buoc09],
 };

@@ -1,0 +1,11 @@
+import { test } from '@playwright/test';
+import { chayBuoc, tenBuoc } from '../../../pages/common/buoc';
+import { LUONG_5B } from '../../../pages/5-lao-dong/form-5B/create-case-5B.page';
+
+// Form 5B — đầu vào src/data/5-lao-dong/data-form-5B.xlsx (mỗi dòng một vụ sơ thẩm), các bước ở src/pages/5-lao-dong/form-5B/buoc/.
+// Trên UI mỗi bước là một nhóm, mỗi vụ án (theo Mã vụ án) một test.
+for (const buoc of LUONG_5B.cacBuoc) {
+  test.describe(tenBuoc(buoc), () => {
+    for (const vuAn of LUONG_5B.dsVuAn) test(vuAn.maVuAn, ({ browser }) => chayBuoc(LUONG_5B, buoc, vuAn, browser));
+  });
+}

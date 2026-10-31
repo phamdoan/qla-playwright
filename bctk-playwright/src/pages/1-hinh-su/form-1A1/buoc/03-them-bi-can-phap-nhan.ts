@@ -1,7 +1,7 @@
 import { Locator, expect } from '@playwright/test';
 import { Buoc } from '../../../common/buoc';
 import { ManHinh, dungChu } from '../../../base.page';
-import { TrangThai1A1, VuNguon } from '../cau-hinh-1A1';
+import { TrangThai1A1, VuNguon, cauHinh1A1, dsPhapNhan } from '../cau-hinh-1A1';
 import { hoTen, ngay } from '../../../../utils/fake-data';
 import { moVuAn, ngauNhien, ngaySinh, soNgauNhien } from './chung';
 
@@ -20,18 +20,23 @@ const NGANH = ['Thương mại', 'Xây dựng', 'Dịch vụ', 'Sản xuất', '
  *  5. Mục "4. Điều luật áp dụng cho pháp nhân" → "Thêm điều luật áp dụng" → tìm theo số điều của tội danh
  *     ở hồ sơ → chọn tội danh → tích "Khoản 1" → "Thêm vào danh sách"
  *  6. "Lưu" → "Lưu thành công"
+ *
+ * Lặp BCTK_SO_PHAP_NHAN lượt (mỗi lượt một pháp nhân; chỉ lượt 1 là "Bị can đầu vụ").
  */
 export const buoc03: Buoc<VuNguon, TrangThai1A1> = {
   so: 3,
   ten: 'Thêm bị can pháp nhân thương mại (người đại diện, thông tin tố tụng, điều luật)',
   huongDan: '3',
-  chay: async ({ vuAn, tt, moPhien, tkToa, can }) => {
+  soLan: cauHinh1A1.soPhapNhan,
+  chay: async ({ vuAn, tt, lan, moPhien, tkToa, can }) => {
+    const daCo = dsPhapNhan(tt);
     const m = await moVuAn(await moPhien(tkToa(vuAn.toaAn)), can('urlVuAn', 2));
     await m.moTab('thu-ly');
     const muc = await m.moMuc('Bị can/Bị cáo');
     await m.choBang(muc);
-    // Lượt trước đã thêm pháp nhân này rồi → không thêm lại
-    if (tt.tenPhapNhan && (await muc.locator('.ant-table-row').filter({ hasText: tt.tenPhapNhan }).count())) return;
+    // Lượt này đã thêm pháp nhân rồi (vd. state cũ) → không thêm lại
+    const cu = daCo[lan - 1];
+    if (cu && (await muc.locator('.ant-table-row').filter({ hasText: cu.ten }).count())) return { dsPhapNhan: daCo };
 
     await m.nut(muc, /^\s*(Tạo mới|Thêm mới)\s*$/).click();
     const d = m.popup('Thêm mới bị can');
@@ -41,7 +46,7 @@ export const buoc03: Buoc<VuNguon, TrangThai1A1> = {
     // ── 1. Thông tin pháp nhân ──
     await m.chon(d, 'Đối tượng phạm tội', 'Pháp nhân thương mại');
     await m.oTheoNhan('Tên pháp nhân thương mại', d).waitFor({ timeout: 15_000 });
-    await m.radio(d, 'Bị can đầu vụ', 'Có');
+    await m.radio(d, 'Bị can đầu vụ', lan === 1 ? 'Có' : 'Không');
     const tenPhapNhan = `${ngauNhien(LOAI_CONG_TY)} ${ngauNhien(NGANH)} ${ngauNhien(HO_CONG_TY)} ${soNgauNhien(3)}`;
     await m.nhap(d, 'Tên pháp nhân thương mại', tenPhapNhan);
     const maSoThue = await m.nhap(d, 'Mã số doanh nghiệp', '0' + soNgauNhien(9));
@@ -74,7 +79,7 @@ export const buoc03: Buoc<VuNguon, TrangThai1A1> = {
     await m.choThongBao(/Lưu thành công/);
     await d.waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => undefined);
     await expect(muc.locator('.ant-table-row').filter({ hasText: tenPhapNhan }).first(), 'Pháp nhân chưa vào bảng bị can').toBeVisible({ timeout: 15_000 });
-    return { tenPhapNhan, maSoThue, nguoiDaiDien, dieuLuat };
+    return { dsPhapNhan: [...daCo.slice(0, lan - 1), { ten: tenPhapNhan, maSoThue, nguoiDaiDien, dieuLuat }] };
   },
 };
 

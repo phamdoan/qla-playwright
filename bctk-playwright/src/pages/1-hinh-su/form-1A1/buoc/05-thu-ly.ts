@@ -9,7 +9,7 @@ import { chonChac, dauTrangVuAn, moVuAn } from './chung';
  *
  *  1. Mở chi tiết vụ án → tab "Thụ lý" → nút "Thụ lý" → popup "Cấp số thụ lý vụ án"
  *  2. Thủ tục áp dụng "Thủ tục thông thường" · Số thụ lý: bấm "Dùng số" · Ngày thụ lý = hôm nay
- *     · Viện kiểm sát theo cấu hình (form-1A1.xlsx) — các ô khác hệ thống tự điền, giữ nguyên
+ *     · Viện kiểm sát theo cấu hình (data-form-1A1.xlsx) — các ô khác hệ thống tự điền, giữ nguyên
  *  3. "Xác nhận thụ lý" → "Lưu thụ lý thành công"
  */
 export const buoc05: Buoc<VuNguon, TrangThai1A1> = {

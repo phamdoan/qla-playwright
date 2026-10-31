@@ -8,11 +8,11 @@ import { TrangThaiChung } from '../../../utils/trang-thai';
 import { VuAnLuong } from '../../common/buoc';
 
 /**
- * Phần dùng chung của luồng 1B: cấu hình (form-1B.xlsx), danh sách vụ án mới (data-1B.xlsx),
+ * Phần dùng chung của luồng 1B: cấu hình (data-form-1B.xlsx), danh sách vụ án mới (data-1B.xlsx),
  * kiểu trạng thái các bước để lại cho nhau. Các bước nằm ở ./buoc/, ghép thành luồng ở create-case-1B.page.ts.
  */
 
-/** Cấu hình luồng 1B (src/data/1-hinh-su/form-1B.xlsx) */
+/** Cấu hình luồng 1B (src/data/1-hinh-su/data-form-1B.xlsx) */
 export interface CauHinh1B {
   linhVuc: LinhVuc;
   bieuMau: string;
@@ -59,12 +59,12 @@ export interface TrangThai1B extends TrangThaiChung {
 const ROOT = path.resolve(__dirname, '../../../..');
 
 /**
- * Đọc src/data/1-hinh-su/form-1B.xlsx:
+ * Đọc src/data/1-hinh-su/data-form-1B.xlsx:
  *   · sheet "Cấu hình": Khóa | Giá trị | Ghi chú
  *   · sheet "Tài khoản bổ sung": Tòa án | Tài khoản | Tên (người ký chưa có trong Taikhoan.xlsx)
  */
 export function docCauHinh1B(): CauHinh1B {
-  const file = path.join(DATA_DIR, '1-hinh-su', 'form-1B.xlsx');
+  const file = path.join(DATA_DIR, '1-hinh-su', 'data-form-1B.xlsx');
   const ch = docKhoaGiaTriSync(file, 'Cấu hình');
   const bat = (khoa: string) => {
     if (!ch[khoa]) throw new Error(`${file}: sheet "Cấu hình" thiếu giá trị "${khoa}"`);

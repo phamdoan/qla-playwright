@@ -20,7 +20,8 @@ export const buoc11: Buoc<VuAnNguon, TrangThai1B> = {
   ten: 'Tòa phúc thẩm · Tạo bản án phúc thẩm, lưu kết quả',
   huongDan: '5.5',
   chay: async ({ vuAn, moPhien, tkToa, can, tt }) => {
-    const phien = await moPhien(tkToa(can('toaPhucTham', 4)));
+    const tk = tkToa(can('toaPhucTham', 4));
+    const phien = await moPhien(tk);
     await phien.vao(can('urlVuAn', 5));
     const m = new ManHinh(phien.page);
     await m.moTab('xet-xu');
@@ -44,6 +45,7 @@ export const buoc11: Buoc<VuAnNguon, TrangThai1B> = {
     await luuDongKetQua(
       cauHinh1B.linhVuc,
       cauHinh1B.bieuMau,
+      tk,
       ['Luồng', 'Mã vụ án sơ thẩm', 'Mã vụ án phúc thẩm', 'Số thụ lý PT', 'Ngày thụ lý PT', 'Tên vụ án', 'Tòa phúc thẩm', 'Chủ tọa', 'Ngày xét xử'],
       [vuAn.luong, vuAn.maVuAn, can('maVuAnPhucTham', 6), tt.soThuLy ?? '', tt.ngayThuLy ?? '', can('tenVuAn', 1), can('toaPhucTham', 4), tt.chuToa ?? '', ngayXetXu],
     );

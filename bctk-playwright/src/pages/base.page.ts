@@ -58,7 +58,16 @@ export abstract class BasePage {
    */
   async moMenu(...duong: string[]) {
     const link = this.page.locator(`.sb-book a.nav-item[title="${duong.join(' › ')}"]`).first();
-    await link.waitFor({ state: 'attached', timeout: 30_000 });
+    // Ngay sau đăng nhập, sidebar có lúc chỉ nạp nhóm "Hệ thống", "Hỗ trợ" (chưa nạp quyền) và không tự nạp thêm
+    // (1A1 Vụ 05 bước 01, 29/10) → F5 rồi chờ lại
+    for (let lan = 1; ; lan++) {
+      if (await link.waitFor({ state: 'attached', timeout: 20_000 }).then(() => true).catch(() => false)) break;
+      if (lan >= 3) {
+        throw new Error(`Menu không có mục "${duong.join(' › ')}" sau ${lan - 1} lần F5 (tài khoản thiếu quyền hoặc sidebar không nạp đủ) — đang ở ${this.page.url()}`);
+      }
+      await this.page.reload();
+      await this.choTaiXong(2000);
+    }
     for (let vong = 0; vong < 8; vong++) {
       const conDong = await link.evaluate(a => {
         document.querySelectorAll('[data-mo-menu]').forEach(e => e.removeAttribute('data-mo-menu'));
@@ -95,18 +104,38 @@ export abstract class BasePage {
 
   /** Tab chi tiết vụ án theo khóa trong id, vd. 'ket-qua-so-tham', 'phan-cong', 'xet-xu' */
   async moTab(khoa: string) {
-    await this.page.locator(`[role=tab][id$="-tab-${khoa}"]`).first().click();
+    const tab = this.page.locator(`[role=tab][id$="-tab-${khoa}"]`).first();
+    // Tab bị khóa (aria-disabled) = trang chưa tải được dữ liệu (API đơn/vụ án báo lỗi) → F5 một lần rồi chờ lại
+    const moDuoc = await expect(tab).not.toHaveAttribute('aria-disabled', 'true', { timeout: 15_000 }).then(() => true).catch(() => false);
+    if (!moDuoc) {
+      await this.page.reload();
+      await this.choTaiXong(3000);
+      await expect(tab, `Tab "${khoa}" vẫn bị khóa sau F5 — máy chủ không trả được dữ liệu của trang`).not.toHaveAttribute('aria-disabled', 'true', { timeout: 30_000 });
+    }
+    // Có lúc tab đã chuyển nhưng cú bấm vẫn treo chờ (trang đang tải nặng) → tab đã chọn thì coi như xong
+    await tab.click().catch(async e => {
+      if ((await tab.getAttribute('aria-selected')) !== 'true') throw e;
+    });
     await this.choTaiXong(1500);
   }
 
   /** Mở (nếu đang đóng) một mục thu gọn có tiêu đề bắt đầu bằng `tieuDe`, trả về khối của mục */
   async moMuc(tieuDe: string): Promise<Locator> {
+    // Chỉ lấy mục đang hiện: tab khác đã vẽ (ẩn) có thể có mục cùng tên nằm trước trong DOM → .first() trúng mục ẩn, chờ mãi
     const muc = this.page
-      .locator('.ant-collapse-item')
+      .locator('.ant-collapse-item:visible')
       .filter({ has: this.page.locator('.ant-collapse-header', { hasText: new RegExp(`^\\s*${thoatRegex(tieuDe)}`) }) })
       .first();
     const dau = muc.locator('.ant-collapse-header').first();
-    await dau.waitFor({ timeout: 30_000 });
+    // Khung trang đã vẽ mà các mục của tab chưa hiện (1A1 Vụ 01 bước 04, 29/10) → F5, mở lại đúng tab đang chọn rồi chờ lại
+    if (!(await dau.waitFor({ timeout: 30_000 }).then(() => true).catch(() => false))) {
+      const idTab = await this.page.locator('[role=tab][aria-selected=true]').first().getAttribute('id', { timeout: 5_000 }).catch(() => null);
+      await this.page.reload();
+      await this.choTaiXong(3000);
+      const khoa = idTab?.match(/-tab-(.+)$/)?.[1];
+      if (khoa) await this.moTab(khoa);
+      await dau.waitFor({ timeout: 30_000 });
+    }
     if ((await dau.getAttribute('aria-expanded')) !== 'true') await dau.click();
     await this.choTaiXong(800);
     return muc;
@@ -157,8 +186,47 @@ export abstract class BasePage {
   /** Chờ thông báo (antd message/notification) khớp `noiDung`, trả về nội dung */
   async choThongBao(noiDung: RegExp, timeout = 30_000): Promise<string> {
     const tb = this.page.locator('.ant-message-notice, .ant-notification-notice').filter({ hasText: noiDung }).first();
-    await expect(tb, `Không thấy thông báo ${noiDung}`).toBeVisible({ timeout });
-    return (await tb.innerText()).trim();
+    // Máy chủ từ chối thì hiện thông báo lỗi (đỏ) thay vì thông báo thành công → dừng ngay, báo đúng câu lỗi thay vì chờ hết giờ
+    const loi = this.page
+      .locator('.ant-message-notice:has(.ant-message-error), .ant-notification-notice:has(.ant-notification-notice-icon-error)')
+      .first();
+    await expect(tb.or(loi).first(), `Không thấy thông báo ${noiDung}`).toBeVisible({ timeout });
+    if (!(await tb.isVisible()) && (await loi.isVisible())) {
+      const cauLoi = (await loi.innerText().catch(() => '')).trim();
+      // "Vui lòng kiểm tra lại dữ liệu nhập!" không nói ô nào sai → kèm lỗi của từng ô đang hiện (1A1 Vụ 02 bước 03, 29/10)
+      const oLoi = await this.loiCacO();
+      throw new Error(`Hệ thống báo lỗi "${cauLoi}" (đang chờ thông báo ${noiDung})${oLoi.length ? ` — ô lỗi: ${oLoi.join(' | ')}` : ''}`);
+    }
+    // Thông báo đã thấy nhưng có khi tắt ngay trước lúc đọc chữ → không chờ, trả về mẫu đang chờ
+    return ((await tb.innerText({ timeout: 2_000 }).catch(() => null)) ?? noiDung.source).trim();
+  }
+
+  /**
+   * Các ô đang báo lỗi trên form (dạng "Nhãn: câu lỗi"): ô antd (.ant-form-item-has-error) và ô form tự viết
+   * (chữ đỏ có class chứa "error" ngay dưới ô, vd. "Vui lòng chọn ngày sinh"). Tối đa 8 ô.
+   */
+  async loiCacO(): Promise<string[]> {
+    const ds = await this.page
+      .evaluate(() => {
+        const hien = (e: Element) => !!(e as HTMLElement).offsetParent;
+        const gon = (s: string | null | undefined) => (s ?? '').replace(/\s+/g, ' ').trim();
+        const ra: string[] = [];
+        document.querySelectorAll('.ant-form-item-has-error').forEach(item => {
+          if (!hien(item)) return;
+          const nhan = gon(item.querySelector('.ant-form-item-label')?.textContent);
+          const cau = gon(item.querySelector('.ant-form-item-explain')?.textContent);
+          ra.push(nhan ? `${nhan}: ${cau}` : cau);
+        });
+        document.querySelectorAll('[class*="error"]:not(.ant-form-item-explain-error):not([class*="ant-form-item"])').forEach(e => {
+          const cau = gon(e.textContent);
+          if (!hien(e) || !cau || cau.length > 80 || e.children.length > 1) return;
+          const nhan = gon(e.parentElement?.querySelector('label')?.textContent);
+          ra.push(nhan ? `${nhan}: ${cau}` : cau);
+        });
+        return ra;
+      })
+      .catch(() => [] as string[]);
+    return [...new Set(ds.filter(Boolean))].slice(0, 8);
   }
 
   /**
@@ -171,8 +239,14 @@ export abstract class BasePage {
     for (let lan = 0; lan < 5; lan++) {
       const co = await hoi.waitFor({ state: 'visible', timeout: lan === 0 ? 8_000 : 3_000 }).then(() => true).catch(() => false);
       if (!co) break;
-      daHoi.push((await hoi.innerText()).replace(/\s+/g, ' ').trim());
-      await hoi.locator('.ant-btn-primary').last().click();
+      // Hộp vừa thấy đã đóng (hiệu ứng đóng của hộp trước) → đọc chữ không chờ lâu, mất thì xét lại vòng sau
+      const chu = await hoi.innerText({ timeout: 2_000 }).catch(() => null);
+      if (chu === null) continue;
+      daHoi.push(chu.replace(/\s+/g, ' ').trim());
+      // Hộp đang chạy hiệu ứng (nhiều hộp chồng nhau) → nút "không ổn định", bấm thường hết giờ → bấm cưỡng bức
+      const dongY = hoi.locator('.ant-btn-primary').last();
+      // Hộp vừa bấm "Đồng ý" đang chạy hiệu ứng đóng vẫn khớp :visible → bấm lại không được rồi hộp biến mất → bỏ qua, không báo lỗi
+      await dongY.click({ timeout: 10_000 }).catch(() => dongY.click({ force: true, timeout: 5_000 }).catch(() => undefined));
       await this.page.waitForTimeout(1000);
     }
     return daHoi;
@@ -190,10 +264,16 @@ export abstract class BasePage {
     const input = item.locator('input.ant-select-selection-search-input, input[aria-controls]').first();
     await item.locator('.ant-select-selector').first().click();
     const listId = await input.getAttribute('aria-controls');
-    const dd = listId
-      ? this.page.locator('.ant-select-dropdown').filter({ has: this.page.locator(`[id="${listId}"]`) })
-      : this.page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden)').last();
-    await dd.waitFor({ state: 'visible', timeout: 15_000 });
+    // Chỉ lấy dropdown THẬT SỰ hiện: 2 ô trùng id (10I tab Yêu cầu: "Người / Cơ quan bị kiện" và "Người bị kiện" cùng id idNguoiBiKien)
+    // → dropdown cũ của ô trước còn trong DOM, không có class -hidden mà không hiện; .last() khớp nhầm nó (10I Đơn 01, 30/10)
+    const dangMo = this.page.locator('.ant-select-dropdown:not(.ant-select-dropdown-hidden)').filter({ visible: true });
+    // Form cũ (vd. "Thêm lịch xét xử" mở lần trước) còn nằm ẩn trong DOM với cùng id danh sách → chỉ lấy dropdown đang mở
+    // (Đơn 04 bước 10: dropdown "Tính chất phiên tòa" đã mở mà vẫn chờ hết giờ vì khớp nhầm bản ẩn)
+    let dd = listId ? dangMo.filter({ has: this.page.locator(`[id="${listId}"]`) }).last() : dangMo.last();
+    if (!(await dd.waitFor({ state: 'visible', timeout: 8_000 }).then(() => true).catch(() => false))) {
+      dd = dangMo.last();
+      await dd.waitFor({ state: 'visible', timeout: 7_000 });
+    }
     await dd.locator('.ant-select-item-option').first().waitFor({ timeout: 15_000 });
     return { dd, input };
   }
@@ -210,8 +290,11 @@ export abstract class BasePage {
     const ngauNhien = giaTri === undefined;
     if (ngauNhien) {
       // Ngẫu nhiên: lấy TÊN một mục đang hiện rồi bấm đúng mục đó; cuối hàm đọc lại ô để chắc đã nhận
+      // Danh mục tải chậm → chờ có mục rồi mới lấy (danh sách rỗng thì giaTri = undefined)
+      await cacMuc.first().waitFor({ timeout: 15_000 }).catch(() => undefined);
       await this.page.waitForTimeout(500);
       const ten = (await cacMuc.allInnerTexts()).map(s => s.replace(/\s+/g, ' ').trim()).filter(Boolean);
+      if (!ten.length) throw new Error('Ô chọn không có mục nào để chọn ngẫu nhiên');
       giaTri = ten[Math.floor(Math.random() * ten.length)];
       muc = cacMuc.filter({ hasText: dungChu(giaTri) }).first();
     } else if (giaTri instanceof RegExp) {

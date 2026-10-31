@@ -1,6 +1,9 @@
-import { Locator, expect } from '@playwright/test';
+import { Frame, Locator, Page, expect } from '@playwright/test';
 import { ManHinh, dungChu } from '../../../base.page';
 import { PhienDangNhap } from '../../../common/login.page';
+import { TrangThai1A1, cauHinh1A1, dsBaoChua, dsPhapNhan } from '../cau-hinh-1A1';
+import { luuDongKetQua } from '../../../../utils/file-helper';
+import { TaiKhoan } from '../../../../utils/tai-khoan';
 
 /**
  * Thao tác màn hình DÙNG CHUNG cho nhiều bước của luồng 1A1.
@@ -16,12 +19,11 @@ export const ngaySinh = () =>
 
 /**
  * [Bước 03–07] Mở chi tiết vụ án theo link (bước 02 để lại) và chờ trang vẽ xong.
- * Đi bằng link (goto) chứ không F5: tải lại trang chi tiết đôi khi nhảy sang trang 404.
+ * Trang trống / 404 / bị đẩy sang trang khác → mở Dashboard rồi vào lại link (PhienDangNhap.vaoCho).
  */
 export async function moVuAn(phien: PhienDangNhap, urlVuAn: string): Promise<ManHinh> {
-  await phien.vao(urlVuAn);
   const m = new ManHinh(phien.page);
-  await m.page.locator('[role=tab][id$="-tab-thu-ly"]').waitFor({ timeout: 60_000 });
+  await phien.vaoCho(urlVuAn, m.page.locator('[role=tab][id$="-tab-thu-ly"]'));
   await m.choTaiXong(1500);
   return m;
 }
@@ -32,8 +34,32 @@ export async function dauTrangVuAn(m: ManHinh): Promise<string> {
 }
 
 /**
+ * Làm `hanhDong` (vd. bấm nút chuyển trang) rồi chờ trang tới URL khớp `mau`; trả về URL đó, quá `timeout` thì null.
+ * Nghe cả các lần chuyển trang thoáng qua: app có lúc mở đúng trang rồi đẩy tiếp sang 404 (1A1 Vụ 02 bước 02, 29/10)
+ * → vẫn lấy được URL (có id) để vào lại bằng PhienDangNhap.vaoCho.
+ */
+export async function batUrl(page: Page, mau: RegExp, hanhDong: () => Promise<unknown>, timeout = 60_000): Promise<string | null> {
+  let thay: string | null = null;
+  const nghe = (f: Frame) => {
+    if (!thay && f === page.mainFrame() && mau.test(f.url())) thay = f.url();
+  };
+  page.on('framenavigated', nghe);
+  try {
+    await hanhDong();
+    const het = Date.now() + timeout;
+    // Đã rơi vào 404 mà chưa từng qua URL đích thì thôi chờ (app không tự quay lại)
+    while (!thay && Date.now() < het && !/exception\/404/.test(page.url())) await page.waitForTimeout(500);
+    return thay;
+  } finally {
+    page.off('framenavigated', nghe);
+  }
+}
+
+/**
  * Ô "Thêm người tham gia tố tụng" là form tự viết (không phải form antd): nhãn là thẻ <label>,
- * ô là input/select thường. Lấy ô `chon` nằm cùng khối với nhãn bắt đầu bằng `nhan`.
+ * ô là input/select thường. Lấy ô `chon` nằm cùng khối với nhãn bắt đầu bằng `nhan`
+ * (khối sâu nhất chứa cả nhãn lẫn một ô `chon`). `chon` phải khớp được ô của CHÍNH trường đó: lọc theo placeholder
+ * mà trường đổi placeholder thì khối khớp là cả hàng → lấy nhầm ô của trường bên cạnh (Ngày sinh → ô Ngày cấp, 29/10).
  */
 export function oNtg(d: Locator, nhan: string | RegExp, chon: string): Locator {
   const mau = typeof nhan === 'string' ? new RegExp(`^\\s*${nhan.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`) : nhan;
@@ -41,13 +67,20 @@ export function oNtg(d: Locator, nhan: string | RegExp, chon: string): Locator {
 }
 
 /**
- * Ô ngày của form người tham gia tố tụng: placeholder ghi "mm/dd/yyyy" nhưng thực tế chỉ nhận dd/mm/yyyy
- * (gõ mm/dd thì Enter xong ô trống) → gõ dd/mm/yyyy rồi Enter, kiểm lại giá trị.
+ * Ô ngày của form người tham gia tố tụng: placeholder mỗi ô một kiểu ("mm/dd/yyyy", "dd/mm/yyyy hoặc yyyy")
+ * nhưng đều nhận dd/mm/yyyy (gõ mm/dd thì Enter xong ô trống) → gõ dd/mm/yyyy rồi Enter, kiểm lại giá trị.
+ * Ô có mặt nạ nhập bỏ chữ khi fill cả chuỗi → xóa, gõ từng phím rồi Tab.
  */
 export async function ngayNtg(o: Locator, ddmmyyyy: string) {
   await o.click();
   await o.fill(ddmmyyyy);
   await o.press('Enter');
+  await o.page().waitForTimeout(300);
+  if ((await o.inputValue()) !== ddmmyyyy) {
+    await o.fill('');
+    await o.pressSequentially(ddmmyyyy, { delay: 50 });
+    await o.press('Tab');
+  }
   await expect(o, `Ô ngày không nhận ${ddmmyyyy}`).toHaveValue(ddmmyyyy, { timeout: 5_000 });
 }
 
@@ -108,4 +141,27 @@ export async function phanCongVaKy(m: ManHinh, menu: string, vaiTro: string, loa
   await m.nut(bm, 'Đóng').click();
   await bm.waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => undefined);
   return { soQD, nguoi };
+}
+
+/**
+ * [Bước 07, 09] Ghi kết quả vụ vào output/1-hinh-su/output-ma-vu-an-form-1A1.xlsx — một sheet, MỖI VỤ MỘT DÒNG (khóa "Mã vụ án"):
+ * bước 07 ghi dòng (cột bản án để trống), bước 09 cập nhật chính dòng đó. Tòa án, tài khoản tạo luôn ở cuối.
+ * Nhiều pháp nhân / người bào chữa nối bằng " ; ".
+ */
+export async function luuKetQua1A1(tk: TaiKhoan, tt: TrangThai1A1) {
+  const pn = dsPhapNhan(tt);
+  const noi = (ds: string[]) => ds.join(' ; ');
+  await luuDongKetQua(
+    cauHinh1A1.linhVuc,
+    cauHinh1A1.bieuMau,
+    tk,
+    ['Mã vụ án', 'Mã hồ sơ', 'Pháp nhân thương mại', 'Mã số thuế', 'Người đại diện', 'Tội danh', 'Điều luật áp dụng', 'Người bào chữa',
+      'Số thụ lý', 'Ngày thụ lý', 'Thẩm phán chủ tọa', 'Số QĐ phân công TP', 'Hội thẩm nhân dân', 'Số QĐ phân công HT',
+      'Số QĐ đưa vụ án ra xét xử', 'Ngày xét xử', 'Số bản án', 'Ngày bản án', 'Link vụ án'],
+    [tt.maVuAnHeThong ?? '', tt.maHoSo ?? '', noi(pn.map(p => p.ten)), noi(pn.map(p => p.maSoThue)), noi(pn.map(p => p.nguoiDaiDien)),
+      tt.toiDanh ?? '', noi(pn.map(p => p.dieuLuat)), noi(dsBaoChua(tt).map(b => b.ten)),
+      tt.soThuLy ?? '', tt.ngayThuLy ?? '', tt.thamPhanChuToa ?? '', tt.soQDThamPhan ?? '', tt.hoiTham ?? '', tt.soQDHoiTham ?? '',
+      tt.soQDXetXu ?? '', tt.ngayXetXu ?? '', tt.soBanAn ?? '', tt.ngayBanAn ?? '', tt.urlVuAn ?? ''],
+    'Mã vụ án',
+  );
 }
