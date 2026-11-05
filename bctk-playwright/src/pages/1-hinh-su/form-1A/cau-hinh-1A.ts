@@ -18,8 +18,6 @@ export interface CauHinh1A {
   tenBieuMau: string;
   /** Tòa tạo vụ án — chọn tài khoản theo cột "Tòa án" của Taikhoan.xlsx */
   toaAn: string;
-  /** Viện kiểm sát chọn khi thụ lý */
-  vienKiemSat: string;
   /** Số vụ án tạo mỗi lần chạy (BCTK_SO_DON_1A trong .env.staging ghi đè; trống thì BCTK_SO_DON chung) */
   soVu: number;
   /** Số bị can cá nhân thêm vào mỗi vụ ở bước 03 (BCTK_SO_BI_CAN_1A trong .env.staging ghi đè) */
@@ -69,6 +67,8 @@ export interface TrangThai1A extends TrangThaiChung {
   dsBaoChua?: NguoiBaoChua[];
   soThuLy?: string;
   ngayThuLy?: string;
+  /** Viện kiểm sát đã chọn khi thụ lý (bước 05) — theo tòa của tài khoản */
+  vienKiemSat?: string;
   thamPhanChuToa?: string;
   soQDThamPhan?: string;
   hoiTham?: string;
@@ -93,7 +93,6 @@ export function docCauHinh1A(): CauHinh1A {
     bieuMau: bat('Biểu mẫu'),
     tenBieuMau: bat('Tên biểu mẫu'),
     toaAn: bat('Tòa án'),
-    vienKiemSat: bat('Viện kiểm sát'),
     soVu: Math.max(1, Number(process.env.BCTK_SO_DON_1A) || Number(process.env.BCTK_SO_DON) || Number(ch['Số vụ tạo mỗi lần chạy']) || 1),
     soBiCan: Math.max(1, Number(process.env.BCTK_SO_BI_CAN_1A) || Number(ch['Số bị can mỗi vụ']) || 1),
   };

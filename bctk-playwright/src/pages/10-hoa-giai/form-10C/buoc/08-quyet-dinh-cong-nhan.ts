@@ -6,6 +6,7 @@ import { ManHinh } from '../../../base.page';
 import { hoaGiai, ketThucKhac, lapBieuMauKyLogic, moChiTietDon, oHien, soVanBan } from './chung';
 import { DATA_DIR, luuDongKetQua } from '../../../../utils/file-helper';
 import { ngay } from '../../../../utils/fake-data';
+import { diaBanCuaToa, vksCuaToa } from '../../../../utils/tai-khoan';
 
 /**
  * BƯỚC 08 · Quyết định công nhận kết quả hòa giải thành — 01-QĐHG (hướng dẫn b7), lưu kết quả
@@ -23,18 +24,19 @@ const TEN_QD_CN = /Quyết định công nhận (?:kết quả h(?:òa|oà) gi�
 const TEP_QD = path.join(DATA_DIR, 'files', 'tai-lieu-mau.pdf');
 
 // Ô bắt buộc riêng của mẫu 03-QĐHG (ô trống mới điền; Người yêu cầu, Các bên tham gia… hệ thống điền sẵn)
-const CHU_MAU_03: [RegExp, string][] = [
-  [/Nơi ban hành quyết định/, 'Hà Nội'],
+// Nơi ban hành, Viện kiểm sát, Cơ quan thi hành án theo tòa của tài khoản (không ghi cứng)
+const chuMau03 = (toaAn: string): [RegExp, string][] => [
+  [/Nơi ban hành quyết định/, diaBanCuaToa(toaAn)],
   [/Cơ quan đã thực hiện đăng ký kết hôn/, 'Ủy ban nhân dân phường Hoàn Kiếm, thành phố Hà Nội'],
-  [/Viện kiểm sát/, 'Viện kiểm sát nhân dân khu vực 9 - Hà Nội'],
-  [/Cơ quan thi hành án/, 'Thi hành án dân sự thành phố Hà Nội'],
+  [/Viện kiểm sát/, vksCuaToa(toaAn)],
+  [/Cơ quan thi hành án/, `Thi hành án dân sự ${diaBanCuaToa(toaAn)}`],
   [/Quan hệ hôn nhân/, 'Công nhận sự thuận tình ly hôn giữa các đương sự.'],
   [/con chung/, 'Các bên thỏa thuận người mẹ trực tiếp nuôi con chung, người cha cấp dưỡng hằng tháng.'],
   [/tài sản chung/, 'Các bên tự thỏa thuận phân chia tài sản chung, không yêu cầu Tòa án giải quyết.'],
   [/Nghĩa vụ chung/, 'Không có.'],
 ];
 
-async function dienMau03(m: ManHinh, bm: Locator) {
+async function dienMau03(m: ManHinh, bm: Locator, toaAn: string) {
   // Căn cứ: bắt buộc ≥ 1 điều của Bộ luật HNGĐ ("Vui lòng thêm ít nhất một căn cứ bộ luật hôn nhân gia đình").
   // "+ Thêm điều luật" → chọn Bộ luật, Điều 55 "Thuận tình ly hôn" → bấm nút lưu (đĩa mềm) ở cột Thao tác của dòng
   const nutThemDL = m.nut(bm, /Thêm điều luật/);
@@ -59,7 +61,7 @@ async function dienMau03(m: ManHinh, bm: Locator) {
     await oNgayDon.fill(ngay(-7));
     await oNgayDon.press('Enter');
   }
-  for (const [nhan, chu] of CHU_MAU_03) {
+  for (const [nhan, chu] of chuMau03(toaAn)) {
     const o = oHien(m, bm, nhan).locator('input:not([type=file]), textarea').first();
     if ((await o.count()) && !(await o.inputValue())) await o.fill(chu);
   }
@@ -108,7 +110,7 @@ export const buoc08: Buoc<DonNguon, TrangThai10C> = {
         }
         const noiDung = oHien(m, bm, hoaGiai('Nội dung hòa giải')).locator('textarea').first();
         if (await noiDung.count()) await noiDung.fill('Các bên tự nguyện thỏa thuận được với nhau về việc giải quyết toàn bộ tranh chấp.');
-        await dienMau03(m, bm);
+        await dienMau03(m, bm, vuAn.toaAn);
       });
       // Ô "Số quyết định" chỉ có phần số; bảng văn bản có số đầy đủ (…/2026/QDCNHGT)
       soQDCongNhan = (await soVanBan(m, TEN_QD_CN)) ?? soQDCongNhan;

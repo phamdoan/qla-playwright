@@ -14,6 +14,13 @@ export const FILE_TAI_KHOAN = path.join(DATA_DIR, 'Tai-khoan', 'Taikhoan.xlsx');
 /** So khớp tên tòa / tên người không phân biệt hoa thường và khoảng trắng */
 export const chuanHoa = (s = '') => s.normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim();
 
+/** Viện kiểm sát cùng địa bàn với tòa: "Tòa án nhân dân khu vực 9 - Hà Nội" → "Viện kiểm sát nhân dân khu vực 9 - Hà Nội" */
+export const vksCuaToa = (toaAn: string) => toaAn.trim().replace(/^Tòa án nhân dân/i, 'Viện kiểm sát nhân dân');
+
+/** Địa bàn (tỉnh/thành) của tòa: "Tòa án nhân dân khu vực 9 - Hà Nội" → "Hà Nội"; "Tòa án nhân dân thành phố Hà Nội" → "thành phố Hà Nội" */
+export const diaBanCuaToa = (toaAn: string) =>
+  toaAn.includes(' - ') ? toaAn.split(' - ').pop()!.trim() : toaAn.trim().replace(/^Tòa án nhân dân\s*/i, '');
+
 /** Như `docTaiKhoan` nhưng đồng bộ (dùng khi khai báo test lúc nạp file spec) */
 export function docTaiKhoanSync(file = FILE_TAI_KHOAN): TaiKhoan[] {
   return docBangExcelSync(file)

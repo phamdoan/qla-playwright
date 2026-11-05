@@ -1,9 +1,9 @@
 import { Locator, expect, test } from '@playwright/test';
 import { Buoc } from '../../../common/buoc';
 import { ManHinh, chuaChu, dungChu } from '../../../base.page';
-import { TrangThai1A1, VuNguon, cauHinh1A1 } from '../cau-hinh-1A1';
+import { TrangThai1A1, VuNguon } from '../cau-hinh-1A1';
 import { hoTen } from '../../../../utils/fake-data';
-import { TaiKhoan } from '../../../../utils/tai-khoan';
+import { TaiKhoan, vksCuaToa } from '../../../../utils/tai-khoan';
 import { luuKetQua1A1, moVuAn, ngauNhien } from './chung';
 
 const NHAN_THAN = ['Nhân thân tốt', 'Chưa có tiền án, tiền sự', 'Có nhân thân tốt, chấp hành tốt chính sách pháp luật tại địa phương'];
@@ -101,7 +101,7 @@ async function deNghiHinhPhat(m: ManHinh, dongBiCao: Locator) {
  * nhận định, quyết định lấy theo ý kiến VKS, nơi nhận → "Lưu" (tạo dự thảo).
  * Lần lưu tạo dự thảo này hệ thống BỎ người ký, số và ngày bản án → điền ở `soNgayVaKy` sau đó.
  */
-async function dienBanAnMoi(m: ManHinh, toiDanh: string) {
+async function dienBanAnMoi(m: ManHinh, toiDanh: string, vks: string) {
   const d = m.popup('Thêm bản án');
   await d.waitFor({ timeout: 30_000 });
   await m.choTaiXong(1500);
@@ -136,7 +136,7 @@ async function dienBanAnMoi(m: ManHinh, toiDanh: string) {
   ).not.toContainText('Chưa có hình phạt', { timeout: 10_000 });
 
   const noiNhan = d.getByPlaceholder('Nơi nhận 1');
-  if (!(await noiNhan.inputValue())) await noiNhan.fill(cauHinh1A1.vienKiemSat);
+  if (!(await noiNhan.inputValue())) await noiNhan.fill(vks);
 
   await m.nut(d, 'Lưu').click();
   await m.choThongBao(/Đã lưu bản án/);
@@ -219,7 +219,7 @@ export const buoc09: Buoc<VuNguon, TrangThai1A1> = {
       } else {
         await expect(nutTao, 'Nút "Tạo bản án" đang khóa — cần quyết định đưa vụ án ra xét xử (bước 08)').toBeEnabled({ timeout: 15_000 });
         await nutTao.click();
-        await dienBanAnMoi(m, tt.toiDanh ?? '');
+        await dienBanAnMoi(m, tt.toiDanh ?? '', tt.vienKiemSat ?? vksCuaToa(vuAn.toaAn));
       }
       const duThao = m.popup(/Bản án \(dự thảo/);
       await duThao.waitFor({ timeout: 30_000 });

@@ -3,7 +3,7 @@ import { ManHinh, dungChu } from '../../../base.page';
 import { PhienDangNhap } from '../../../common/login.page';
 import { TrangThai1A1, cauHinh1A1, dsBaoChua, dsPhapNhan } from '../cau-hinh-1A1';
 import { luuDongKetQua } from '../../../../utils/file-helper';
-import { TaiKhoan } from '../../../../utils/tai-khoan';
+import { TaiKhoan, chuanHoa, vksCuaToa } from '../../../../utils/tai-khoan';
 
 /**
  * Thao tác màn hình DÙNG CHUNG cho nhiều bước của luồng 1A1.
@@ -95,6 +95,22 @@ export async function chonChac(m: ManHinh, item: Locator, giaTri: string) {
   await item.locator('.ant-select-selector').first().click();
   await m.page.locator(`.ant-select-dropdown:not(.ant-select-dropdown-hidden) .ant-select-item-option[title="${giaTri}"]`).first().click();
   await expect(daChon.first(), `Chưa chọn được "${giaTri}"`).toContainText(giaTri, { timeout: 5_000 });
+}
+
+/**
+ * Ô "Viện kiểm sát" theo tòa của tài khoản — không ghi cứng tên:
+ * ưu tiên VKS cùng địa bàn ("Tòa án nhân dân X" → "Viện kiểm sát nhân dân X"); danh sách không có thì lấy mục đầu tiên
+ * (danh sách chỉ gồm các VKS tòa đang đăng nhập được chọn, vd. tòa thành phố Hà Nội chỉ có VKSND thành phố Hà Nội).
+ * @returns tên VKS đã chọn
+ */
+export async function chonVienKiemSat(m: ManHinh, item: Locator, toaAn: string): Promise<string> {
+  const muon = chuanHoa(vksCuaToa(toaAn));
+  let ds: string[] = [];
+  for (let i = 0; i < 3 && !ds.length; i++) ds = (await m.cacLuaChonTrong(item)).filter(Boolean);
+  const vks = ds.find(t => chuanHoa(t) === muon) ?? ds.find(t => chuanHoa(t).includes(muon)) ?? ds[0];
+  if (!vks) throw new Error('Ô "Viện kiểm sát" không có mục nào để chọn');
+  await chonChac(m, item, vks);
+  return vks;
 }
 
 /**

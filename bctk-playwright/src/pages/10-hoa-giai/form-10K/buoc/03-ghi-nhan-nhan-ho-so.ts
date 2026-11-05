@@ -28,7 +28,7 @@ export const buoc03: Buoc<Don10K, TrangThai10K> = {
     await dienNgay(oHien(m, bm, /Ngày văn bản\/Ngày nhận/));
     await m.chonTrong(oHien(m, bm, /Phương thức nhận/), /^\s*Trực tiếp\s*$/);
     await m.chonTrong(oHien(m, bm, /Tình trạng hồ sơ/), /^\s*Đủ\s*$/);
-    await oHien(m, bm, /Người bàn giao\/Đơn vị gửi/).locator('input, textarea').first().fill('Tòa án nhân dân khu vực 9 - Hà Nội');
+    await oHien(m, bm, /Người bàn giao\/Đơn vị gửi/).locator('input, textarea').first().fill(vuAn.toaAn);
     await oHien(m, bm, /Ghi chú/).locator('textarea').first().fill('Đã nhận đủ hồ sơ.');
     await dinhKemTep(m, bm);
     await m.nut(bm, 'Lưu').click();

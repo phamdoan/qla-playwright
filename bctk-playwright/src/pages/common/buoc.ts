@@ -2,7 +2,7 @@ import { Browser, test } from '@playwright/test';
 import { PhienDangNhap } from './login.page';
 import { LinhVuc } from '../../utils/file-helper';
 import { TaiKhoan, chuanHoa, taiKhoanCuaToa, taiKhoanTheoTen } from '../../utils/tai-khoan';
-import { TrangThaiChung, docTrangThai, ghiTrangThai, xoaTrangThai } from '../../utils/trang-thai';
+import { TrangThaiChung, catTrangThai, docTrangThai, ghiTrangThai, xoaTrangThai } from '../../utils/trang-thai';
 
 /**
  * Khung chạy một LUỒNG tạo dữ liệu chia thành nhiều BƯỚC — dùng chung cho mọi biểu mẫu.
@@ -84,6 +84,13 @@ export const tenBuoc = (b: Buoc<any, any>) =>
  */
 const phienConMo = new Set<PhienDangNhap>();
 
+/**
+ * Có bỏ qua state cũ không: BCTK_LAM_MOI_<mã> (riêng form) hoặc BCTK_LAM_MOI (chung) = 1.
+ * Để trống / 0 → chạy tiếp từ state cũ (mặc định).
+ */
+const lamMoi = (bieuMau: string) =>
+  /^(1|true|co|có)$/i.test((process.env[`BCTK_LAM_MOI_${bieuMau}`] || process.env.BCTK_LAM_MOI || '').trim());
+
 /** Chạy một bước cho một vụ án — gọi trong test() ở file spec */
 export async function chayBuoc<V extends VuAnLuong, T extends TrangThaiChung>(
   luong: Luong<V, T>,
@@ -99,6 +106,12 @@ export async function chayBuoc<V extends VuAnLuong, T extends TrangThaiChung>(
   const buocCuoi = luong.cacBuoc[luong.cacBuoc.length - 1].so;
   if (viTri === 0 && (tt.buocXong ?? 0) >= buocCuoi) {
     xoaTrangThai(luong.linhVuc, luong.bieuMau, vuAn.maVuAn);
+    tt = {} as T;
+  }
+  // BCTK_LAM_MOI → bỏ qua state cũ (cả vụ đang dở): bước đầu cất state sang state/_cu/ rồi làm lại từ đầu
+  if (viTri === 0 && lamMoi(luong.bieuMau)) {
+    const daCat = catTrangThai(luong.linhVuc, luong.bieuMau, vuAn.maVuAn);
+    if (daCat) test.info().annotations.push({ type: 'Làm mới', description: `State cũ đã cất: ${daCat}` });
     tt = {} as T;
   }
   const truoc = viTri > 0 ? luong.cacBuoc[viTri - 1].so : 0;

@@ -1,15 +1,15 @@
 import { expect } from '@playwright/test';
 import { Buoc } from '../../../common/buoc';
-import { TrangThai1A, VuNguon, cauHinh1A } from '../cau-hinh-1A';
+import { TrangThai1A, VuNguon } from '../cau-hinh-1A';
 import { ngay } from '../../../../utils/fake-data';
-import { chonChac, dauTrangVuAn, moVuAn } from './chung';
+import { chonVienKiemSat, dauTrangVuAn, moVuAn } from './chung';
 
 /**
  * BƯỚC 05 · Thụ lý vụ án (hướng dẫn bước 5)
  *
  *  1. Mở chi tiết vụ án → tab "Thụ lý" → nút "Thụ lý" → popup "Cấp số thụ lý vụ án"
  *  2. Thủ tục áp dụng "Thủ tục thông thường" · Số thụ lý: bấm "Dùng số" · Ngày thụ lý = hôm nay
- *     · Viện kiểm sát theo cấu hình (data-form-1A.xlsx) — các ô khác hệ thống tự điền, giữ nguyên
+ *     · Viện kiểm sát cùng địa bàn với tòa của tài khoản (không có thì mục đầu tiên) — các ô khác hệ thống tự điền, giữ nguyên
  *  3. "Xác nhận thụ lý" → "Lưu thụ lý thành công"
  */
 export const buoc05: Buoc<VuNguon, TrangThai1A> = {
@@ -36,11 +36,11 @@ export const buoc05: Buoc<VuNguon, TrangThai1A> = {
     await expect(oSo, 'Bấm "Dùng số" nhưng ô "Số thụ lý" vẫn trống').not.toHaveValue('', { timeout: 10_000 });
     const soThuLy = await oSo.inputValue();
     const ngayThuLy = await m.ngay(bm, 'Ngày thụ lý', ngay(0));
-    await chonChac(m, m.oTheoNhan('Viện kiểm sát', bm), cauHinh1A.vienKiemSat);
+    const vienKiemSat = await chonVienKiemSat(m, m.oTheoNhan('Viện kiểm sát', bm), vuAn.toaAn);
 
     await m.nut(bm, 'Xác nhận thụ lý').click();
     await m.choThongBao(/Lưu thụ lý thành công/);
     await bm.waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => undefined);
-    return { soThuLy, ngayThuLy };
+    return { soThuLy, ngayThuLy, vienKiemSat };
   },
 };

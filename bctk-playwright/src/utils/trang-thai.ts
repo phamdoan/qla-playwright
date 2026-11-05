@@ -34,6 +34,20 @@ export function xoaTrangThai(linhVuc: LinhVuc, bieuMau: string, maVuAn: string) 
   fs.rmSync(fileTrangThai(linhVuc, bieuMau, maVuAn), { force: true });
 }
 
+/**
+ * Cất trạng thái sang state/_cu/<lĩnh vực>/form-<mã>/<mã vụ án> <lần chạy>.json (không xóa hẳn — cần thì chép về lại).
+ * Trả về đường dẫn file đã cất, hoặc undefined nếu chưa có trạng thái.
+ */
+export function catTrangThai(linhVuc: LinhVuc, bieuMau: string, maVuAn: string) {
+  const file = fileTrangThai(linhVuc, bieuMau, maVuAn);
+  if (!fs.existsSync(file)) return;
+  const lanChay = process.env.BCTK_LAN_CHAY || new Date().toISOString().replace(/[:.]/g, '-');
+  const dich = path.join(ROOT, 'state', '_cu', linhVuc, `form-${bieuMau}`, `${maVuAn} ${lanChay}.json`);
+  fs.mkdirSync(path.dirname(dich), { recursive: true });
+  fs.renameSync(file, dich);
+  return dich;
+}
+
 /** Gộp `thayDoi` vào trạng thái đang có rồi ghi lại */
 export function ghiTrangThai<T extends TrangThaiChung>(linhVuc: LinhVuc, bieuMau: string, maVuAn: string, thayDoi: Partial<T>): T {
   const file = fileTrangThai(linhVuc, bieuMau, maVuAn);
