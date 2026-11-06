@@ -1,7 +1,7 @@
 import { test } from '@playwright/test';
 import { Buoc } from '../../../common/buoc';
 import { TrangThai1A, VuNguon, dsBiCan } from '../cau-hinh-1A';
-import { luuKetQua1A, moVuAn, phanCongVaKy } from './chung';
+import { moVuAn, phanCongVaKy } from './chung';
 
 /**
  * BƯỚC 07 · Phân công Hội thẩm nhân dân (hướng dẫn bước 7), lưu kết quả
@@ -21,7 +21,6 @@ export const buoc07: Buoc<VuNguon, TrangThai1A> = {
     const m = await moVuAn(await moPhien(tk), urlVuAn);
     const { soQD, nguoi } = await phanCongVaKy(m, 'Phân công Hội thẩm', 'Hội thẩm nhân dân', /dự khuyết/);
 
-    await luuKetQua1A(tk, { ...tt, hoiTham: nguoi, soQDHoiTham: soQD });
     test.info().annotations.push({ type: 'Vụ án đã tạo', description: `${tt.maVuAnHeThong} · ${dsBiCan(tt).map(p => p.ten).join(' ; ')} · ${urlVuAn}` });
     return { hoiTham: nguoi, soQDHoiTham: soQD };
   },

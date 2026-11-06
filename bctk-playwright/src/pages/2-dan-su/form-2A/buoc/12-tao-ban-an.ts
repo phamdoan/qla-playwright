@@ -1,8 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { Buoc } from '../../../common/buoc';
-import { DonNguon, TrangThai2A, cauHinh2A } from '../cau-hinh-2A';
+import { DonNguon, TrangThai2A } from '../cau-hinh-2A';
 import { ngay } from '../../../../utils/fake-data';
-import { luuDongKetQua } from '../../../../utils/file-helper';
 import { oChonTheoGoiY } from '../../../5-lao-dong/form-5A/buoc/13-tao-ban-an';
 import { moVuAn, popup } from './chung';
 
@@ -30,6 +29,7 @@ export const buoc12: Buoc<DonNguon, TrangThai2A> = {
 
     const daKy = main.locator('.ant-table-row').filter({ hasText: /52-DS|Bản án/ }).filter({ hasText: /Đã ký|Đã có hiệu lực|Hoàn thành/ });
     let soBanAn = tt.soBanAn ?? '';
+    let ngayBanAn = tt.ngayBanAn ?? '';
     // Ký xong mà lượt trước lỗi trước khi kịp lưu số → đọc từ dòng bản án ("… 23624/2026/DS-ST …")
     if ((await daKy.count()) && !soBanAn) soBanAn = (await daKy.first().innerText()).match(/(\d+)\/\d{4}\/DS-ST/)?.[1] ?? '';
     if (!(await daKy.count())) {
@@ -45,6 +45,7 @@ export const buoc12: Buoc<DonNguon, TrangThai2A> = {
         await oNgay.fill(ngay(0));
         await oNgay.press('Enter');
       }
+      ngayBanAn = await oNgay.inputValue();
       // Ô theo nhãn "Số bản án" là ô ẩn bị khóa — ô nhập thật có placeholder "Nhập số bản án"
       soBanAn = String(10000 + Math.floor(Math.random() * 90000));
       await d.getByPlaceholder('Nhập số bản án').first().fill(soBanAn);
@@ -90,15 +91,7 @@ export const buoc12: Buoc<DonNguon, TrangThai2A> = {
     }
 
     // ── Lưu kết quả (ô đơn này xong; lần chạy sau ô sẽ tạo đơn mới) ──
-    await luuDongKetQua(
-      cauHinh2A.linhVuc,
-      cauHinh2A.bieuMau,
-      tk,
-      ['Mã vụ án', 'Số tiếp nhận', 'Tên đơn', 'Quan hệ pháp luật', 'Người khởi kiện', 'Người bị kiện', 'Thẩm phán xử lý đơn', 'Số TB 26-DS', 'Số TB 29-DS', 'Số biên lai', 'Ngày thụ lý', 'Thẩm phán chủ tọa', 'Số QĐ phân công TP', 'Thư ký', 'Số QĐ phân công TK', 'Hội thẩm nhân dân', 'Số QĐ phân công HT', 'Số QĐ đưa ra xét xử', 'Ngày xét xử', 'Số bản án', 'Link đơn', 'Link vụ án'],
-      [tt.maVuAnHeThong ?? '', tt.soTiepNhan ?? '', tt.tenDon ?? '', tt.quanHePhapLuat ?? '', tt.nguoiKhoiKien ?? '', tt.nguoiBiKien ?? '', tt.thamPhanXuLyDon ?? '', tt.soTB26 ?? '', tt.soTB29 ?? '', tt.soBienLai ?? '', tt.ngayThuLy ?? '', tt.thamPhanChuToa ?? '', tt.soQDThamPhan ?? '', tt.thuKy ?? '', tt.soQDThuKy ?? '', tt.hoiTham ?? '', tt.soQDHoiTham ?? '', tt.soQDXetXu ?? '', tt.ngayXetXu ?? '', soBanAn, tt.urlDon ?? '', urlVuAn],
-      'Mã vụ án',
-    );
     test.info().annotations.push({ type: 'Vụ án đã tạo', description: `${tt.maVuAnHeThong} · bản án số ${soBanAn} · ${urlVuAn}` });
-    return { soBanAn };
+    return { soBanAn, ngayBanAn };
   },
 };

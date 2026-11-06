@@ -1,8 +1,7 @@
 import { Locator, expect, test } from '@playwright/test';
 import { Buoc } from '../../../common/buoc';
 import { ManHinh } from '../../../base.page';
-import { DonNguon, TrangThai6A, cauHinh6A } from '../cau-hinh-6A';
-import { luuDongKetQua } from '../../../../utils/file-helper';
+import { DonNguon, TrangThai6A } from '../cau-hinh-6A';
 import { dungSo, moVuAn, popup } from './chung';
 
 /**
@@ -44,6 +43,7 @@ export const buoc14: Buoc<DonNguon, TrangThai6A> = {
     const ketQua = main.getByText(/Bản án sơ thẩm số\s*\d+/).first();
     await ketQua.or(main.locator('.kqxx-pick-card').first()).or(m.nut(main, 'Tạo bản án')).first().waitFor({ timeout: 30_000 });
     let soBanAn = tt.soBanAn ?? '';
+    let ngayBanAn = tt.ngayBanAn ?? '';
     if (await ketQua.isVisible().catch(() => false)) {
       soBanAn ||= (await ketQua.innerText()).match(/số\s*(\d+)/)?.[1] ?? '';
     } else {
@@ -56,6 +56,7 @@ export const buoc14: Buoc<DonNguon, TrangThai6A> = {
       await m.choTaiXong(1500);
 
       soBanAn = await dungSo(m, d, 'Số bản án');
+      ngayBanAn = (await d.locator('.ant-picker-input input').first().inputValue({ timeout: 3_000 }).catch(() => '')) || ngayBanAn;
       if (tk.ten && !(await m.docGiaTri('Người ký', d)).startsWith(tk.ten)) {
         await m.chonTrong(m.oTheoNhan('Người ký', d), new RegExp(`^\\s*${tk.ten}`));
       }
@@ -104,15 +105,7 @@ export const buoc14: Buoc<DonNguon, TrangThai6A> = {
     }
 
     // ── Lưu kết quả (ô đơn này xong; lần chạy sau ô sẽ tạo đơn mới) ──
-    await luuDongKetQua(
-      cauHinh6A.linhVuc,
-      cauHinh6A.bieuMau,
-      tk,
-      ['Mã vụ án', 'Số tiếp nhận', 'Tên đơn', 'Quan hệ pháp luật', 'Người khởi kiện', 'Người bị kiện', 'Cấp cơ quan bị kiện', 'Thẩm phán xử lý đơn', 'Số TB sửa đổi, bổ sung', 'Số TB 04-HC', 'Số biên lai', 'Ngày thụ lý', 'Thẩm phán chủ tọa', 'Số QĐ phân công TP', 'Thư ký', 'Số QĐ phân công TK', 'Hội thẩm nhân dân', 'Số QĐ phân công HT', 'Số QĐ đưa ra xét xử', 'Ngày xét xử', 'Số bản án', 'Link đơn', 'Link vụ án'],
-      [tt.maVuAnHeThong ?? '', tt.soTiepNhan ?? '', tt.tenDon ?? '', tt.quanHePhapLuat ?? '', tt.nguoiKhoiKien ?? '', tt.nguoiBiKien ?? '', tt.capCoQuanBiKien ?? '', tt.thamPhanXuLyDon ?? '', tt.soTB26 ?? '', tt.soTB29 ?? '', tt.soBienLai ?? '', tt.ngayThuLy ?? '', tt.thamPhanChuToa ?? '', tt.soQDThamPhan ?? '', tt.thuKy ?? '', tt.soQDThuKy ?? '', tt.hoiTham ?? '', tt.soQDHoiTham ?? '', tt.soQDXetXu ?? '', tt.ngayXetXu ?? '', soBanAn, tt.urlDon ?? '', urlVuAn],
-      'Mã vụ án',
-    );
     test.info().annotations.push({ type: 'Vụ án đã tạo', description: `${tt.maVuAnHeThong} · bản án số ${soBanAn} · ${urlVuAn}` });
-    return { soBanAn };
+    return { soBanAn, ngayBanAn };
   },
 };

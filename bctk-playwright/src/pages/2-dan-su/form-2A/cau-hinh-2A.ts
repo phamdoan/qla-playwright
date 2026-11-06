@@ -62,6 +62,7 @@ export interface TrangThai2A extends TrangThaiChung {
   /** Ngày mở phiên tòa (dd/mm/yyyy) */
   ngayXetXu?: string;
   soBanAn?: string;
+  ngayBanAn?: string;
 }
 
 export function docCauHinh2A(): CauHinh2A {

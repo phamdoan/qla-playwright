@@ -4,7 +4,7 @@ Bộ kịch bản Playwright **tự tạo vụ án** trên Hệ thống quản l
 
 Mỗi biểu mẫu là một **luồng** gồm nhiều **bước** (thêm đơn → phân công → thụ lý → … → bản án). Một luồng đăng nhập bằng nhiều tài khoản (thẩm phán, thư ký, lãnh đạo…) và chạy đúng thứ tự nghiệp vụ. Mã vụ án và số bản án tạo ra được ghi vào file Excel ở thư mục `output/`.
 
-> ⚠️ Kịch bản tạo **dữ liệu thật**. Cấu hình đã chặn cứng host production (`e-qlta.toaan.gov.vn`, `qla.toaan.gov.vn`). Chỉ chạy trên STG / dev / UAT.
+> ⚠️ Kịch bản tạo **dữ liệu thật**. Cấu hình đã chặn cứng host production (`qla.toaan.gov.vn`). Chỉ chạy trên STG / dev / UAT.
 
 ---
 

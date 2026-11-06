@@ -1,9 +1,7 @@
 import { Frame, Locator, Page, expect } from '@playwright/test';
 import { ManHinh, dungChu } from '../../../base.page';
 import { PhienDangNhap } from '../../../common/login.page';
-import { TrangThai1A1, cauHinh1A1, dsBaoChua, dsPhapNhan } from '../cau-hinh-1A1';
-import { luuDongKetQua } from '../../../../utils/file-helper';
-import { TaiKhoan, chuanHoa, vksCuaToa } from '../../../../utils/tai-khoan';
+import { chuanHoa, vksCuaToa } from '../../../../utils/tai-khoan';
 
 /**
  * Thao tác màn hình DÙNG CHUNG cho nhiều bước của luồng 1A1.
@@ -157,27 +155,4 @@ export async function phanCongVaKy(m: ManHinh, menu: string, vaiTro: string, loa
   await m.nut(bm, 'Đóng').click();
   await bm.waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => undefined);
   return { soQD, nguoi };
-}
-
-/**
- * [Bước 07, 09] Ghi kết quả vụ vào output/1-hinh-su/output-ma-vu-an-form-1A1.xlsx — một sheet, MỖI VỤ MỘT DÒNG (khóa "Mã vụ án"):
- * bước 07 ghi dòng (cột bản án để trống), bước 09 cập nhật chính dòng đó. Tòa án, tài khoản tạo luôn ở cuối.
- * Nhiều pháp nhân / người bào chữa nối bằng " ; ".
- */
-export async function luuKetQua1A1(tk: TaiKhoan, tt: TrangThai1A1) {
-  const pn = dsPhapNhan(tt);
-  const noi = (ds: string[]) => ds.join(' ; ');
-  await luuDongKetQua(
-    cauHinh1A1.linhVuc,
-    cauHinh1A1.bieuMau,
-    tk,
-    ['Mã vụ án', 'Mã hồ sơ', 'Pháp nhân thương mại', 'Mã số thuế', 'Người đại diện', 'Tội danh', 'Điều luật áp dụng', 'Người bào chữa',
-      'Số thụ lý', 'Ngày thụ lý', 'Thẩm phán chủ tọa', 'Số QĐ phân công TP', 'Hội thẩm nhân dân', 'Số QĐ phân công HT',
-      'Số QĐ đưa vụ án ra xét xử', 'Ngày xét xử', 'Số bản án', 'Ngày bản án', 'Link vụ án'],
-    [tt.maVuAnHeThong ?? '', tt.maHoSo ?? '', noi(pn.map(p => p.ten)), noi(pn.map(p => p.maSoThue)), noi(pn.map(p => p.nguoiDaiDien)),
-      tt.toiDanh ?? '', noi(pn.map(p => p.dieuLuat)), noi(dsBaoChua(tt).map(b => b.ten)),
-      tt.soThuLy ?? '', tt.ngayThuLy ?? '', tt.thamPhanChuToa ?? '', tt.soQDThamPhan ?? '', tt.hoiTham ?? '', tt.soQDHoiTham ?? '',
-      tt.soQDXetXu ?? '', tt.ngayXetXu ?? '', tt.soBanAn ?? '', tt.ngayBanAn ?? '', tt.urlVuAn ?? ''],
-    'Mã vụ án',
-  );
 }

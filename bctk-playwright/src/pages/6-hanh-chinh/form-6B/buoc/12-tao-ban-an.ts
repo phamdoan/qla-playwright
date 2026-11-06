@@ -1,8 +1,7 @@
 import { Locator, expect, test } from '@playwright/test';
 import { Buoc } from '../../../common/buoc';
 import { ManHinh } from '../../../base.page';
-import { BIEU_MAU_6B, LINH_VUC_6B, TrangThai6B, VuAn6B } from '../cau-hinh-6B';
-import { luuDongKetQua } from '../../../../utils/file-helper';
+import { TrangThai6B, VuAn6B } from '../cau-hinh-6B';
 import { chonNeuTrong, dungSo, moVuAn, popup } from './chung';
 import { chonKetQuaBanAn } from './11-bien-ban-nghi-an';
 
@@ -118,18 +117,6 @@ export const buoc12: Buoc<VuAn6B, TrangThai6B> = {
     const ngayBanAnPT = (chu.match(/\d{2}\/\d{2}\/\d{4}/) ?? [ngayXetXu])[0];
 
     const kq = { ...tt, soBanAnPT, ngayBanAnPT };
-    await luuDongKetQua(
-      LINH_VUC_6B,
-      BIEU_MAU_6B,
-      tk,
-      ['Mã vụ án', 'Mã định danh', 'Luồng', 'Tòa án sơ thẩm', 'Số QĐ kháng nghị', 'Người kháng cáo', 'Số thông báo 32-HC',
-        'Mã vụ án phúc thẩm', 'Số thụ lý phúc thẩm', 'Thẩm phán chủ tọa', 'Số QĐ phân công', 'Số QĐ đưa vụ án ra xét xử', 'Ngày xét xử',
-        'Số bản án phúc thẩm', 'Ngày bản án', 'Link vụ án phúc thẩm'],
-      [vuAn.maVuAn, kq.maDinhDanh ?? '', vuAn.luong, vuAn.toaSoTham, kq.soKhangNghi ?? '', kq.nguoiKhangCao ?? '', kq.soThongBao ?? '',
-        kq.maVuAnPT ?? '', kq.soThuLyPT ?? '', kq.chuToa ?? '', kq.soQDPhanCong ?? '', kq.soQDXetXu ?? '', ngayXetXu,
-        soBanAnPT, ngayBanAnPT, urlVuAnPT],
-      'Mã vụ án',
-    );
     test.info().annotations.push({ type: 'Bản án phúc thẩm', description: `${vuAn.maVuAn} → ${kq.maVuAnPT} · ${soBanAnPT} · ${urlVuAnPT}` });
     return { soBanAnPT, ngayBanAnPT };
   },

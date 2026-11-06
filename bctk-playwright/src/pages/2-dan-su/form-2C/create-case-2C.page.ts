@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 import { Buoc, Luong } from '../../common/buoc';
-import { BIEU_MAU_2C, BanAn2C, LINH_VUC_2C, TrangThai2C, docBanAn2C } from './cau-hinh-2C';
+import { BIEU_MAU_2C, BanAn2C, LINH_VUC_2C, TrangThai2C, docBanAn2C, TK_VU_TRUONG } from './cau-hinh-2C';
 import { docTaiKhoanSync } from '../../../utils/tai-khoan';
 import { buoc01 } from './buoc/01-them-ho-so-khang-nghi';
 import { buoc02 } from './buoc/02-phan-cong-tham-phan';
@@ -35,6 +35,7 @@ export const LUONG_2C: Luong<BanAn2C, TrangThai2C> = {
   bieuMau: BIEU_MAU_2C,
   dsVuAn: docBanAn2C(),
   dsTaiKhoan: docTaiKhoanSync(),
+  tkKetQua: TK_VU_TRUONG,
   // Máy chủ báo lỗi / bị đẩy về Trang chủ, đăng nhập giữa bước → chạy lại bước (dùng chung với 2A)
   cacBuoc: [buoc01, buoc02, buoc03, buoc04, buoc05, buoc06, buoc07, buoc08, buoc09].map(b => thuLaiKhiMayChuLoi(choPhepCham(b))),
 };

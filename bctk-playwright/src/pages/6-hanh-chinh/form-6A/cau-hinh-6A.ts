@@ -66,6 +66,7 @@ export interface TrangThai6A extends TrangThaiChung {
   soQDXetXu?: string;
   ngayXetXu?: string;
   soBanAn?: string;
+  ngayBanAn?: string;
 }
 
 export function docCauHinh6A(): CauHinh6A {

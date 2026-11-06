@@ -1,8 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { Buoc } from '../../../common/buoc';
-import { BIEU_MAU_10H, Don10H, KET_QUA_10H, LINH_VUC_10H, TrangThai10H } from '../cau-hinh-10H';
+import { Don10H, KET_QUA_10H, TrangThai10H } from '../cau-hinh-10H';
 import { dinhKemTep, lapVanBanKyLogic, moHoSo, nutHoacXong, oHien } from './chung';
-import { luuDongKetQua } from '../../../../utils/file-helper';
 
 /**
  * BƯỚC 07 · Ra quyết định giải quyết đề nghị, lưu kết quả (hướng dẫn bước 7)
@@ -13,7 +12,7 @@ import { luuDongKetQua } from '../../../../utils/file-helper';
  *  3. "Lưu" → "Ký logic" → "Đóng" → "Xem quyết định" → "Đóng"
  *  4. Ghi output/10-hoa-giai/10H/output-ma-vu-an-form-10H_<lần chạy>.xlsx
  * Mục "Quyết định giải quyết" đã có quyết định (lượt trước) → chỉ lưu kết quả.
- * Đơn không có quyết định công nhận (bước 01 ghi ketThucKhac) → chỉ ghi dòng kết quả với trạng thái đơn.
+ * Đơn không có quyết định công nhận (bước 01 ghi ketThucKhac) → không làm gì thêm.
  */
 export const buoc07: Buoc<Don10H, TrangThai10H> = {
   so: 7,
@@ -21,18 +20,8 @@ export const buoc07: Buoc<Don10H, TrangThai10H> = {
   huongDan: '7',
   chay: async ({ vuAn, tt, moPhien, tkToa, can }) => {
     const tk = tkToa(vuAn.toaAn);
-    const ghiKetQua = (maHoSo: string, ketQua: string, soQuyetDinh: string) =>
-      luuDongKetQua(
-        LINH_VUC_10H,
-        BIEU_MAU_10H,
-        tk,
-        ['Số tiếp nhận', 'Link đơn', 'QĐ công nhận', 'Người đề nghị', 'Mã hồ sơ', 'Số YC chuyển hồ sơ', 'Số thụ lý', 'Thẩm phán', 'Số QĐ phân công', 'Kết quả', 'Số quyết định', 'Link hồ sơ'],
-        [tt.soTiepNhan ?? vuAn.soTiepNhan, vuAn.urlDon, tt.soQDCongNhan ?? '', tt.nguoiDeNghi ?? '', maHoSo, tt.soYeuCauChuyenHS ?? '', tt.soThuLy ?? '',
-          tt.thamPhan ?? '', tt.soPhanCong ?? '', ketQua, soQuyetDinh, tt.urlHoSo ?? ''],
-      );
-    // Đơn không có quyết định công nhận (bước 01) → không có hồ sơ đề nghị; vẫn ghi dòng kết quả với trạng thái đơn
+    // Đơn không có quyết định công nhận (bước 01) → không có hồ sơ đề nghị
     if (tt.ketThucKhac) {
-      await ghiKetQua('', tt.ketThucKhac, '');
       test.info().annotations.push({ type: 'Đơn không đề nghị được', description: `${vuAn.soTiepNhan} · ${tt.ketThucKhac} · ${vuAn.urlDon}` });
       return;
     }
@@ -74,7 +63,6 @@ export const buoc07: Buoc<Don10H, TrangThai10H> = {
     await expect(main, 'Ký xong nhưng quyết định chưa có số').toContainText(coSo, { timeout: 30_000 });
     soQuyetDinh = (await main.innerText()).match(/Quyết định\s+(\d+\/\d{4}\/[^\s·]+)/)?.[1] || soQuyetDinh;
 
-    await ghiKetQua(maHoSo || (tt.maHoSo ?? ''), KET_QUA_10H, soQuyetDinh ?? '');
     test.info().annotations.push({ type: 'Hồ sơ', description: `${maHoSo} · QĐ ${soQuyetDinh} · ${tt.urlHoSo}` });
     return { ketQua: KET_QUA_10H, soQuyetDinh };
   },

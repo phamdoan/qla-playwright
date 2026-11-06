@@ -1,8 +1,7 @@
 import { test } from '@playwright/test';
 import { Buoc } from '../../../common/buoc';
 import { ManHinh } from '../../../base.page';
-import { BIEU_MAU_1D1, BanAn1D1, LINH_VUC_1D1, TK_LANH_DAO, TK_VU_TRUONG, TrangThai1D1, Y_KIEN_DE_XUAT } from '../cau-hinh-1D1';
-import { luuDongKetQua } from '../../../../utils/file-helper';
+import { BanAn1D1, TK_VU_TRUONG, TrangThai1D1 } from '../cau-hinh-1D1';
 import { dongVuXetXu } from './chung';
 
 /**
@@ -26,14 +25,6 @@ export const buoc09: Buoc<BanAn1D1, TrangThai1D1> = {
     const soThuLy = chu.match(/Số TLXX:\s*(\d+)/)?.[1] ?? '';
     const trangThai = chu.match(/(Chưa xét xử|Đã xét xử|Đã có kết quả[^0-9]*?)\s+(Đã lên lịch xét xử|Chưa lên lịch xét xử)?/)?.[0]?.trim() ?? '';
 
-    await luuDongKetQua(
-      LINH_VUC_1D1,
-      BIEU_MAU_1D1,
-      TK_VU_TRUONG,
-      ['Số bản án', 'Ngày bản án', 'Tòa ra quyết định', 'Cấp xét xử', 'Người kháng nghị', 'Số QĐKN', 'Ngày QĐKN', 'Thẩm phán', 'Số tờ trình PC', 'Chủ tọa', 'Thẩm phán khác', 'Lịch xét xử', 'Số chương trình làm việc', 'Số thụ lý XX', 'Ý kiến đề xuất / Kết quả GĐT,TT', 'Trạng thái', 'Link vụ án'],
-      [vuAn.soBanAn, vuAn.ngayBanAn, vuAn.toaAn, vuAn.capXetXu, vuAn.nguoiKhangNghi, soKhangNghi, tt.ngayKhangNghi ?? '', tt.thamPhan ?? '', tt.soToTrinh ?? '', TK_LANH_DAO.ten!, tt.thanhVienHDXX ?? '', tt.lichXetXu ?? '', tt.soChuongTrinh ?? '', soThuLy, Y_KIEN_DE_XUAT, trangThai, tt.urlVuAn ?? ''],
-      'Số QĐKN',
-    );
     test.info().annotations.push({ type: 'Vụ tái thẩm hình sự', description: `KN ${soKhangNghi} · BA ${vuAn.soBanAn} · TLXX ${soThuLy} · ${tt.lichXetXu} · ${trangThai}` });
   },
 };

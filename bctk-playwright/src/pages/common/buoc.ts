@@ -1,6 +1,6 @@
 import { Browser, test } from '@playwright/test';
 import { PhienDangNhap } from './login.page';
-import { LinhVuc } from '../../utils/file-helper';
+import { DongKetQua, LinhVuc, luuDongKetQua } from '../../utils/file-helper';
 import { TaiKhoan, chuanHoa, taiKhoanCuaToa, taiKhoanTheoTen } from '../../utils/tai-khoan';
 import { TrangThaiChung, catTrangThai, docTrangThai, ghiTrangThai, xoaTrangThai } from '../../utils/trang-thai';
 
@@ -68,6 +68,8 @@ export interface Luong<V extends VuAnLuong, T extends TrangThaiChung> {
   dsTaiKhoan: TaiKhoan[];
   /** Các bước theo đúng thứ tự chạy */
   cacBuoc: Buoc<V, T>[];
+  /** Tài khoản giải quyết vụ khi không phải tòa của vụ án (giám đốc thẩm, tái thẩm: Vụ trưởng) — dùng cho file output */
+  tkKetQua?: TaiKhoan;
 }
 
 /**
@@ -90,6 +92,50 @@ const phienConMo = new Set<PhienDangNhap>();
  */
 const lamMoi = (bieuMau: string) =>
   /^(1|true|co|có)$/i.test((process.env[`BCTK_LAM_MOI_${bieuMau}`] || process.env.BCTK_LAM_MOI || '').trim());
+
+/** Giá trị đầu tiên có dữ liệu */
+const dau = (...ds: unknown[]) => String(ds.find(Boolean) ?? '');
+
+/**
+ * Dòng file output của một vụ, tính từ state — các biểu mẫu cùng tên khóa nên dùng chung một chỗ.
+ * "Thẩm phán - Tài khoản": tài khoản của thẩm phán nếu có trong Taikhoan.xlsx, không có thì tài khoản thao tác của tòa.
+ * Đơn hòa giải không có bản án → cột "Số bản án" ghi số quyết định.
+ */
+function dongKetQua<V extends VuAnLuong, T extends TrangThaiChung>(luong: Luong<V, T>, vuAn: V, tt: T, ghiChu: string): DongKetQua {
+  const v = vuAn as unknown as Record<string, unknown>;
+  const t = tt as unknown as Record<string, unknown>;
+  const toa = luong.tkKetQua?.toaAn ?? dau(t.toaPhucTham, v.toaPhucTham, v.toaAn);
+  const thamPhan = dau(t.thamPhanChuToa, t.chuToa, t.thamPhan, t.thamPhanHoaGiai, t.thamPhanXuLyDon);
+  const tk =
+    luong.dsTaiKhoan.find(k => thamPhan && k.ten && chuanHoa(k.ten) === chuanHoa(thamPhan)) ??
+    luong.tkKetQua ??
+    luong.dsTaiKhoan.find(k => chuanHoa(k.toaAn) === chuanHoa(toa));
+  const coBanAn = t.soBanAnPT || t.soBanAn;
+  const cuoi = luong.cacBuoc[luong.cacBuoc.length - 1].so;
+  const xong = tt.buocXong ?? 0;
+  const tenXong = luong.cacBuoc.find(b => b.so === xong)?.ten;
+  return {
+    maVuAn: dau(t.maVuAnHeThong, t.maVuAnPT, t.maVuAnPhucTham, t.soTiepNhan, v.soTiepNhan, vuAn.maVuAn),
+    toaGiaiQuyet: toa,
+    ngayBanAn: dau(t.ngayBanAnPT, t.ngayBanAn, coBanAn && t.ngayXetXu, v.ngayBanAn),
+    soBanAn: dau(t.soBanAnPT, t.soBanAn, t.soQuyetDinh, t.soQDCongNhan, v.soBanAn),
+    thamPhanTaiKhoan: [thamPhan, tk?.taiKhoan].filter(Boolean).join(' - '),
+    ngayThuLy: dau(t.ngayThuLy, t.ngayThuLyPT),
+    linkVuAn: dau(t.urlVuAnPT, t.urlVuAn, t.urlHoiDong, t.urlHoSo, t.urlDon, v.urlDon, v.urlVuAnSoTham, v.linkVuAn),
+    buocDaChay: `Bước ${xong}/${cuoi}${tenXong ? `: ${tenXong}` : ''}${ghiChu ? ` · ${ghiChu}` : xong >= cuoi ? ' · Hoàn thành' : ''}`,
+  };
+}
+
+/**
+ * Cập nhật dòng của vụ trong file output. Lỗi ghi file (đang mở trong Excel…) không làm hỏng bước:
+ * dòng là ảnh chụp state, lần ghi sau tự bù. Bước cuối chờ lâu hơn vì không còn lần ghi sau.
+ */
+async function ghiKetQua<V extends VuAnLuong, T extends TrangThaiChung>(luong: Luong<V, T>, vuAn: V, tt: T, ghiChu = '') {
+  const cuoi = (tt.buocXong ?? 0) >= luong.cacBuoc[luong.cacBuoc.length - 1].so;
+  await luuDongKetQua(luong.linhVuc, luong.bieuMau, dongKetQua(luong, vuAn, tt, ghiChu), vuAn.maVuAn, cuoi ? 24 : 6).catch(e =>
+    console.warn(`⚠ Chưa ghi được output của ${vuAn.maVuAn}: ${(e as Error).message}`),
+  );
+}
 
 /** Chạy một bước cho một vụ án — gọi trong test() ở file spec */
 export async function chayBuoc<V extends VuAnLuong, T extends TrangThaiChung>(
@@ -124,6 +170,9 @@ export async function chayBuoc<V extends VuAnLuong, T extends TrangThaiChung>(
       batDau: new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' }),
     } as Partial<T>);
   }
+
+  // Ghi trước khi chạy: bước hết giờ / bị dừng giữa chừng thì output vẫn cho biết vụ dừng ở đâu
+  await ghiKetQua(luong, vuAn, tt, `đang chạy bước ${buoc.so}`);
 
   const soLan = Math.max(1, (typeof buoc.soLan === 'function' ? buoc.soLan(tt) : buoc.soLan) ?? 1);
   // Phiên theo tài khoản — các lượt dùng lại, không đăng nhập lại mỗi lượt
@@ -168,7 +217,11 @@ export async function chayBuoc<V extends VuAnLuong, T extends TrangThaiChung>(
     const moi = ghiTrangThai<T>(luong.linhVuc, luong.bieuMau, vuAn.maVuAn, {
       buocXong: Math.max(tt.buocXong ?? 0, buoc.so),
     } as Partial<T>);
+    await ghiKetQua(luong, vuAn, moi);
     await test.info().attach('trang-thai.json', { body: JSON.stringify(moi, null, 2), contentType: 'application/json' });
+  } catch (e) {
+    await ghiKetQua(luong, vuAn, tt, `lỗi ở bước ${buoc.so}`);
+    throw e;
   } finally {
     for (const p of cacPhien.values()) {
       await p.dong();

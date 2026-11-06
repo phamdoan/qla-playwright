@@ -30,7 +30,7 @@ export const buoc01: Buoc<VuNguon, TrangThai1A1> = {
     const m = new ManHinh(phien.page);
     const main = m.page.locator('main');
 
-    await m.moMenu('Vụ việc', 'Quản lý án sơ thẩm', 'Hồ sơ tiếp nhận');
+    await m.moMenu('Vụ việc', 'Hình sự', 'Quản lý án sơ thẩm', 'Hồ sơ tiếp nhận');
     await m.nut(main, 'Tạo mới hồ sơ').click();
     await m.page.waitForURL(/ho-so-tiep-nhan\/tao-ho-so/, { timeout: 60_000 });
     await m.oTheoNhan('Tên bị can (Đầu vụ)', main).waitFor({ timeout: 60_000 });

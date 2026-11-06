@@ -10,11 +10,17 @@ import zlib from 'zlib';
  * file để không đè phần người dùng vừa sửa; hết giờ vẫn khóa thì báo lỗi (kèm nội dung dòng chưa ghi).
  * @param cotKhoa tên cột khóa (vd. "Mã vụ án"): đã có dòng cùng giá trị thì ghi đè dòng đó thay vì thêm dòng mới
  */
-export async function ghiDongExcel(file: string, tieuDe: string[], cacDong: (string | number)[][], cotKhoa?: string): Promise<string> {
-  const SO_LAN = 24;
+export async function ghiDongExcel(
+  file: string,
+  tieuDe: string[],
+  cacDong: (string | number)[][],
+  cotKhoa?: string,
+  khoaKhac: string[] = [],
+  SO_LAN = 24,
+): Promise<string> {
   for (let lan = 1; ; lan++) {
     try {
-      await ghiDongExcelMotLan(file, tieuDe, cacDong, cotKhoa);
+      await ghiDongExcelMotLan(file, tieuDe, cacDong, cotKhoa, khoaKhac);
       return file;
     } catch (e) {
       if ((e as NodeJS.ErrnoException).code !== 'EBUSY') throw e;
@@ -30,7 +36,7 @@ export async function ghiDongExcel(file: string, tieuDe: string[], cacDong: (str
   }
 }
 
-async function ghiDongExcelMotLan(file: string, tieuDe: string[], cacDong: (string | number)[][], cotKhoa?: string) {
+async function ghiDongExcelMotLan(file: string, tieuDe: string[], cacDong: (string | number)[][], cotKhoa?: string, khoaKhac: string[] = []) {
   const wb = new ExcelJS.Workbook();
   if (fs.existsSync(file)) await wb.xlsx.readFile(file);
   const sheet = wb.worksheets[0] ?? wb.addWorksheet('Vụ án');
@@ -58,14 +64,14 @@ async function ghiDongExcelMotLan(file: string, tieuDe: string[], cacDong: (stri
       }
     }
     for (const d of cacDong) {
-      // Có cột khóa và đã có dòng cùng giá trị khóa → ghi đè dòng đó (theo tên cột), không thêm dòng mới
+      // Có cột khóa và đã có dòng cùng giá trị khóa (hoặc một giá trị trong `khoaKhac`) → ghi đè dòng đó (theo tên cột), không thêm dòng mới
       const iKhoa = cotKhoa ? tieuDe.indexOf(cotKhoa) : -1;
       if (iKhoa >= 0) {
         const cot = dauFile.indexOf(cotKhoa!);
-        const can = String(d[iKhoa] ?? '').trim();
+        const cacKhoa = [d[iKhoa], ...khoaKhac].map(v => String(v ?? '').trim()).filter(Boolean);
         let r = 2;
-        while (r <= sheet.rowCount && String(sheet.getRow(r).getCell(cot).value ?? '').trim() !== can) r++;
-        if (r <= sheet.rowCount && can) {
+        while (r <= sheet.rowCount && !cacKhoa.includes(String(sheet.getRow(r).getCell(cot).value ?? '').trim())) r++;
+        if (r <= sheet.rowCount) {
           tieuDe.forEach((ten, i) => (sheet.getRow(r).getCell(dauFile.indexOf(ten)).value = d[i] ?? ''));
           continue;
         }

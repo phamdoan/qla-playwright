@@ -1,8 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { Buoc } from '../../../common/buoc';
-import { BIEU_MAU_10B, Don10B, KET_QUA_10B, LINH_VUC_10B, TrangThai10B } from '../cau-hinh-10B';
+import { Don10B, KET_QUA_10B, TrangThai10B } from '../cau-hinh-10B';
 import { dinhKemTep, lapVanBanKyLogic, moHoSo, nutHoacXong, oHien } from './chung';
-import { luuDongKetQua } from '../../../../utils/file-helper';
 
 /**
  * BƯỚC 07 · Ra quyết định giải quyết đề nghị, lưu kết quả (hướng dẫn bước 7)
@@ -58,14 +57,6 @@ export const buoc07: Buoc<Don10B, TrangThai10B> = {
     await expect(main, 'Ký xong nhưng quyết định chưa có số').toContainText(coSo, { timeout: 30_000 });
     soQuyetDinh = (await main.innerText()).match(/Quyết định\s+(\d+\/\d{4}\/[^\s·]+)/)?.[1] || soQuyetDinh;
 
-    await luuDongKetQua(
-      LINH_VUC_10B,
-      BIEU_MAU_10B,
-      tk,
-      ['Số tiếp nhận', 'Link đơn', 'QĐ công nhận', 'Người đề nghị', 'Mã hồ sơ', 'Số YC chuyển hồ sơ', 'Số thụ lý', 'Thẩm phán', 'Số QĐ phân công', 'Kết quả', 'Số quyết định', 'Link hồ sơ'],
-      [vuAn.soTiepNhan, vuAn.urlDon, tt.soQDCongNhan ?? '', tt.nguoiDeNghi ?? '', maHoSo || (tt.maHoSo ?? ''), tt.soYeuCauChuyenHS ?? '', tt.soThuLy ?? '',
-        tt.thamPhan ?? '', tt.soPhanCong ?? '', KET_QUA_10B, soQuyetDinh ?? '', tt.urlHoSo ?? ''],
-    );
     test.info().annotations.push({ type: 'Hồ sơ', description: `${maHoSo} · QĐ ${soQuyetDinh} · ${tt.urlHoSo}` });
     return { ketQua: KET_QUA_10B, soQuyetDinh };
   },

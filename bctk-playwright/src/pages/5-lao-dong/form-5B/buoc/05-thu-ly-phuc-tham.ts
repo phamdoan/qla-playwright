@@ -29,9 +29,10 @@ export const buoc05: Buoc<VuAn5B, TrangThai5B> = {
     const oSo = m.oTheoNhan(/Số thụ lý/, bm).locator('input').first();
     if (!(await oSo.inputValue())) await m.nut(bm, /Dùng số/).click();
     const soThuLyPT = await oSo.inputValue();
+    const ngayThuLyPT = await m.oTheoNhan(/Ngày thụ lý/, bm).locator('input').first().inputValue({ timeout: 3_000 }).catch(() => '');
     await m.nut(bm, 'Lưu').click();
     await m.choThongBao(/thành công/i);
     await bm.waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => undefined);
-    return { soThuLyPT };
+    return { soThuLyPT, ngayThuLyPT };
   },
 };

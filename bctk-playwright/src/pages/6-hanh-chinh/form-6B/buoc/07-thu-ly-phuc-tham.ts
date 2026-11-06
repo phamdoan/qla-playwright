@@ -37,6 +37,7 @@ export const buoc07: Buoc<VuAn6B, TrangThai6B> = {
     if (!maVuAnPT) maVuAnPT = ((await main.innerText()).match(/VA\d{2}-\d+/) ?? [''])[0];
     await m.moTab('thu-ly');
     const nutThuLy = m.nut(main, /^\s*Thụ lý\s*$/);
+    let ngayThuLyPT = tt.ngayThuLyPT ?? '';
     if (await nutThuLy.isVisible().catch(() => false)) {
       await nutThuLy.click();
       const bm = popup(m, /Thụ lý/);
@@ -44,12 +45,13 @@ export const buoc07: Buoc<VuAn6B, TrangThai6B> = {
       await m.choTaiXong(1500);
       const oSo = m.oTheoNhan(/Số thụ lý/, bm).locator('input').first();
       if ((await oSo.count()) && !(await oSo.inputValue())) await m.nut(bm, /Dùng số/).click().catch(() => undefined);
+      ngayThuLyPT = await m.oTheoNhan(/Ngày thụ lý/, bm).locator('input').first().inputValue({ timeout: 3_000 }).catch(() => '');
       await m.nut(bm, /^\s*Lưu\s*$/).click();
       await m.choThongBao(/thành công/i);
       await bm.waitFor({ state: 'hidden', timeout: 15_000 }).catch(() => undefined);
       await m.choTaiXong(1500);
     }
     const soThuLyPT = ((await main.innerText()).match(/(\d+\/\d{4}\/TLPT-HC)/) ?? ['', tt.soThuLyPT ?? ''])[1];
-    return { urlVuAnPT, maVuAnPT, soThuLyPT };
+    return { urlVuAnPT, maVuAnPT, soThuLyPT, ngayThuLyPT };
   },
 };

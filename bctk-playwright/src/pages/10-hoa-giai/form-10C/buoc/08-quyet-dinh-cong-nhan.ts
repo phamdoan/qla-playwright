@@ -1,10 +1,10 @@
 import path from 'path';
 import { Locator, test } from '@playwright/test';
 import { Buoc } from '../../../common/buoc';
-import { DonNguon, TrangThai10C, cauHinh10C } from '../cau-hinh-10C';
+import { DonNguon, TrangThai10C } from '../cau-hinh-10C';
 import { ManHinh } from '../../../base.page';
 import { hoaGiai, ketThucKhac, lapBieuMauKyLogic, moChiTietDon, oHien, soVanBan } from './chung';
-import { DATA_DIR, luuDongKetQua } from '../../../../utils/file-helper';
+import { DATA_DIR } from '../../../../utils/file-helper';
 import { ngay } from '../../../../utils/fake-data';
 import { diaBanCuaToa, vksCuaToa } from '../../../../utils/tai-khoan';
 
@@ -117,15 +117,6 @@ export const buoc08: Buoc<DonNguon, TrangThai10C> = {
     }
 
     // ── Lưu kết quả (ô đơn này xong; lần chạy sau ô sẽ tạo đơn mới) ──
-    await luuDongKetQua(
-      cauHinh10C.linhVuc,
-      cauHinh10C.bieuMau,
-      tk,
-      ['Số tiếp nhận', 'Tên đơn', 'Quan hệ pháp luật', 'Người khởi kiện', 'Người bị kiện', 'Thẩm phán hòa giải', 'Số QĐ phân công', 'Số TB 01-HG', 'Kết quả lựa chọn',
-        'Hòa giải viên', 'Số QĐ chỉ định HGV (06-HG)', 'Số TB chuyển hòa giải (07-HG)', 'Kết quả hòa giải', 'Số QĐ công nhận (01-QĐHG)', 'Link đơn'],
-      [tt.soTiepNhan ?? '', tt.tenDon ?? '', tt.quanHePhapLuat ?? '', tt.nguoiKhoiKien ?? '', tt.nguoiBiKien ?? '', tt.thamPhanHoaGiai ?? '', tt.soQuyetDinhPhanCong ?? '',
-        tt.soThongBao01HG ?? '', tt.ketQuaLuaChon ?? '', tt.hoaGiaiVien ?? '', tt.soQDChiDinhHGV ?? '', tt.soTBChuyenHoaGiai ?? '', kt ?? tt.ketQuaHoaGiai ?? '', soQDCongNhan ?? '', urlDon],
-    );
     test.info().annotations.push({
       type: kt ? 'Đơn kết thúc khác' : 'Đơn đã tạo',
       description: `${tt.soTiepNhan} · ${tt.tenDon} · ${kt ?? `QĐ công nhận ${soQDCongNhan}`} · ${urlDon}`,

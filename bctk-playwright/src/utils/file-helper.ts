@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 import type { TruongForm } from '../pages/base.page';
-import type { TaiKhoan } from './tai-khoan';
 import { docBangExcel, docBangExcelSync, docKhoaGiaTriSync, ghiDongExcel } from './excel-helper';
 
 const ROOT = path.resolve(__dirname, '../..');
@@ -95,44 +94,35 @@ export function docJson<T>(duongDan: string): T {
   return JSON.parse(fs.readFileSync(file, 'utf-8')) as T;
 }
 
-/** Hai cột CUỐI của file output: tòa án và tài khoản đã tạo vụ án */
-const COT_NGUOI_TAO = ['Tòa án tạo', 'Tài khoản tạo'];
-/** Giá trị cho COT_NGUOI_TAO: tên tòa · "số tài khoản - họ tên" */
-const giaTriNguoiTao = (tk: TaiKhoan) => [tk.toaAn, tk.ten ? `${tk.taiKhoan} - ${tk.ten}` : tk.taiKhoan];
+/** Các cột của file output — giống nhau ở mọi biểu mẫu */
+const COT_KET_QUA = ['Thời điểm', 'Mã vụ án', 'Tòa giải quyết', 'Ngày bản án', 'Số bản án', 'Thẩm phán - Tài khoản', 'Ngày thụ lý', 'Link vụ án', 'Bước đã chạy đến'];
 
-/**
- * Ghi một dòng vào sheet duy nhất của output/<linhVuc>/output-ma-vu-an-form-<bieuMau>.xlsx:
- * "Thời điểm" + `tieuDe` + tòa án, tài khoản tạo (luôn ở cuối). File mới thì tạo kèm dòng tiêu đề.
- * @param tk tài khoản đã tạo vụ án (tòa án lấy theo tài khoản)
- * @param cotKhoa tên cột khóa (vd. "Mã vụ án"): đã có dòng cùng giá trị thì cập nhật dòng đó thay vì thêm dòng
- */
-export async function luuDongKetQua(linhVuc: LinhVuc, bieuMau: string, tk: TaiKhoan, tieuDe: string[], giaTri: string[], cotKhoa?: string) {
-  await ghiDongExcel(
-    fileOutput(linhVuc, bieuMau),
-    ['Thời điểm', ...tieuDe, ...COT_NGUOI_TAO],
-    [[thoiDiemHienTai(), ...giaTri, ...giaTriNguoiTao(tk)]],
-    cotKhoa,
-  );
+/** Một dòng file output (trừ "Thời điểm") — khung bước `chayBuoc` tính từ state và ghi sau mỗi bước */
+export interface DongKetQua {
+  maVuAn: string;
+  toaGiaiQuyet: string;
+  ngayBanAn: string;
+  soBanAn: string;
+  thamPhanTaiKhoan: string;
+  ngayThuLy: string;
+  linkVuAn: string;
+  buocDaChay: string;
 }
 
 /**
- * Tìm trong MỌI file output của một biểu mẫu khác (output/<lĩnh vực>/<biểu mẫu>/output-*.xlsx, cả file gộp)
- * dòng có cột `cotKhoa` = `giaTri`; nhiều file cùng có thì lấy file mới nhất. Không thấy → {}.
- * Dùng cho form nối tiếp lấy thêm thông tin từ output form trước (vd. 6D lấy "Người bị kiện" từ 6A theo "Số bản án").
+ * Ghi dòng của một vụ vào file output của lần chạy, MỖI VỤ MỘT DÒNG (khóa "Mã vụ án"): bước sau cập nhật chính dòng đó.
+ * @param oVuAn tên ô của vụ (Vụ 01, Đơn 01…) — cột "Mã vụ án" ghi tên ô cho tới khi vụ có mã thật, nên vẫn tìm được dòng cũ
+ * @param soLanThu số lần thử khi file đang mở trong Excel, mỗi lần cách 5s
  */
-export async function timDongOutput(linhVuc: LinhVuc, bieuMau: string, cotKhoa: string, giaTri: string): Promise<Record<string, string>> {
-  const dir = path.join(OUTPUT_DIR, linhVuc, bieuMau);
-  if (!fs.existsSync(dir)) return {};
-  const cacFile = fs
-    .readdirSync(dir)
-    .filter(f => /^output.*\.xlsx$/i.test(f))
-    .map(f => path.join(dir, f))
-    .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
-  for (const f of cacFile) {
-    const dong = (await docBangExcel(f).catch(() => [])).find(d => (d[cotKhoa] ?? '').trim() === giaTri.trim());
-    if (dong) return dong;
-  }
-  return {};
+export async function luuDongKetQua(linhVuc: LinhVuc, bieuMau: string, d: DongKetQua, oVuAn: string, soLanThu?: number) {
+  await ghiDongExcel(
+    fileOutput(linhVuc, bieuMau),
+    COT_KET_QUA,
+    [[thoiDiemHienTai(), d.maVuAn, d.toaGiaiQuyet, d.ngayBanAn, d.soBanAn, d.thamPhanTaiKhoan, d.ngayThuLy, d.linkVuAn, d.buocDaChay]],
+    'Mã vụ án',
+    [oVuAn],
+    soLanThu,
+  );
 }
 
 /** Đọc lại các mã vụ án đã lưu (cột "Mã vụ án", hoặc cột cuối nếu không có) */

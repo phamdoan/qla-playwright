@@ -50,6 +50,8 @@ export interface TrangThai5B extends TrangThaiChung {
   soQDXetXu?: string;
   ngayXetXu?: string;
   soBanAnPT?: string;
+  ngayBanAnPT?: string;
+  ngayThuLyPT?: string;
 }
 
 /** Đọc các vụ án trong file đầu vào; thiếu cột thì báo rõ cột nào */

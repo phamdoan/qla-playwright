@@ -1,5 +1,5 @@
 import { Luong } from '../../common/buoc';
-import { BIEU_MAU_5D, BanAn5D, LINH_VUC_5D, TrangThai5D, docBanAn5D } from './cau-hinh-5D';
+import { BIEU_MAU_5D, BanAn5D, LINH_VUC_5D, TrangThai5D, docBanAn5D, TK_VU_TRUONG } from './cau-hinh-5D';
 import { docTaiKhoanSync } from '../../../utils/tai-khoan';
 import { buoc01 } from './buoc/01-them-ho-so-khang-nghi';
 import { buoc02 } from './buoc/02-phan-cong-tham-phan';
@@ -21,5 +21,6 @@ export const LUONG_5D: Luong<BanAn5D, TrangThai5D> = {
   bieuMau: BIEU_MAU_5D,
   dsVuAn: docBanAn5D(),
   dsTaiKhoan: docTaiKhoanSync(),
+  tkKetQua: TK_VU_TRUONG,
   cacBuoc: [buoc01, buoc02, buoc03, buoc04, buoc05, buoc06, buoc07, buoc08, buoc09],
 };

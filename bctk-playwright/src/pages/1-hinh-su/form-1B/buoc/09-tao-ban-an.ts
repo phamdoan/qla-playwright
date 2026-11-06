@@ -1,9 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { Buoc } from '../../../common/buoc';
 import { ManHinh } from '../../../base.page';
-import { BIEU_MAU_1B, LINH_VUC_1B, TrangThai1B, VuAnNguon } from '../cau-hinh-1B';
+import { TrangThai1B, VuAnNguon } from '../cau-hinh-1B';
 import { ngay } from '../../../../utils/fake-data';
-import { luuDongKetQua } from '../../../../utils/file-helper';
 import { batDauBang, dungSo } from './chung';
 
 /**
@@ -172,15 +171,6 @@ export const buoc09: Buoc<VuAnNguon, TrangThai1B> = {
     }
 
     // ── Lưu kết quả ──
-    await luuDongKetQua(
-      LINH_VUC_1B,
-      BIEU_MAU_1B,
-      tk,
-      ['Luồng', 'Mã vụ án sơ thẩm', 'Link vụ án sơ thẩm', 'Mã vụ án phúc thẩm', 'Số thụ lý PT', 'Ngày thụ lý PT', 'Tên vụ án', 'Tòa phúc thẩm',
-        'Chủ tọa', 'Số QĐ đưa ra xét xử', 'Ngày xét xử', 'Số bản án', 'Link vụ án phúc thẩm'],
-      [vuAn.luong === 'khang-cao' ? 'Kháng cáo' : 'Kháng nghị', vuAn.maVuAn, vuAn.urlVuAnSoTham, can('maVuAnPhucTham', 6), tt.soThuLy ?? '',
-        tt.ngayThuLy ?? '', can('tenVuAn', 1), can('toaPhucTham', 4), tt.chuToa ?? '', tt.soQuyetDinhXetXu ?? '', ngayXetXu, soBanAn ?? '', tt.urlVuAn ?? ''],
-    );
     test.info().annotations.push({ type: 'Vụ án phúc thẩm', description: `${vuAn.maVuAn} → ${tt.maVuAnPhucTham} · bản án ${soBanAn ?? ''}` });
     return { ngayXetXu, soBanAn };
   },

@@ -1,8 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { Buoc } from '../../../common/buoc';
 import { ManHinh } from '../../../base.page';
-import { BIEU_MAU_6C, BanAn6C, LINH_VUC_6C, TK_LANH_DAO, TK_VU_TRUONG, TrangThai6C } from '../cau-hinh-6C';
-import { luuDongKetQua, timDongOutput } from '../../../../utils/file-helper';
+import { BanAn6C, TK_VU_TRUONG, TrangThai6C } from '../cau-hinh-6C';
 import { chonTab } from './chung';
 
 /**
@@ -34,17 +33,7 @@ export const buoc09: Buoc<BanAn6C, TrangThai6C> = {
     const dong = main.locator('.ant-table-row').filter({ hasText: new RegExp(`Kháng nghị:\\s*${soKhangNghi}(?!\\d)`) }).first();
     await expect(dong, `Hồ sơ KN ${soKhangNghi} chưa có ở tab "${tenTab}"`).toBeVisible({ timeout: 30_000 });
     const trangThai = await m.docCot(dong, 'TRẠNG THÁI').catch(() => m.docCot(dong, 'Trạng thái')).catch(() => '');
-    // Bản án đầu vào của 6C là bản án sơ thẩm của 6A → lấy người bị kiện / cấp cơ quan bị kiện từ output 6A theo số bản án
-    const vuAn6A = await timDongOutput(LINH_VUC_6C, '6A', 'Số bản án', vuAn.soBanAn);
 
-    await luuDongKetQua(
-      LINH_VUC_6C,
-      BIEU_MAU_6C,
-      TK_VU_TRUONG,
-      ['Số bản án', 'Ngày bản án', 'Tòa ra quyết định', 'Cấp xét xử', 'Người kháng nghị', 'Số QĐKN', 'Ngày QĐKN', 'Quan hệ pháp luật', 'Người bị kiện', 'Cấp cơ quan bị kiện', 'Thẩm phán', 'Số tờ trình PC', 'Chủ tọa', 'Thẩm phán khác', 'Lịch xét xử', 'Số chương trình làm việc', 'Số QĐ thành lập HĐXX', 'Số công văn mời VKS', 'Trạng thái', 'Link hội đồng'],
-      [vuAn.soBanAn, vuAn.ngayBanAn, vuAn.toaAn, vuAn.capXetXu, vuAn.nguoiKhangNghi, soKhangNghi, tt.ngayKhangNghi ?? '', tt.quanHePhapLuat ?? '', vuAn6A['Người bị kiện'] ?? '', vuAn6A['Cấp cơ quan bị kiện'] ?? '', tt.thamPhan ?? '', tt.soToTrinh ?? '', TK_LANH_DAO.ten!, tt.thanhVienHDXX ?? '', tt.lichXetXu ?? '', tt.soChuongTrinh ?? '', tt.soQDHoiDong ?? '', tt.soCongVanVKS ?? '', trangThai, tt.urlHoiDong ?? ''],
-      'Số QĐKN',
-    );
     test.info().annotations.push({ type: 'Vụ giám đốc thẩm', description: `KN ${soKhangNghi} · BA ${vuAn.soBanAn} · ${tt.lichXetXu} · ${trangThai}` });
   },
 };

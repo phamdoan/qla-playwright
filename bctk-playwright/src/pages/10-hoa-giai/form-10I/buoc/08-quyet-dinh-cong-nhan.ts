@@ -1,8 +1,7 @@
 import { test } from '@playwright/test';
 import { Buoc } from '../../../common/buoc';
-import { DonNguon, TrangThai10I, cauHinh10I } from '../cau-hinh-10I';
+import { DonNguon, TrangThai10I } from '../cau-hinh-10I';
 import { hoaGiai, ketThucKhac, lapBieuMauKyLogic, moChiTietDon, oHien, soVanBan } from './chung';
-import { luuDongKetQua } from '../../../../utils/file-helper';
 
 /**
  * BƯỚC 08 · Quyết định công nhận kết quả đối thoại thành — 01-QĐĐT (hướng dẫn b7), lưu kết quả
@@ -56,15 +55,6 @@ export const buoc08: Buoc<DonNguon, TrangThai10I> = {
     }
 
     // ── Lưu kết quả (ô đơn này xong; lần chạy sau ô sẽ tạo đơn mới) ──
-    await luuDongKetQua(
-      cauHinh10I.linhVuc,
-      cauHinh10I.bieuMau,
-      tk,
-      ['Số tiếp nhận', 'Tên đơn', 'Quan hệ pháp luật', 'Người khởi kiện', 'Người bị kiện', 'Thẩm phán đối thoại', 'Số QĐ phân công', 'Số TB 01-ĐT', 'Kết quả lựa chọn',
-        'Hòa giải viên', 'Số QĐ chỉ định HGV (06-ĐT)', 'Số TB chuyển đối thoại (07-ĐT)', 'Kết quả đối thoại', 'Số QĐ công nhận (01-QĐĐT)', 'Link đơn'],
-      [tt.soTiepNhan ?? '', tt.tenDon ?? '', tt.quanHePhapLuat ?? '', tt.nguoiKhoiKien ?? '', tt.nguoiBiKien ?? '', tt.thamPhanHoaGiai ?? '', tt.soQuyetDinhPhanCong ?? '',
-        tt.soThongBao01HG ?? '', tt.ketQuaLuaChon ?? '', tt.hoaGiaiVien ?? '', tt.soQDChiDinhHGV ?? '', tt.soTBChuyenHoaGiai ?? '', kt ?? tt.ketQuaHoaGiai ?? '', soQDCongNhan ?? '', urlDon],
-    );
     test.info().annotations.push({
       type: kt ? 'Đơn kết thúc khác' : 'Đơn đã tạo',
       description: `${tt.soTiepNhan} · ${tt.tenDon} · ${kt ?? `QĐ công nhận ${soQDCongNhan}`} · ${urlDon}`,

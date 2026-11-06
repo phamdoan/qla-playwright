@@ -57,6 +57,7 @@ export interface TrangThai6B extends TrangThaiChung {
   ngayXetXu?: string;
   soBanAnPT?: string;
   ngayBanAnPT?: string;
+  ngayThuLyPT?: string;
 }
 
 /** Đọc các vụ án trong file đầu vào; thiếu cột thì báo rõ cột nào */

@@ -58,6 +58,7 @@ export interface TrangThai5A extends TrangThaiChung {
   soQDXetXu?: string;
   ngayXetXu?: string;
   soBanAn?: string;
+  ngayBanAn?: string;
 }
 
 export function docCauHinh5A(): CauHinh5A {

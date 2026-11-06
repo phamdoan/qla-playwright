@@ -39,9 +39,8 @@ const env = HO_SO;
 
 /**
  * Chặn cứng PRODUCTION: bộ kịch bản này tạo vụ án thật.
- * Pre-prod (e-qlta-uat) và production (e-qlta) chỉ lệch nhau 4 ký tự "-uat" nên khớp theo host.
  */
-const HOST_PRODUCTION = ['e-qlta.toaan.gov.vn', 'qla.toaan.gov.vn'];
+const HOST_PRODUCTION = ['qla.toaan.gov.vn'];
 {
   let host = '';
   try {

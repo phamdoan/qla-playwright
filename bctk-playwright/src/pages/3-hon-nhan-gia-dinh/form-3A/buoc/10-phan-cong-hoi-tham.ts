@@ -1,7 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { Buoc } from '../../../common/buoc';
-import { DonNguon, TrangThai3A, cauHinh3A } from '../cau-hinh-3A';
-import { luuDongKetQua } from '../../../../utils/file-helper';
+import { DonNguon, TrangThai3A } from '../cau-hinh-3A';
 import { moVuAn, phanCongVuAn } from './chung';
 
 /**
@@ -33,13 +32,6 @@ export const buoc10: Buoc<DonNguon, TrangThai3A> = {
 
     // ── Lưu kết quả (ô đơn này xong; lần chạy sau ô sẽ tạo đơn mới) ──
     const hoiTham = nguoi.join(' ; ');
-    await luuDongKetQua(
-      cauHinh3A.linhVuc,
-      cauHinh3A.bieuMau,
-      tk,
-      ['Mã vụ án', 'Số tiếp nhận', 'Tên đơn', 'Quan hệ pháp luật', 'Người khởi kiện', 'Người bị kiện', 'Thẩm phán xử lý đơn', 'Số TB 26-DS', 'Số TB 29-DS', 'Số biên lai', 'Ngày thụ lý', 'Thẩm phán chủ tọa', 'Số QĐ phân công TP', 'Thư ký', 'Số QĐ phân công TK', 'Hội thẩm nhân dân', 'Số QĐ phân công HT', 'Link đơn', 'Link vụ án'],
-      [tt.maVuAnHeThong ?? '', tt.soTiepNhan ?? '', tt.tenDon ?? '', tt.quanHePhapLuat ?? '', tt.nguoiKhoiKien ?? '', tt.nguoiBiKien ?? '', tt.thamPhanXuLyDon ?? '', tt.soTB26 ?? '', tt.soTB29 ?? '', tt.soBienLai ?? '', tt.ngayThuLy ?? '', tt.thamPhanChuToa ?? '', tt.soQDThamPhan ?? '', tt.thuKy ?? '', tt.soQDThuKy ?? '', hoiTham, soQDHoiTham, tt.urlDon ?? '', urlVuAn],
-    );
     test.info().annotations.push({ type: 'Vụ án đã tạo', description: `${tt.maVuAnHeThong} · ${tt.tenDon} · ${urlVuAn}` });
     return { hoiTham, soQDHoiTham };
   },

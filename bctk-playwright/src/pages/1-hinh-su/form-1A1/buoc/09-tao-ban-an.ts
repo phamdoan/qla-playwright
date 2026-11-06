@@ -4,7 +4,7 @@ import { ManHinh, chuaChu, dungChu } from '../../../base.page';
 import { TrangThai1A1, VuNguon } from '../cau-hinh-1A1';
 import { hoTen } from '../../../../utils/fake-data';
 import { TaiKhoan, vksCuaToa } from '../../../../utils/tai-khoan';
-import { luuKetQua1A1, moVuAn, ngauNhien } from './chung';
+import { moVuAn, ngauNhien } from './chung';
 
 const NHAN_THAN = ['Nhân thân tốt', 'Chưa có tiền án, tiền sự', 'Có nhân thân tốt, chấp hành tốt chính sách pháp luật tại địa phương'];
 
@@ -231,7 +231,6 @@ export const buoc09: Buoc<VuNguon, TrangThai1A1> = {
     const ngayBanAn = await m.docCot(dongBanAn, 'Ngày bản án');
 
     // ── Lưu kết quả: cập nhật dòng của vụ (bước 07 đã ghi) thêm số, ngày bản án ──
-    await luuKetQua1A1(tk, { ...tt, soBanAn, ngayBanAn });
     test.info().annotations.push({ type: 'Bản án', description: `${tt.maVuAnHeThong} · bản án số ${soBanAn} ngày ${ngayBanAn}` });
     return { soBanAn, ngayBanAn };
   },

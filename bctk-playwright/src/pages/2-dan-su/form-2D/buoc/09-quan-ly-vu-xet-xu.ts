@@ -1,8 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { Buoc } from '../../../common/buoc';
 import { ManHinh } from '../../../base.page';
-import { BIEU_MAU_2D, BanAn2D, LINH_VUC_2D, TK_LANH_DAO, TK_VU_TRUONG, TrangThai2D } from '../cau-hinh-2D';
-import { luuDongKetQua } from '../../../../utils/file-helper';
+import { BanAn2D, TK_VU_TRUONG, TrangThai2D } from '../cau-hinh-2D';
 
 /**
  * BƯỚC 09 · Vụ trưởng · Màn "Quản lý vụ xét xử", kiểm tra vụ đã có lịch, lưu kết quả (hướng dẫn bước 9)
@@ -31,14 +30,6 @@ export const buoc09: Buoc<BanAn2D, TrangThai2D> = {
     await expect(dong, `Hồ sơ KN ${soKhangNghi} chưa có trong "Quản lý xét xử GĐT" (tab "Tất cả")`).toBeVisible({ timeout: 30_000 });
     const trangThai = await m.docCot(dong, 'TRẠNG THÁI').catch(() => m.docCot(dong, 'Trạng thái')).catch(() => '');
 
-    await luuDongKetQua(
-      LINH_VUC_2D,
-      BIEU_MAU_2D,
-      TK_VU_TRUONG,
-      ['Số bản án', 'Ngày bản án', 'Tòa ra quyết định', 'Cấp xét xử', 'Người kháng nghị', 'Số QĐKN', 'Ngày QĐKN', 'Quan hệ pháp luật', 'Thẩm phán', 'Số tờ trình PC', 'Chủ tọa', 'Thẩm phán khác', 'Lịch xét xử', 'Số chương trình làm việc', 'Số QĐ thành lập HĐXX', 'Số công văn mời VKS', 'Trạng thái', 'Link hội đồng'],
-      [vuAn.soBanAn, vuAn.ngayBanAn, vuAn.toaAn, vuAn.capXetXu, vuAn.nguoiKhangNghi, soKhangNghi, tt.ngayKhangNghi ?? '', tt.quanHePhapLuat ?? '', tt.thamPhan ?? '', tt.soToTrinh ?? '', TK_LANH_DAO.ten!, tt.thanhVienHDXX ?? '', tt.lichXetXu ?? '', tt.soChuongTrinh ?? '', tt.soQDHoiDong ?? '', tt.soCongVanVKS ?? '', trangThai, tt.urlHoiDong ?? ''],
-      'Số QĐKN',
-    );
     test.info().annotations.push({ type: 'Vụ giám đốc thẩm', description: `KN ${soKhangNghi} · BA ${vuAn.soBanAn} · ${tt.lichXetXu} · ${trangThai}` });
   },
 };

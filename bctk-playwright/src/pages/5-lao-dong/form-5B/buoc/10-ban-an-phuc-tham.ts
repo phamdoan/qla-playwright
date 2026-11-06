@@ -1,8 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { Buoc } from '../../../common/buoc';
-import { BIEU_MAU_5B, LINH_VUC_5B, TrangThai5B, VuAn5B } from '../cau-hinh-5B';
+import { TrangThai5B, VuAn5B } from '../cau-hinh-5B';
 import { ngay } from '../../../../utils/fake-data';
-import { luuDongKetQua } from '../../../../utils/file-helper';
 import { oChonTheoGoiY, soanThao } from '../../form-5A/buoc/13-tao-ban-an';
 import { moVuAn, popup } from './chung';
 
@@ -31,6 +30,7 @@ export const buoc10: Buoc<VuAn5B, TrangThai5B> = {
     const main = m.page.locator('main');
 
     let soBanAnPT = tt.soBanAnPT ?? '';
+    let ngayBanAnPT = tt.ngayBanAnPT ?? '';
     const daKy = main.locator('.ant-table-row').filter({ hasText: /Bản án phúc thẩm|75-DS/ }).filter({ hasText: /Đã ký|hiệu lực|Hoàn thành/ });
     if (!(await daKy.count())) {
       // Loại kết quả đang là "Quyết định" → đổi; còn 2 thẻ thì bấm thẳng thẻ "Bản án"
@@ -45,7 +45,7 @@ export const buoc10: Buoc<VuAn5B, TrangThai5B> = {
       await d.waitFor({ timeout: 30_000 });
       await m.choTaiXong(1500);
 
-      await m.ngay(d, 'Ngày bản án', ngay(0));
+      ngayBanAnPT = await m.ngay(d, 'Ngày bản án', ngay(0));
       soBanAnPT = String(10_000 + Math.floor(Math.random() * 90_000));
       await d.getByPlaceholder('Nhập số bản án').first().fill(soBanAnPT);
       await m.nhap(d, 'Tóm tắt nội dung bản án', 'Chấp nhận kháng nghị của Viện kiểm sát, sửa bản án lao động sơ thẩm.');
@@ -99,15 +99,7 @@ export const buoc10: Buoc<VuAn5B, TrangThai5B> = {
       test.info().annotations.push({ type: 'Căn cứ', description: dieu });
     }
 
-    await luuDongKetQua(
-      LINH_VUC_5B,
-      BIEU_MAU_5B,
-      tk,
-      ['Mã vụ án', 'Tòa sơ thẩm', 'Tòa phúc thẩm', 'Số QĐ kháng nghị', 'Viện kiểm sát', 'Bản án sơ thẩm', 'Mã vụ án phúc thẩm', 'Số thụ lý PT', 'Chủ tọa', 'Thành viên HĐXX', 'Thư ký', 'Số QĐ phân công', 'Số QĐ đưa ra xét xử', 'Ngày xét xử', 'Số bản án PT', 'Link vụ án sơ thẩm', 'Link vụ án phúc thẩm'],
-      [vuAn.maVuAn, vuAn.toaSoTham, vuAn.toaPhucTham, tt.soKhangNghi ?? '', tt.vienKiemSat ?? '', tt.banAnSoTham ?? '', tt.maVuAnPT ?? '', tt.soThuLyPT ?? '', tt.chuToa ?? '', tt.thanhVienHDXX ?? '', tt.thuKy ?? '', tt.soQDPhanCong ?? '', tt.soQDXetXu ?? '', tt.ngayXetXu ?? '', soBanAnPT, vuAn.linkVuAn, urlVuAnPT],
-      'Mã vụ án',
-    );
     test.info().annotations.push({ type: 'Vụ án phúc thẩm', description: `${tt.maVuAnPT} · bản án số ${soBanAnPT} · ${urlVuAnPT}` });
-    return { soBanAnPT };
+    return { soBanAnPT, ngayBanAnPT };
   },
 };
